@@ -1,0 +1,16 @@
+{
+  "name": "Kidzootopia – Talente stärken",
+  "short_name": "Kidzootopia",
+  "description": "Lern-App für Kinder: Talente entdecken und jedes Lernziel über den passenden Weg erreichen.",
+  "lang": "de",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f5ff",
+  "theme_color": "#5b4bff",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

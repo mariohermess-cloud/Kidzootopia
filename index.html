@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#5b4bff">
+<title>Kidzootopia – Talente stärken</title>
+<meta name="description" content="Lern-App für Kinder: Talente entdecken und jedes Lernziel über den Weg erreichen, der zum Kind passt.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kidzootopia">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <header id="topbar" class="topbar" hidden>
+    <button class="avatar-btn" id="avatarBtn" aria-label="Profil wechseln"><span id="avatarEmoji">🦊</span></button>
+    <div class="topbar-info">
+      <strong id="topName">–</strong>
+      <span id="topSub" class="muted">–</span>
+    </div>
+    <div class="streak" id="streakBox" title="Lern-Serie">🔥 <span id="streakCount">0</span></div>
+  </header>
+
+  <main id="view" class="view" aria-live="polite"></main>
+
+  <nav id="nav" class="nav" hidden>
+    <button data-route="lernen" class="nav-btn"><span>🎯</span>Lernen</button>
+    <button data-route="talente" class="nav-btn"><span>🧭</span>Talente</button>
+    <button data-route="wege" class="nav-btn"><span>🗺️</span>Wege</button>
+    <button data-route="eltern" class="nav-btn"><span>👨‍👩‍👧</span>Eltern</button>
+  </nav>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
