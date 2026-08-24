@@ -2,6 +2,7 @@
    Keine Konten, keine Server, keine Daten von Kindern nach draussen. */
 
 import { TALENTE, WEGE, ZIELE, ABZEICHEN } from './data.js';
+import { auswerten } from './talenttest.js';
 
 const KEY = 'kidzootopia.v1';
 const heute = () => new Date().toISOString().slice(0,10);
@@ -31,6 +32,9 @@ function migriere(p) {
   p.ziele       ||= {};
   p.wegeGenutzt ||= {};
   p.abzeichen   ||= [];
+  p.wegStats    ||= {};   // je Weg: wie gut und wie schnell laeuft es damit?
+  p.zielWeg     ||= {};   // je Lernziel und Weg dasselbe – dort zeigt sich der Unterschied
+  p.testTeile   ||= null; // Ergebnis der einzelnen Testteile
   p.stats ||= {};
   p.stats.aufgabenGesamt  ??= 0;
   p.stats.richtigGesamt   ??= 0;
@@ -60,17 +64,55 @@ export function loescheProfil(id) {
   speichern();
 }
 
-/* --- Talent-Test auswerten: Werte 0..100 je Talent --- */
-export function testAuswerten(profil, antworten /* [{t, v}] */) {
-  const summe = {}, anzahl = {};
-  antworten.forEach(({ t, v }) => { summe[t] = (summe[t]||0) + v; anzahl[t] = (anzahl[t]||0) + 1; });
-  Object.keys(TALENTE).forEach(t => {
-    const mittel = anzahl[t] ? summe[t]/anzahl[t] : 2.5;   // 1..4
-    profil.talente[t] = Math.round((mittel - 1) / 3 * 100);
-  });
+/* --- Talent-Test auswerten (siehe talenttest.js) --- */
+export function testAuswerten(profil, antworten) {
+  const ergebnis = auswerten(antworten);
+  Object.assign(profil.talente, ergebnis.werte);
+  profil.testTeile = ergebnis.teile;
   profil.testGemacht = true;
+  profil.testTeileGenutzt = ergebnis.verwendet;
   profil.testDatum = heute();
   speichern();
+  return ergebnis;
+}
+
+/* Wie gut laeuft es bei diesem Kind ueber einen bestimmten Weg?
+   Erfolgsquote, gedaempft in Richtung des eigenen Durchschnitts (wenige Aufgaben
+   sollen kein Urteil ergeben), plus ein kleiner Bonus fuer zuegiges Loesen. */
+export function wegWirksamkeit(profil, weg) {
+  const w = profil.wegStats[weg];
+  const gesamtQuote = profil.stats.aufgabenGesamt
+    ? profil.stats.richtigGesamt / profil.stats.aufgabenGesamt : 0.6;
+  if (!w || !w.gesamt) return { wert: Math.round(gesamtQuote*100), n: 0, konfidenz: 0 };
+
+  const K = 6;                                   // Daempfung: erst ab ~6 Aufgaben zaehlt es richtig
+  const quote = (w.richtig + K * gesamtQuote) / (w.gesamt + K);
+  let wert = quote * 100;
+
+  const eigeneSek = w.msSumme / w.gesamt / 1000;
+  const alleMs = Object.values(profil.wegStats).reduce((a,x) => a + x.msSumme, 0);
+  const alleN  = Object.values(profil.wegStats).reduce((a,x) => a + x.gesamt, 0);
+  if (alleN >= 12 && eigeneSek > 0) {
+    const schnittSek = alleMs / alleN / 1000;
+    const tempo = (schnittSek - eigeneSek) / Math.max(4, schnittSek);  // schneller als sonst = +
+    wert += Math.max(-8, Math.min(8, tempo * 16));
+  }
+  return {
+    wert: Math.max(0, Math.min(100, Math.round(wert))),
+    n: w.gesamt,
+    konfidenz: Math.min(1, w.gesamt / 20)
+  };
+}
+
+/* Wirksamkeit eines Weges fuer ein bestimmtes Lernziel – dort zeigt sich,
+   ob ein Kind Brueche wirklich besser ueber Bilder als ueber Geschichten versteht. */
+export function zielWegWirksamkeit(profil, zielId, weg) {
+  const z = profil.zielWeg[zielId]?.[weg];
+  const basis = wegWirksamkeit(profil, weg);
+  if (!z || z.gesamt < 3) return basis;
+  const K = 4;
+  const quote = (z.richtig + K * (basis.wert/100)) / (z.gesamt + K);
+  return { wert: Math.round(quote*100), n: z.gesamt, konfidenz: Math.min(1, z.gesamt/12) };
 }
 
 /* Talent-Profil = Selbsteinschaetzung + gezeigte Leistung.
@@ -79,11 +121,17 @@ export function talentWerte(profil) {
   const out = {};
   for (const t of Object.keys(TALENTE)) {
     const test = profil.talente[t] ?? 50;
-    const l = profil.leistung[t];
-    if (!l || l.gesamt < 6) { out[t] = test; continue; }
-    const quote = Math.round(l.richtig / l.gesamt * 100);
-    const gewicht = Math.min(0.45, l.gesamt / 120);        // waechst mit Datenmenge
-    out[t] = Math.round(test * (1 - gewicht) + quote * gewicht);
+    // alle Wege, die zu diesem Talent gehoeren
+    const wege = Object.entries(WEGE).filter(([,w]) => w.talent === t).map(([k]) => k);
+    let summe = 0, n = 0;
+    wege.forEach(w => {
+      const s = profil.wegStats[w];
+      if (s?.gesamt) { const e = wegWirksamkeit(profil, w); summe += e.wert * s.gesamt; n += s.gesamt; }
+    });
+    if (!n) { out[t] = test; continue; }
+    const gemessen = summe / n;
+    const gewicht = Math.min(0.45, n / 120);      // waechst mit der Datenmenge
+    out[t] = Math.round(test * (1 - gewicht) + gemessen * gewicht);
   }
   return out;
 }
@@ -102,7 +150,7 @@ export function zieleFuerKlasse(profil) {
 }
 
 /* Ergebnis einer Aufgabe verbuchen */
-export function verbuche(profil, { zielId, weg, level, richtig, bruecke }) {
+export function verbuche(profil, { zielId, weg, level, richtig, bruecke, ms = 0 }) {
   const z = zielStand(profil, zielId);
   z.gesamt++; if (richtig) { z.richtig++; z.xp += 10 + level * 2; }
   z.serie = richtig ? z.serie + 1 : 0;
@@ -117,6 +165,15 @@ export function verbuche(profil, { zielId, weg, level, richtig, bruecke }) {
     l.gesamt++; if (richtig) l.richtig++;
     profil.wegeGenutzt[weg] = (profil.wegeGenutzt[weg]||0) + 1;
   }
+
+  // Hier lernt die App: Wie gut und wie schnell laeuft dieses Kind ueber diesen Weg?
+  const ws = profil.wegStats[weg] ||= { gesamt:0, richtig:0, msSumme:0 };
+  ws.gesamt++; if (richtig) ws.richtig++;
+  ws.msSumme += Math.min(ms || 0, 120000);        // Ausreisser (Pause, Handy weggelegt) kappen
+
+  const zw = (profil.zielWeg[zielId] ||= {});
+  const e = zw[weg] ||= { gesamt:0, richtig:0 };
+  e.gesamt++; if (richtig) e.richtig++;
 
   const s = profil.stats;
   s.aufgabenGesamt++; if (richtig) s.richtigGesamt++;

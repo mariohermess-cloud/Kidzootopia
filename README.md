@@ -26,12 +26,33 @@ Vier Kinder, vier Wege, ein Ergebnis: Sie können 4 × 6.
 
 ## Was die App macht
 
-1. **Talent-Test** – 24 kindgerechte Aussagen, 8 Talentbereiche
-   (Sprache, Logik, Raum, Technik, Musik, Bewegung, Natur, Miteinander).
-   Ergebnis: ein Talent-Radar.
-2. **Talent-Radar lernt mit** – das Ergebnis ist keine Etikette. Zu jeder Selbst­einschätzung
-   kommt die tatsächlich gezeigte Leistung dazu (gewichtet, je mehr geübt wurde, desto stärker).
-   Der Test darf jederzeit wiederholt werden.
+1. **Talent-Test in fünf Teilen** – 8 Talentbereiche (Sprache, Logik, Raum, Technik,
+   Musik, Bewegung, Natur, Miteinander), erfasst aus vier verschiedenen Blickwinkeln.
+   Eine einzige Frageform genügt nicht: Kinder neigen bei „Magst du X?“ zum Ja-Sagen,
+   und am Ende sieht alles gleich stark aus.
+
+   | Teil | Form | Warum |
+   |---|---|---|
+   | 1 · Was magst du? | 16 Aussagen, Skala 🙁😐🙂🤩 | Selbstbild |
+   | 2 · Lieber … oder …? | 12 Paarvergleiche | erzwingt eine Rangfolge, entlarvt Ja-Sager |
+   | 3 · Was würdest du tun? | 6 Alltagsszenarien | Verhalten statt Meinung |
+   | 4 · Kleine Proben | 8 Mini-Aufgaben mit Zeitmessung | tatsächlich gezeigtes Können |
+   | 5 · Feinschliff | bis zu 4 Stichfragen | nur dort, wo Talente dicht beieinander liegen |
+
+   Jeder Teil ist freiwillig: Nach jedem Teil steht schon ein Ergebnis, jeder weitere
+   Teil macht es genauer. Wenige Datenpunkte werden gedämpft, damit eine einzelne
+   Antwort niemanden festlegt.
+
+2. **Die App lernt aus den Ergebnissen weiter** – das Testergebnis ist kein Etikett:
+   * Zu jeder Aufgabe werden Treffer **und Bearbeitungszeit** je Lernweg mitgeschrieben.
+   * Daraus entsteht eine **Wirksamkeit** je Weg (geglättete Trefferquote + Tempobonus) –
+     auch getrennt je Lernziel, denn ein Kind kann Brüche über Bilder verstehen und
+     Einmaleins über Rhythmus.
+   * Die Wegwahl richtet sich nach Talent **und** Wirksamkeit; je mehr Daten vorliegen,
+     desto stärker zählt das Gemessene (25 % → 70 %).
+   * Widerspricht die Praxis dem Test, sagt der Eltern-Bereich das ausdrücklich:
+     *„Im Test lag der Knobel-Weg vorn, in den Aufgaben läuft der Rhythmus-Weg besser.“*
+   * Der Test darf jederzeit wiederholt werden – Kinder verändern sich.
 3. **Lernziele statt Aufgabenlisten** – 11 Ziele aus dem Schulstoff
    (Mathe, Deutsch, Englisch, Allgemeinwissen, Technik & Code). Jedes Ziel beschreibt eine
    Kompetenz, nicht eine Aufgabenform.
@@ -58,11 +79,16 @@ Kein App-Store, keine Installation, keine Konten.
 * **Android / Chrome:** Seite öffnen → Menü ⋮ → *App installieren*
 * **iPhone / Safari:** Seite öffnen → Teilen-Symbol → *Zum Home-Bildschirm*
 
-Nach jedem Push auf `main` wird die App automatisch über GitHub Pages veröffentlicht
-(Workflow `.github/workflows/pages.yml`). Der Workflow schaltet GitHub Pages beim ersten
-Lauf selbst ein (`configure-pages` mit `enablement: true`) – es ist kein Handgriff in den
-Einstellungen nötig. Sollte das Aktivieren an fehlenden Rechten scheitern, hilft einmalig
-*Settings → Pages → Source: GitHub Actions*. Die Adresse lautet:
+**Einmalig nötig:** GitHub Pages im Repository einschalten unter
+*Settings → Pages → Build and deployment → Source:* **GitHub Actions**.
+Das lässt sich nicht automatisieren – ein Workflow-Token darf die Pages-Seite nicht
+selbst anlegen (`Resource not accessible by integration`), dafür wären
+Administrator-Rechte nötig.
+
+Danach wird die App bei jedem Push auf `main` automatisch veröffentlicht
+(Workflow `.github/workflows/pages.yml`; der Generator-Test läuft als Gate davor).
+Der fehlgeschlagene Lauf lässt sich unter *Actions → Deploy zu GitHub Pages →
+Re-run all jobs* einfach wiederholen. Die Adresse lautet:
 
 ```
 https://mariohermess-cloud.github.io/Kidzootopia/
@@ -90,8 +116,9 @@ keine Tracker, kein Netzwerkverkehr. Ein Backup erzeugen Eltern selbst über
 
 ```bash
 npm run test:aufgaben   # prüft alle Generatoren: 13.200 Aufgaben auf Vollständigkeit & Eindeutigkeit
+npm run test:lernen     # prüft die Lernschleife: erkennt die App den wirksamen Weg?
 npm start &             # Server für den Durchklick-Test
-npm run test:e2e        # Profil anlegen → Talent-Test → Mission → alle Bereiche → Neustart
+npm run test:e2e        # Profil anlegen → 5-teiliger Talent-Test → Mission → alle Bereiche → Neustart
 ```
 
 ---
@@ -103,10 +130,11 @@ index.html            Gerüst (Kopfzeile, Ansicht, Navigation)
 app.css               Gestaltung, hell & dunkel, Handy zuerst
 manifest.webmanifest  App-Installation
 sw.js                 Offline-Betrieb
-js/data.js            Talente, Lernwege, Lernziele, Talent-Test, Abzeichen
+js/data.js            Talente, Lernwege, Lernziele, Talent-Test (5 Teile), Abzeichen
+js/talenttest.js      Auswertung des Talent-Tests: Blöcke, Gewichte, Feinschliff
 js/generators.js      Aufgaben-Generatoren – ein Ziel, viele Wege
 js/engine.js          Auswahl von Ziel & Weg, Brücken-Regel, Elternhinweise
-js/store.js           Profile, Fortschritt, Talentwerte (lokal)
+js/store.js           Profile, Fortschritt, Talentwerte, gemessene Wirksamkeit (lokal)
 js/ui.js              Bildschirme
 js/chart.js           Talent-Radar (SVG)
 tests/                Generator-Test & Durchklick-Test
