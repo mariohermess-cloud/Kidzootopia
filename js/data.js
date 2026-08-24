@@ -41,32 +41,37 @@ export const FAECHER = {
   technik:  { name:'Technik & Code',  emoji:'💡' }
 };
 
-/* --- Talent-Test: 24 Aussagen, 3 pro Talent, Skala 1-4 --- */
-export const TEST_FRAGEN = [
+/* ---------------------------------------------------------------------------
+   Talent-Test in fuenf Teilen.
+   Eine einzige Frageform reicht nicht: Kinder neigen bei "Magst du X?" zum
+   Ja-Sagen, und alles wirkt gleich stark. Darum mischen wir vier Blickwinkel:
+     1. Vorlieben  – Selbsteinschaetzung (Skala)
+     2. Entweder-oder – erzwungene Wahl, deckt echte Rangfolgen auf
+     3. Szenarien  – Verhalten statt Meinung
+     4. Kleine Proben – tatsaechlich gezeigtes Koennen (mit Zeitmessung)
+     5. Feinschliff – Stichfragen zwischen den Talenten, die dicht beieinander liegen
+   Jeder Teil ist freiwillig: Nach jedem Teil gibt es schon ein Ergebnis,
+   jeder weitere Teil macht es genauer.
+   --------------------------------------------------------------------------- */
+
+/* Teil 1: Vorlieben – 16 Aussagen, 2 je Talent */
+export const TEST_LIKERT = [
   { t:'sprache',  q:'Ich erfinde oder erzähle gern Geschichten.' },
-  { t:'sprache',  q:'Ich lese oder höre gern Bücher und merke mir viel davon.' },
-  { t:'sprache',  q:'Ich erkläre anderen Dinge gern mit Worten.' },
+  { t:'sprache',  q:'Neue Wörter merke ich mir schnell.' },
   { t:'logik',    q:'Ich löse gern Rätsel und Knobelaufgaben.' },
-  { t:'logik',    q:'Ich rechne gern im Kopf.' },
   { t:'logik',    q:'Ich finde schnell heraus, wie ein Muster weitergeht.' },
-  { t:'raum',     q:'Ich baue gern mit Bausteinen, Lego oder Papier.' },
-  { t:'raum',     q:'Ich male oder zeichne gern.' },
+  { t:'raum',     q:'Ich baue oder bastle gern etwas, das halten muss.' },
   { t:'raum',     q:'Ich kann mir Wege und Räume gut im Kopf vorstellen.' },
   { t:'technik',  q:'Ich will wissen, wie Geräte innen funktionieren.' },
-  { t:'technik',  q:'Ich probiere gern am Computer oder Tablet Neues aus.' },
-  { t:'technik',  q:'Ich repariere oder verbessere gern Sachen.' },
+  { t:'technik',  q:'Wenn etwas kaputt ist, will ich es selbst reparieren.' },
   { t:'musik',    q:'Ich singe, summe oder trommle oft.' },
-  { t:'musik',    q:'Ich merke mir Lieder und Melodien schnell.' },
-  { t:'musik',    q:'Ich lerne Dinge leichter, wenn sie einen Rhythmus haben.' },
-  { t:'bewegung', q:'Ich bewege mich gern und kann schlecht lange still sitzen.' },
-  { t:'bewegung', q:'Ich lerne gut, wenn ich dabei laufe oder etwas mit den Händen tue.' },
-  { t:'bewegung', q:'Sport und Bewegungsspiele machen mir viel Spaß.' },
+  { t:'musik',    q:'Melodien und Lieder merke ich mir sehr schnell.' },
+  { t:'bewegung', q:'Beim Lernen bewege ich mich gern oder laufe herum.' },
+  { t:'bewegung', q:'Bewegungen kann ich mir nach einmal Zeigen gut merken.' },
   { t:'natur',    q:'Ich beobachte gern Tiere, Pflanzen oder das Wetter.' },
-  { t:'natur',    q:'Ich stelle viele Fragen über die Welt.' },
-  { t:'natur',    q:'Ich sammle oder untersuche gern Dinge aus der Natur.' },
-  { t:'sozial',   q:'Ich lerne lieber zusammen mit anderen als allein.' },
-  { t:'sozial',   q:'Ich merke schnell, wie es anderen geht.' },
-  { t:'sozial',   q:'Ich helfe anderen gern beim Verstehen.' }
+  { t:'natur',    q:'Ich stelle sehr viele Fragen über die Welt.' },
+  { t:'sozial',   q:'Ich erkläre anderen gern etwas, bis sie es verstehen.' },
+  { t:'sozial',   q:'Ich merke schnell, wie es jemandem gerade geht.' }
 ];
 
 export const SKALA = [
@@ -74,6 +79,91 @@ export const SKALA = [
   { v:2, em:'😐', label:'ein wenig' },
   { v:3, em:'🙂', label:'oft' },
   { v:4, em:'🤩', label:'total' }
+];
+
+/* Teil 2: Entweder-oder – 12 Paare. Wer alles mag, muss sich hier entscheiden. */
+export const TEST_PAARE = [
+  { a:'sprache',  b:'logik',    fa:'Eine Geschichte schreiben',        fb:'Ein Zahlenrätsel knacken' },
+  { a:'raum',     b:'sprache',  fa:'Ein Modell bauen',                 fb:'Ein Buch lesen' },
+  { a:'technik',  b:'natur',    fa:'Einen Roboter programmieren',      fb:'Käfer im Garten beobachten' },
+  { a:'musik',    b:'bewegung', fa:'Ein Lied auf Instrumenten spielen',fb:'Ein Wettrennen laufen' },
+  { a:'sozial',   b:'logik',    fa:'Einem Kind Mathe erklären',        fb:'Allein eine harte Aufgabe lösen' },
+  { a:'bewegung', b:'sprache',  fa:'Ein Theaterstück vorspielen',      fb:'Ein Gedicht auswendig lernen' },
+  { a:'natur',    b:'raum',     fa:'Blätter sammeln und bestimmen',    fb:'Ein Labyrinth zeichnen' },
+  { a:'technik',  b:'musik',    fa:'Eine Taschenlampe auseinanderbauen', fb:'Ein Schlagzeug ausprobieren' },
+  { a:'logik',    b:'natur',    fa:'Ein Sudoku lösen',                 fb:'Ein Vogelnest untersuchen' },
+  { a:'sozial',   b:'technik',  fa:'Eine Gruppe anleiten',             fb:'Allein am Computer tüfteln' },
+  { a:'musik',    b:'sozial',   fa:'Ein Lied auswendig singen',        fb:'Einem Freund Mut machen' },
+  { a:'raum',     b:'bewegung', fa:'Mit Lego eine Brücke bauen',       fb:'Auf Bäume klettern' }
+];
+
+/* Teil 3: Szenarien – was tut das Kind wirklich? */
+export const TEST_SZENARIEN = [
+  { q:'Ihr sollt in der Gruppe ein Projekt über Wale machen. Was übernimmst du am liebsten?',
+    opt:[ { text:'Den Text schreiben und vortragen', t:'sprache' },
+          { text:'Das Plakat gestalten und ein Wal-Modell bauen', t:'raum' },
+          { text:'Zahlen sammeln: Wie groß, wie schwer, wie tief?', t:'logik' },
+          { text:'Dafür sorgen, dass alle etwas zu tun haben', t:'sozial' } ] },
+  { q:'Du bekommst einen Karton voller alter Sachen. Was machst du damit?',
+    opt:[ { text:'Ich baue etwas Neues daraus', t:'raum' },
+          { text:'Ich nehme die Geräte auseinander und schaue hinein', t:'technik' },
+          { text:'Ich denke mir eine Geschichte zu jedem Ding aus', t:'sprache' },
+          { text:'Ich sortiere alles nach Regeln in Gruppen', t:'logik' } ] },
+  { q:'Ein Ausflug! Wohin würdest du am liebsten?',
+    opt:[ { text:'In den Wald, Tiere und Pflanzen entdecken', t:'natur' },
+          { text:'Ins Technikmuseum zum Ausprobieren', t:'technik' },
+          { text:'Ins Konzert oder in eine Musikwerkstatt', t:'musik' },
+          { text:'In den Kletterpark', t:'bewegung' } ] },
+  { q:'Eine Aufgabe ist richtig schwer. Was hilft dir am meisten?',
+    opt:[ { text:'Wenn sie mir jemand erklärt und wir sie zusammen machen', t:'sozial' },
+          { text:'Wenn ich sie aufzeichnen oder mit Dingen nachlegen kann', t:'raum' },
+          { text:'Wenn ich dabei herumlaufen darf', t:'bewegung' },
+          { text:'Wenn ich in Ruhe allein nachdenken darf', t:'logik' } ] },
+  { q:'Wie lernst du ein neues Gedicht am schnellsten?',
+    opt:[ { text:'Ich singe es oder klopfe den Takt dazu', t:'musik' },
+          { text:'Ich lese es mehrmals laut vor', t:'sprache' },
+          { text:'Ich laufe dabei durchs Zimmer', t:'bewegung' },
+          { text:'Ich male mir zu jeder Zeile ein Bild', t:'raum' } ] },
+  { q:'Was findest du an einem Regentag am spannendsten?',
+    opt:[ { text:'Zu beobachten, wohin das Wasser läuft', t:'natur' },
+          { text:'Ein Boot zu bauen, das schwimmt', t:'technik' },
+          { text:'Regentropfen als Rhythmus zu hören', t:'musik' },
+          { text:'Jemandem Gesellschaft zu leisten, der traurig ist', t:'sozial' } ] }
+];
+
+/* Teil 4: Kleine Proben – gezeigtes Koennen statt Selbsteinschaetzung.
+   Zeit wird mitgemessen: sicheres, schnelles Loesen zaehlt staerker. */
+export const TEST_PROBEN = [
+  { t:'sprache',  q:'Welches Wort reimt sich auf „Blume“?',
+    optionen:['Krume','Blatt','Bloß','Bild'], a:'Krume' },
+  { t:'logik',    q:'Wie geht die Reihe weiter?\n2, 4, 8, 16, ?',
+    optionen:['32','24','20','18'], a:'32' },
+  { t:'raum',     q:'Der Pfeil ▲ wird eine Vierteldrehung nach rechts gedreht.\nWohin zeigt er dann?',
+    optionen:['▶','◀','▼','▲'], a:'▶' },
+  { t:'technik',  q:'Der Roboter startet oben links und führt aus:\n➡️ ➡️ ⬇️ ⬅️\nWie weit ist er von seinem Start entfernt?',
+    optionen:['1 nach rechts und 1 nach unten','2 nach rechts','1 nach unten','wieder am Start'],
+    a:'1 nach rechts und 1 nach unten' },
+  { t:'musik',    q:'Der Takt geht: 👏 👏 🥁 | 👏 👏 🥁 | 👏 ?\nWas kommt jetzt?',
+    optionen:['👏','🥁','Pause','🎵'], a:'👏' },
+  { t:'bewegung', q:'Du machst 3 Schritte vorwärts, drehst dich um und machst 3 Schritte vorwärts.\nWo stehst du?',
+    optionen:['wieder am Start','3 Schritte weiter','6 Schritte weiter','3 Schritte zurück'], a:'wieder am Start' },
+  { t:'natur',    q:'Was kommt bei einer Pflanze direkt nach dem Samen?',
+    optionen:['der Keimling','die Frucht','die Blüte','das Blatt'], a:'der Keimling' },
+  { t:'sozial',   q:'In der Pause sitzt ein Kind allein und schaut traurig.\nWas hilft ihm am ehesten?',
+    optionen:['Hingehen und fragen, ob es mitspielen will','Es in Ruhe lassen',
+              'Der Lehrerin sagen, dass es stört','Über es lachen'],
+    a:'Hingehen und fragen, ob es mitspielen will' }
+];
+
+/* Gewichte der Teile am Endergebnis. Fehlende Teile werden neu normiert. */
+export const TEST_GEWICHTE = { likert:0.30, paare:0.25, szenarien:0.20, proben:0.25 };
+
+export const TEST_TEILE = [
+  { id:'likert',    titel:'Was magst du?',        emoji:'💚', info:'16 kurze Fragen. Es gibt kein Richtig oder Falsch.' },
+  { id:'paare',     titel:'Lieber … oder …?',     emoji:'⚖️', info:'Immer zwei Dinge – such dir eines aus.' },
+  { id:'szenarien', titel:'Was würdest du tun?',  emoji:'🎭', info:'Sechs Situationen aus dem Alltag.' },
+  { id:'proben',    titel:'Kleine Proben',        emoji:'🎯', info:'Acht Mini-Aufgaben. Nimm dir Zeit – aber trödle nicht.' },
+  { id:'stich',     titel:'Feinschliff',          emoji:'🔍', info:'Ein paar Stichfragen dort, wo es noch eng ist.' }
 ];
 
 /* --- Lernziele: was gekonnt werden soll, unabhaengig vom Weg --- */

@@ -15,15 +15,37 @@ await p.fill('#nName','Mia');
 await p.selectOption('#nKlasse','3');
 await p.click('[data-av="🦄"]');
 await p.click('#nAnlegen');
-await p.waitForSelector('.scale');
-await p.screenshot({path:S+'/1-test.png'});
-// Talent-Test durchklicken
-for (let i=0;i<24;i++){ const v = [4,3,2,1][i%4]; await p.click(`.scale [data-v="${v}"]`); }
+// Talent-Test: fünf Teile durchspielen
+await p.waitForSelector('#testStart');
+await p.screenshot({path:S+'/1-test-start.png', fullPage:true});
+await p.click('#testStart');
+
+const teilDurchspielen = async () => {
+  for (let n = 0; n < 60; n++) {
+    if (await p.$('#weiterTeil')) return 'pause';
+    if (await p.$('#losgehts')) return 'fertig';
+    if (await p.$('.scale [data-v]')) { await p.click(`.scale [data-v="${[4,3,2,1][n%4]}"]`); continue; }
+    if (await p.$('.choice')) { await p.click('.choice'); continue; }
+    return 'unbekannt';
+  }
+  return 'zu-lang';
+};
+
+let zustand = await teilDurchspielen();
+let teile = 1;
+while (zustand === 'pause') {
+  if (teile === 1) await p.screenshot({path:S+'/2-teil-pause.png', fullPage:true});
+  await p.click('#weiterTeil');
+  zustand = await teilDurchspielen();
+  teile++;
+}
+if (zustand !== 'fertig') throw new Error('Talent-Test endete unerwartet: ' + zustand);
+console.log('Testteile durchgespielt:', teile);
 await p.waitForSelector('#losgehts');
-await p.screenshot({path:S+'/2-radar.png', fullPage:true});
+await p.screenshot({path:S+'/3-radar.png', fullPage:true});
 await p.click('#losgehts');
 await p.waitForSelector('#mission');
-await p.screenshot({path:S+'/3-home.png', fullPage:true});
+await p.screenshot({path:S+'/4-home.png', fullPage:true});
 
 // Mission spielen: 8 Aufgaben
 await p.click('#mission');
@@ -33,11 +55,11 @@ for (let i=0;i<8;i++){
   if (await p.$('#eingabe')) { await p.fill('#eingabe','42'); await p.click('#pruefen'); }
   else { await p.click('.choice'); }
   await p.waitForSelector('#weiter');
-  if (i===0) await p.screenshot({path:S+'/4-aufgabe.png', fullPage:true});
+  if (i===0) await p.screenshot({path:S+'/5-aufgabe.png', fullPage:true});
   await p.click('#weiter');
 }
 await p.waitForSelector('#nochmal');
-await p.screenshot({path:S+'/5-ergebnis.png', fullPage:true});
+await p.screenshot({path:S+'/6-ergebnis.png', fullPage:true});
 await p.click('#heim');
 
 // Fach-Runde + Ziel-Runde
@@ -50,7 +72,7 @@ await p.click('[data-ziel="einmaleins"]');
 await p.waitForSelector('.task'); await p.click('#raus');
 
 // Tabs
-for (const [r,f] of [['talente','6-talente'],['wege','7-wege'],['eltern','8-eltern']]) {
+for (const [r,f] of [['talente','7-talente'],['wege','8-wege'],['eltern','9-eltern']]) {
   await p.click(`.nav-btn[data-route="${r}"]`);
   await p.waitForTimeout(180);
   await p.screenshot({path:`${S}/${f}.png`, fullPage:true});

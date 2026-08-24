@@ -23,6 +23,7 @@ jobs:
         with:
           node-version: 24
       - run: node tests/aufgaben.mjs
+      - run: node tests/lernen.mjs
 
   deploy:
     needs: test

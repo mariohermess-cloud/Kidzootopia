@@ -1,8 +1,10 @@
 /* Oberflaeche: alle Bildschirme. Bewusst gross, ruhig und antippbar (Handy zuerst). */
 
-import { TALENTE, WEGE, FAECHER, ZIELE, ZIEL_MAP, TEST_FRAGEN, SKALA, AVATARE, ABZEICHEN } from './data.js';
+import { TALENTE, WEGE, FAECHER, ZIELE, ZIEL_MAP, SKALA, AVATARE, ABZEICHEN,
+         TEST_LIKERT, TEST_PAARE, TEST_SZENARIEN, TEST_PROBEN, TEST_TEILE } from './data.js';
 import * as S from './store.js';
-import { starteSession, empfehlungen, wegRanking } from './engine.js';
+import { starteSession, empfehlungen, wegRanking, wegeNachWirkung, wegBewertung } from './engine.js';
+import { auswerten, stichPaare, engeTalente } from './talenttest.js';
 import { pruefe } from './generators.js';
 import { radar } from './chart.js';
 
@@ -104,33 +106,141 @@ function screenProfile() {
 }
 
 /* ------------------------------ Talent-Test ------------------------------ */
+/* Fünf Teile mit unterschiedlichen Frageformen. Nach jedem Teil kann das Kind
+   aufhören – das Ergebnis steht dann schon, jeder weitere Teil verfeinert es. */
 function screenTest(p) {
-  let i = 0; const antworten = [];
-  const frage = () => {
-    if (i >= TEST_FRAGEN.length) return fertig();
-    const f = TEST_FRAGEN[i];
+  const antworten = { likert:[], paare:[], szenarien:[], proben:[], stich:[] };
+  const mischen = a => a.map(v=>[Math.random(),v]).sort((x,y)=>x[0]-y[0]).map(v=>v[1]);
+  const likert = mischen([...TEST_LIKERT]);
+  const paare = mischen([...TEST_PAARE]);
+  const szenarien = mischen([...TEST_SZENARIEN]);
+  const proben = mischen([...TEST_PROBEN]);
+  let stich = [];
+
+  const kopf = (teilNr, i, n) => {
+    const teil = TEST_TEILE[teilNr];
+    return `<div class="row spread"><span class="pill">${teil.emoji} Teil ${teilNr+1}/5 · ${teil.titel}</span>
+        <span class="muted small">${i+1} / ${n}</span></div>
+      <div class="bar" style="margin:12px 0 18px"><i style="width:${i/n*100}%"></i></div>`;
+  };
+
+  /* Zwischenstand: weitermachen oder Ergebnis ansehen */
+  const pause = (naechsterTeil) => {
+    const teil = TEST_TEILE[naechsterTeil];
+    const zwischen = auswerten(antworten);
+    const top = Object.entries(zwischen.werte).sort((a,b)=>b[1]-a[1])[0];
     view().innerHTML = `
+      <div class="hero"><h2>Geschafft! 🎉</h2>
+        <p>Bis hierhin sieht es nach <b>${TALENTE[top[0]].emoji} ${TALENTE[top[0]].name}</b> aus.</p></div>
       <div class="card">
-        <div class="row spread"><span class="pill">Talent-Test</span>
-          <span class="muted small">${i+1} / ${TEST_FRAGEN.length}</span></div>
-        <div class="bar" style="margin:12px 0 18px"><i style="width:${(i/TEST_FRAGEN.length*100)}%"></i></div>
+        <h3>${teil.emoji} Weiter mit: ${teil.titel}</h3>
+        <p class="muted small">${teil.info}</p>
+        <p class="small">Jeder weitere Teil macht dein Talent-Radar genauer. Du kannst aber auch
+          jetzt schon aufhören und später weitermachen.</p>
+        <button class="btn" id="weiterTeil">Weiter zu Teil ${naechsterTeil+1} ${teil.emoji}</button>
+        <button class="btn quiet" id="fertigJetzt" style="margin-top:10px">Ergebnis jetzt ansehen</button>
+      </div>`;
+    view().querySelector('#weiterTeil').onclick = () => starts[naechsterTeil]();
+    view().querySelector('#fertigJetzt').onclick = fertig;
+  };
+
+  /* Teil 1: Vorlieben (Skala) */
+  const teil1 = (i = 0) => {
+    if (i >= likert.length) return pause(1);
+    const f = likert[i];
+    view().innerHTML = `<div class="card">${kopf(0, i, likert.length)}
         <p class="task pop">${esc(f.q)}</p>
-        <div class="scale">
-          ${SKALA.map(s => `<button data-v="${s.v}"><b>${s.em}</b><small>${s.label}</small></button>`).join('')}
-        </div>
+        <div class="scale">${SKALA.map(sk =>
+          `<button data-v="${sk.v}"><b>${sk.em}</b><small>${sk.label}</small></button>`).join('')}</div>
         ${i>0?'<button class="btn quiet small" id="zurueck" style="margin-top:14px">← zurück</button>':''}
       </div>
       <p class="muted small center">Es gibt kein Richtig oder Falsch. Antworte einfach ehrlich.</p>`;
     view().querySelectorAll('[data-v]').forEach(b => b.onclick = () => {
-      antworten[i] = { t: f.t, v: Number(b.dataset.v) }; i++; frage();
+      antworten.likert[i] = { t: f.t, v: Number(b.dataset.v) }; teil1(i+1);
     });
-    view().querySelector('#zurueck')?.addEventListener('click', () => { i--; frage(); });
+    view().querySelector('#zurueck')?.addEventListener('click', () => teil1(i-1));
   };
+
+  /* Teil 2: Entweder-oder */
+  const teil2 = (i = 0) => {
+    if (i >= paare.length) return pause(2);
+    const f = paare[i];
+    const links = Math.random() < .5;
+    const [ea, eb] = links ? [f.a, f.b] : [f.b, f.a];
+    const [ta, tb] = links ? [f.fa, f.fb] : [f.fb, f.fa];
+    view().innerHTML = `<div class="card">${kopf(1, i, paare.length)}
+        <p class="task pop">Was machst du lieber?</p>
+        <div class="choices">
+          <button class="choice" data-w="${ea}" data-l="${eb}">${esc(ta)}</button>
+          <button class="choice" data-w="${eb}" data-l="${ea}">${esc(tb)}</button>
+        </div>
+      </div>
+      <p class="muted small center">Auch wenn du beides magst: Wähl das, was dir zuerst Spaß macht.</p>`;
+    view().querySelectorAll('[data-w]').forEach(b => b.onclick = () => {
+      antworten.paare[i] = { gewinner: b.dataset.w, verlierer: b.dataset.l }; teil2(i+1);
+    });
+  };
+
+  /* Teil 3: Szenarien */
+  const teil3 = (i = 0) => {
+    if (i >= szenarien.length) return pause(3);
+    const f = szenarien[i];
+    const opts = mischen([...f.opt]);
+    view().innerHTML = `<div class="card">${kopf(2, i, szenarien.length)}
+        <p class="task pop">${esc(f.q)}</p>
+        <div class="choices">${opts.map(o =>
+          `<button class="choice" data-t="${o.t}">${esc(o.text)}</button>`).join('')}</div>
+      </div>`;
+    view().querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
+      antworten.szenarien[i] = { gewaehlt: b.dataset.t, angeboten: f.opt.map(o => o.t) }; teil3(i+1);
+    });
+  };
+
+  /* Teil 4: Kleine Proben – mit Zeitmessung */
+  const teil4 = (i = 0) => {
+    if (i >= proben.length) return pause(4);
+    const f = proben[i];
+    const start = performance.now();
+    view().innerHTML = `<div class="card">${kopf(3, i, proben.length)}
+        <p class="task pop">${esc(f.q)}</p>
+        <div class="choices">${mischen([...f.optionen]).map(o =>
+          `<button class="choice" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      </div>
+      <p class="muted small center">Denk nach – aber trödle nicht. Beides zählt.</p>`;
+    view().querySelectorAll('[data-o]').forEach(b => b.onclick = () => {
+      antworten.proben[i] = { t: f.t, richtig: b.dataset.o === f.a, ms: performance.now() - start };
+      teil4(i+1);
+    });
+  };
+
+  /* Teil 5: Feinschliff – nur dort, wo Talente dicht beieinander liegen */
+  const teil5 = (i = 0) => {
+    if (i === 0) {
+      stich = stichPaare(auswerten(antworten).werte, 4);
+      if (!stich.length) return fertig();
+    }
+    if (i >= stich.length) return fertig();
+    const f = stich[i];
+    view().innerHTML = `<div class="card">${kopf(4, i, stich.length)}
+        <p class="task pop">Hier ist es noch eng – was zieht dich mehr?</p>
+        <div class="choices">
+          <button class="choice" data-w="${f.a}" data-l="${f.b}">${esc(f.fa)}</button>
+          <button class="choice" data-w="${f.b}" data-l="${f.a}">${esc(f.fb)}</button>
+        </div>
+      </div>`;
+    view().querySelectorAll('[data-w]').forEach(b => b.onclick = () => {
+      antworten.stich[i] = { gewinner: b.dataset.w, verlierer: b.dataset.l }; teil5(i+1);
+    });
+  };
+
+  const starts = [teil1, teil2, teil3, teil4, teil5];
+
   const fertig = () => {
-    S.testAuswerten(p, antworten);
+    const ergebnis = S.testAuswerten(p, antworten);
     kopfzeile(p);
     const werte = S.talentWerte(p);
-    const top = S.topTalente(p,3);
+    const top = S.topTalente(p, 3);
+    const teileAnzahl = ergebnis.verwendet.length + (antworten.stich.length ? 1 : 0);
     view().innerHTML = `
       <div class="hero"><h1>Dein Talent-Radar ist fertig! 🎉</h1>
         <p>${esc(p.name)}, so lernst du am liebsten:</p></div>
@@ -141,12 +251,28 @@ function screenTest(p) {
           <div class="tx"><b>${idx===0?'⭐ ':''}${TALENTE[t].name}</b>
             <span class="muted small">${TALENTE[t].staerke}</span></div>
           <span class="val">${werte[t]}</span></div>`).join('')}
-        <p class="muted small" style="margin-top:10px">Das Radar lernt weiter mit: Je mehr du übst, desto genauer wird es.</p>
+        <p class="muted small" style="margin-top:10px">
+          Grundlage: ${teileAnzahl} von 5 Testteilen.
+          ${teileAnzahl < 4 ? 'Mit den übrigen Teilen wird das Radar noch genauer.' : ''}
+          Und es lernt weiter mit: Je mehr du übst, desto besser kennt dich die App.</p>
       </div>
       <button class="btn" id="losgehts">Jetzt lernen 🚀</button>`;
     view().querySelector('#losgehts').onclick = () => zeige('lernen');
   };
-  frage();
+
+  /* Startbildschirm des Tests */
+  view().innerHTML = `
+    <div class="hero"><h1>Talent-Test 🧭</h1>
+      <p>Fünf kurze Teile. Danach weiß die App, auf welchem Weg du am leichtesten lernst.</p></div>
+    <div class="card">
+      <ul class="clean">${TEST_TEILE.map((t,i) => `<li>
+        <b>${t.emoji} Teil ${i+1}: ${t.titel}</b>
+        <div class="muted small">${t.info}</div></li>`).join('')}</ul>
+      <p class="small muted">Du kannst nach jedem Teil aufhören – das Ergebnis steht dann schon,
+        es wird mit jedem Teil nur genauer.</p>
+      <button class="btn" id="testStart">Los geht’s</button>
+    </div>`;
+  view().querySelector('#testStart').onclick = () => teil1();
 }
 
 /* ------------------------------ Lernen (Start) ------------------------------ */
@@ -204,9 +330,11 @@ function screenSession(p, opts = {}) {
   const sess = starteSession(p, opts);
   const status = [];
 
+  let startZeit = 0;
   const naechste = () => {
     const a = sess.naechste();
     if (!a) return ende();
+    startZeit = performance.now();
     render(a, null);
   };
 
@@ -268,11 +396,13 @@ function screenSession(p, opts = {}) {
 
   const auswerten = (a, eingabe) => {
     if (a.typ === 'text' && !String(eingabe).trim()) return;
+    const ms = startZeit ? performance.now() - startZeit : 0;
     const ok = pruefe(a, eingabe);
     status[sess.index] = ok ? 'done' : 'miss';
     sess.index++; if (ok) sess.richtig++;
-    sess.verlauf.push({ ziel:a.ziel.id, weg:a.weg, ok, bruecke:a.bruecke });
-    S.verbuche(p, { zielId:a.ziel.id, weg:a.weg, level:a.level, richtig:ok, bruecke:a.bruecke });
+    sess.verlauf.push({ ziel:a.ziel.id, weg:a.weg, ok, bruecke:a.bruecke, ms });
+    // Zeit fliesst in die Wirksamkeit eines Weges ein – schnell und sicher zaehlt mehr.
+    S.verbuche(p, { zielId:a.ziel.id, weg:a.weg, level:a.level, richtig:ok, bruecke:a.bruecke, ms });
     if (ok && navigator.vibrate) navigator.vibrate(20);
     render(a, ok, String(eingabe));
   };
@@ -345,12 +475,21 @@ function screenWege(p) {
     </div>
     <div class="card">
       <h3>Deine Wege</h3>
-      ${Object.entries(WEGE).sort((a,b)=>(werte[b[1].talent]||0)-(werte[a[1].talent]||0)).map(([k,w]) => `
+      <p class="muted small">Der Balken zeigt, wie gut es über diesen Weg tatsächlich läuft –
+        gemessen an deinen Aufgaben, nicht am Test.</p>
+      ${Object.entries(WEGE).map(([k,w]) => {
+        const wirk = S.wegWirksamkeit(p, k);
+        const genug = wirk.n >= 5;
+        return { k, w, wirk, genug };
+      }).sort((a,b) => (b.genug?b.wirk.wert:-1) - (a.genug?a.wirk.wert:-1)).map(({k,w,wirk,genug}) => `
         <div class="talent-row">
           <span class="em">${w.emoji}</span>
           <div class="tx"><b>${w.name}</b>
-            <span class="bar" style="display:block;margin-top:5px"><i style="width:${Math.round((genutzt[k]||0)/maxN*100)}%"></i></span>
-            <span class="muted small">${w.hinweis}</span></div>
+            <span class="bar ${genug && wirk.wert>=75 ? 'ok':''}" style="display:block;margin-top:5px">
+              <i style="width:${genug ? wirk.wert : 0}%"></i></span>
+            <span class="muted small">${genug
+              ? `${wirk.wert} % Treffer · ${wirk.n} Aufgaben`
+              : `noch zu wenig geübt (${wirk.n} von 5)`}</span></div>
           <span class="val">${genutzt[k]||0}×</span></div>`).join('')}
     </div>
     <h2>Beispiel: dasselbe Ziel, vier Wege</h2>
@@ -404,6 +543,33 @@ function screenEltern(p) {
           <div style="height:${Math.max(4, x.n/maxTag*70)}px;background:var(--brand);border-radius:6px 6px 0 0"></div>
           <div class="muted" style="font-size:.65rem">${x.d.slice(8)}.</div></div>`).join('')}
       </div>
+    </div>
+    <div class="card">
+      <h3>Was bei ${esc(p.name)} wirkt</h3>
+      <p class="muted small">Gemessen an tatsächlich gelösten Aufgaben – Trefferquote und Tempo.
+        Danach richtet die App ihre Auswahl aus.</p>
+      ${(() => {
+        const wirkung = wegeNachWirkung(p).filter(x => x.n >= 5);
+        if (!wirkung.length) return '<p class="small">Noch zu wenig Übung. Ab etwa 5 Aufgaben je Weg erscheint hier eine belastbare Reihenfolge.</p>';
+        return wirkung.map(x => `<div class="talent-row">
+          <span class="em">${WEGE[x.weg].emoji}</span>
+          <div class="tx"><b>${WEGE[x.weg].name}</b>
+            <span class="bar ${x.wert>=75?'ok':''}" style="display:block;margin-top:5px"><i style="width:${x.wert}%"></i></span>
+            <span class="muted small">${x.n} Aufgaben · Verlässlichkeit ${Math.round(x.konfidenz*100)} %</span></div>
+          <span class="val">${x.wert} %</span></div>`).join('');
+      })()}
+    </div>
+    <div class="card">
+      <h3>Grundlage des Talent-Profils</h3>
+      <p class="muted small">${p.testGemacht
+        ? `Talent-Test vom ${p.testDatum} · ${(p.testTeileGenutzt||[]).length} von 4 Fragearten genutzt`
+        : 'Der Talent-Test wurde noch nicht gemacht – die Werte sind bisher geschätzt.'}</p>
+      ${p.testTeile ? `<ul class="clean small">${
+        [['likert','Vorlieben (Selbsteinschätzung)'],['paare','Entweder-oder-Vergleiche'],
+         ['szenarien','Verhalten in Situationen'],['proben','Kleine Leistungsproben']]
+        .map(([id,name]) => `<li>${p.testTeile[id] ? '✅' : '⬜'} ${name}</li>`).join('')}</ul>` : ''}
+      <p class="small muted">Das Profil verschiebt sich mit der Zeit: Was in den Übungen sichtbar wird,
+        zählt zunehmend mehr als die Selbsteinschätzung im Test.</p>
     </div>
     <div class="card">
       <h3>Lernziele im Überblick</h3>

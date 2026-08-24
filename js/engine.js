@@ -5,21 +5,48 @@
 
 import { ZIEL_MAP, WEGE, ZIELE, TALENTE } from './data.js';
 import { baueAufgabe } from './generators.js';
-import { talentWerte, zielStand, zieleFuerKlasse } from './store.js';
+import { talentWerte, zielStand, zieleFuerKlasse, zielWegWirksamkeit, wegWirksamkeit } from './store.js';
 
 const BRUECKEN_ANTEIL = 0.2;
 
-export function wegRanking(profil, ziel) {
+/* Bewertung eines Weges fuer ein Kind und ein Ziel.
+   Zwei Quellen: das Talent-Profil (was der Test sagt) und die Wirksamkeit
+   (was die Uebungen tatsaechlich zeigen). Je mehr Daten vorliegen, desto
+   staerker zaehlt das Gemessene – so korrigiert die Praxis den Test. */
+export function wegBewertung(profil, ziel, weg) {
   const werte = talentWerte(profil);
-  return [...ziel.wege].sort((a,b) => (werte[WEGE[b].talent]||0) - (werte[WEGE[a].talent]||0));
+  const passung = werte[WEGE[weg].talent] ?? 50;
+  const gemessen = zielWegWirksamkeit(profil, ziel.id, weg);
+  const anteil = 0.25 + 0.45 * gemessen.konfidenz;         // 0,25 bis 0,70
+  return {
+    punkte: Math.round(passung * (1 - anteil) + gemessen.wert * anteil),
+    passung, gemessen
+  };
+}
+
+export function wegRanking(profil, ziel) {
+  return [...ziel.wege]
+    .map(w => ({ w, b: wegBewertung(profil, ziel, w) }))
+    .sort((x, y) => y.b.punkte - x.b.punkte)
+    .map(x => x.w);
 }
 
 export function waehleWeg(profil, ziel, erzwingeBruecke = null) {
   const rang = wegRanking(profil, ziel);
   const bruecke = erzwingeBruecke ?? (Math.random() < BRUECKEN_ANTEIL && rang.length > 2);
+  // Brueckenaufgaben gehen bewusst ueber die hinteren Wege – dort waechst,
+  // was noch schwerfaellt. Sonst bleibt das Kind auf seiner Staerke stehen.
   const auswahl = bruecke ? rang.slice(-2) : rang.slice(0, 2);
   const weg = auswahl[Math.floor(Math.random()*auswahl.length)];
   return { weg, bruecke: !!bruecke };
+}
+
+/* Welche Wege wirken bei diesem Kind am besten? (fuer den Eltern-Bereich) */
+export function wegeNachWirkung(profil) {
+  return Object.keys(WEGE)
+    .map(w => ({ weg: w, ...wegWirksamkeit(profil, w) }))
+    .filter(x => x.n > 0)
+    .sort((a,b) => b.wert - a.wert);
 }
 
 /* Ziel-Auswahl fuer den Tagesmix: schwache und wenig geuebte Ziele zuerst. */
@@ -56,29 +83,47 @@ export function starteSession(profil, { zielId = null, fach = null, laenge = 8 }
   return session;
 }
 
-/* Klartext-Empfehlungen fuer Eltern */
+/* Klartext-Empfehlungen fuer Eltern.
+   Getrennt nach: was der Test sagt, was die Uebungen zeigen, und wo es hakt. */
 export function empfehlungen(profil) {
   const werte = talentWerte(profil);
   const sortiert = Object.entries(werte).sort((a,b) => b[1]-a[1]);
   const top = sortiert.slice(0,2).map(e => e[0]);
-  const schwach = sortiert.slice(-1)[0][0];
-
-  const zieleStand = zieleFuerKlasse(profil).map(z => {
-    const s = zielStand(profil, z.id);
-    return { z, s, quote: s.gesamt ? s.richtig / s.gesamt : null };
-  });
-  const geuebt = zieleStand.filter(x => x.s.gesamt >= 5);
-  const schwaechstesZiel = geuebt.slice().sort((a,b) => a.quote - b.quote)[0];
-  const staerkstesZiel  = geuebt.slice().sort((a,b) => b.quote - a.quote)[0];
-
+  const schwach = sortiert.at(-1)[0];
   const tipps = [];
+
   top.forEach(t => {
-    const passendeWege = Object.entries(WEGE).filter(([,w]) => w.talent === t).map(([k]) => k);
-    const ziele = ZIELE.filter(z => z.wege.some(w => passendeWege.includes(w))).slice(0,3);
-    tipps.push(`Über den **${WEGE[passendeWege[0]].name}** lernt ${profil.name} besonders leicht – er wird u. a. bei „${ziele.map(z=>z.titel).join('“, „')}“ eingesetzt.`);
+    const weg = Object.entries(WEGE).find(([,w]) => w.talent === t)?.[0];
+    const ziele = ZIELE.filter(z => z.wege.includes(weg)).slice(0,3);
+    if (weg && ziele.length) {
+      tipps.push(`Stärke **${TALENTE[t].name}**: Der **${WEGE[weg].name}** passt dazu – er kommt u. a. bei „${ziele.map(z=>z.titel).join('“, „')}“ zum Einsatz.`);
+    }
   });
-  if (schwaechstesZiel) tipps.push(`Aktuell am schwersten: **${schwaechstesZiel.z.titel}** (${Math.round(schwaechstesZiel.quote*100)} % richtig). Die App bietet dieses Ziel automatisch häufiger an – und probiert dabei andere Wege aus.`);
-  if (staerkstesZiel && staerkstesZiel.quote >= .8) tipps.push(`Sicher unterwegs bei **${staerkstesZiel.z.titel}** (${Math.round(staerkstesZiel.quote*100)} % richtig). Hier lohnt sich das nächste Level.`);
-  tipps.push(`Weniger ausgeprägt zeigt sich gerade „${TALENTE[schwach].kurz}“. Das ist kein Mangel: Über die Brücken-Aufgaben (jede 5. Aufgabe) wird genau dieser Bereich behutsam mittrainiert.`);
+
+  /* Was die Praxis zeigt – und wo sie dem Test widerspricht */
+  const gemessen = wegeNachWirkung(profil).filter(x => x.n >= 6);
+  if (gemessen.length >= 2) {
+    const bester = gemessen[0], schwaechster = gemessen.at(-1);
+    tipps.push(`Gemessen über ${gemessen.reduce((a,x)=>a+x.n,0)} Aufgaben wirkt der **${WEGE[bester.weg].name}** am besten (${bester.wert} % Trefferquote), am zähesten läuft der ${WEGE[schwaechster.weg].name} (${schwaechster.wert} %). Die App bietet den wirksamen Weg jetzt häufiger an.`);
+    const testRang = Object.entries(WEGE).map(([k,w]) => [k, werte[w.talent]||0]).sort((a,b)=>b[1]-a[1]);
+    if (testRang[0][0] !== bester.weg && bester.n >= 10) {
+      tipps.push(`Bemerkenswert: Im Test lag der ${WEGE[testRang[0][0]].name} vorn, in den Aufgaben läuft der **${WEGE[bester.weg].name}** aber besser. Die App richtet sich nach dem, was tatsächlich funktioniert.`);
+    }
+  } else {
+    tipps.push('Für belastbare Aussagen über die wirksamsten Wege braucht die App noch etwas mehr Übung – ab etwa 50 Aufgaben wird dieser Abschnitt genauer.');
+  }
+
+  const zieleStand = zieleFuerKlasse(profil)
+    .map(z => ({ z, s: zielStand(profil, z.id) }))
+    .filter(x => x.s.gesamt >= 5)
+    .map(x => ({ ...x, quote: x.s.richtig / x.s.gesamt }));
+  if (zieleStand.length) {
+    const schlecht = zieleStand.slice().sort((a,b) => a.quote - b.quote)[0];
+    const gut = zieleStand.slice().sort((a,b) => b.quote - a.quote)[0];
+    tipps.push(`Aktuell am schwersten: **${schlecht.z.titel}** (${Math.round(schlecht.quote*100)} % richtig). Dieses Ziel kommt automatisch häufiger – und die App probiert dafür andere Wege aus.`);
+    if (gut.quote >= .8) tipps.push(`Sicher unterwegs bei **${gut.z.titel}** (${Math.round(gut.quote*100)} % richtig) – hier lohnt das nächste Level.`);
+  }
+
+  tipps.push(`Weniger ausgeprägt zeigt sich gerade „${TALENTE[schwach].kurz}“. Das ist kein Mangel: Jede 5. Aufgabe ist eine Brücke über genau solche Bereiche, damit sie behutsam mitwachsen.`);
   return tipps;
 }
