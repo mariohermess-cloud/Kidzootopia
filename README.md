@@ -58,11 +58,16 @@ Kein App-Store, keine Installation, keine Konten.
 * **Android / Chrome:** Seite öffnen → Menü ⋮ → *App installieren*
 * **iPhone / Safari:** Seite öffnen → Teilen-Symbol → *Zum Home-Bildschirm*
 
-Nach jedem Push auf `main` wird die App automatisch über GitHub Pages veröffentlicht
-(Workflow `.github/workflows/pages.yml`). Der Workflow schaltet GitHub Pages beim ersten
-Lauf selbst ein (`configure-pages` mit `enablement: true`) – es ist kein Handgriff in den
-Einstellungen nötig. Sollte das Aktivieren an fehlenden Rechten scheitern, hilft einmalig
-*Settings → Pages → Source: GitHub Actions*. Die Adresse lautet:
+**Einmalig nötig:** GitHub Pages im Repository einschalten unter
+*Settings → Pages → Build and deployment → Source:* **GitHub Actions**.
+Das lässt sich nicht automatisieren – ein Workflow-Token darf die Pages-Seite nicht
+selbst anlegen (`Resource not accessible by integration`), dafür wären
+Administrator-Rechte nötig.
+
+Danach wird die App bei jedem Push auf `main` automatisch veröffentlicht
+(Workflow `.github/workflows/pages.yml`; der Generator-Test läuft als Gate davor).
+Der fehlgeschlagene Lauf lässt sich unter *Actions → Deploy zu GitHub Pages →
+Re-run all jobs* einfach wiederholen. Die Adresse lautet:
 
 ```
 https://mariohermess-cloud.github.io/Kidzootopia/
