@@ -1,0 +1,13 @@
+{
+  "name": "kidzootopia",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Lern-App für Kinder: Talente entdecken und jedes Lernziel über den passenden Weg erreichen.",
+  "scripts": {
+    "start": "python3 -m http.server 8765",
+    "test:aufgaben": "node tests/aufgaben.mjs",
+    "test:e2e": "node tests/e2e.mjs ./screens"
+  },
+  "devDependencies": { "playwright": "^1.49.1" }
+}

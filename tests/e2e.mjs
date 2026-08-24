@@ -1,0 +1,65 @@
+/* Durchklick-Test: Profil anlegen -> Talent-Test -> Mission -> alle Tabs -> Neustart.
+   Start: python3 -m http.server 8765 &  dann  node tests/e2e.mjs ./screens */
+import { chromium } from 'playwright';
+const b = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
+const p = await b.newPage({ viewport:{width:390,height:844}, deviceScaleFactor:2 });
+const fehler = [];
+p.on('pageerror', e => fehler.push('pageerror: '+e.message));
+p.on('console', m => { if (m.type()==='error') fehler.push('console: '+m.text()); });
+const S = process.argv[2] || '.';
+const BASIS = process.env.BASIS || 'http://localhost:8765';
+
+await p.goto(`${BASIS}/index.html`);
+await p.waitForSelector('#nName');
+await p.fill('#nName','Mia');
+await p.selectOption('#nKlasse','3');
+await p.click('[data-av="🦄"]');
+await p.click('#nAnlegen');
+await p.waitForSelector('.scale');
+await p.screenshot({path:S+'/1-test.png'});
+// Talent-Test durchklicken
+for (let i=0;i<24;i++){ const v = [4,3,2,1][i%4]; await p.click(`.scale [data-v="${v}"]`); }
+await p.waitForSelector('#losgehts');
+await p.screenshot({path:S+'/2-radar.png', fullPage:true});
+await p.click('#losgehts');
+await p.waitForSelector('#mission');
+await p.screenshot({path:S+'/3-home.png', fullPage:true});
+
+// Mission spielen: 8 Aufgaben
+await p.click('#mission');
+for (let i=0;i<8;i++){
+  await p.waitForSelector('.task');
+  const frage = await p.textContent('.task');
+  if (await p.$('#eingabe')) { await p.fill('#eingabe','42'); await p.click('#pruefen'); }
+  else { await p.click('.choice'); }
+  await p.waitForSelector('#weiter');
+  if (i===0) await p.screenshot({path:S+'/4-aufgabe.png', fullPage:true});
+  await p.click('#weiter');
+}
+await p.waitForSelector('#nochmal');
+await p.screenshot({path:S+'/5-ergebnis.png', fullPage:true});
+await p.click('#heim');
+
+// Fach-Runde + Ziel-Runde
+await p.click('[data-fach="deutsch"]');
+await p.waitForSelector('.task');
+if (await p.$('#eingabe')) { await p.fill('#eingabe','1'); await p.click('#pruefen'); } else await p.click('.choice');
+await p.waitForSelector('#weiter'); await p.click('#raus');
+await p.waitForSelector('#mission');
+await p.click('[data-ziel="einmaleins"]');
+await p.waitForSelector('.task'); await p.click('#raus');
+
+// Tabs
+for (const [r,f] of [['talente','6-talente'],['wege','7-wege'],['eltern','8-eltern']]) {
+  await p.click(`.nav-btn[data-route="${r}"]`);
+  await p.waitForTimeout(180);
+  await p.screenshot({path:`${S}/${f}.png`, fullPage:true});
+}
+// Reload -> Fortschritt bleibt?
+await p.reload();
+await p.waitForSelector('#mission');
+const kopf = await p.textContent('#topName');
+const sw = await p.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length);
+console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
+console.log(fehler.length ? 'FEHLER:\n'+fehler.join('\n') : 'keine JS-Fehler ✅');
+await b.close();
