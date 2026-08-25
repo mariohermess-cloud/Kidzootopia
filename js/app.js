@@ -18,8 +18,24 @@ zeige(S.aktiv() ? 'lernen' : 'start');
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); window.installPrompt = e; });
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () =>
-    navigator.serviceWorker.register(new URL('../sw.js', import.meta.url)).catch(()=>{}));
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register(new URL('../sw.js', import.meta.url));
+      /* Bei jedem Start nachsehen, ob es etwas Neues gibt – und immer dann, wenn die
+         App nach längerer Pause wieder in den Vordergrund kommt. Auf dem iPhone wird
+         eine App vom Startbildschirm oft tagelang nicht wirklich neu gestartet,
+         sondern nur wieder eingeblendet; ohne das hier bliebe sie auf ihrer Fassung
+         sitzen, obwohl längst eine neue bereitliegt. */
+      let zuletzt = Date.now();
+      reg.update().catch(()=>{});
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible') return;
+        if (Date.now() - zuletzt < 60_000) return;   // nicht bei jedem Wischen
+        zuletzt = Date.now();
+        reg.update().catch(()=>{});
+      });
+    } catch {}
+  });
 
   /* Kommt im Hintergrund eine neue Fassung an, wird nicht einfach neu geladen –
      das würde ein Kind mitten in einer Aufgabe herausreißen. Stattdessen ein

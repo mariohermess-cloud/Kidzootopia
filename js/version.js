@@ -16,7 +16,9 @@ export const STAND = '25.08.2026';
 export const VERLAUF = [
   { nr: 16, stand: '25.08.2026', was: [
     'Wiederholungen endgültig behoben: ist ein Weg leergeübt, wechselt die App den Weg',
-    'Derselbe Fragewortlaut kommt in einer Runde nur noch einmal vor'
+    'Derselbe Fragewortlaut kommt in einer Runde nur noch einmal vor',
+    'Die App holt sich neue Fassungen jetzt selbst – auch, wenn sie nur wieder eingeblendet wird',
+    'Notausgang im Eltern-Bereich, falls doch einmal die alte Fassung hängen bleibt'
   ]},
   { nr: 15, stand: '25.08.2026', was: [
     'Diese Anzeige: welche Fassung auf diesem Gerät läuft, was neu ist und ob es eine neuere gibt',

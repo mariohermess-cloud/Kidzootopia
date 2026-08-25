@@ -262,6 +262,22 @@ deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht 
   tippen zum Neustart“**. Die App lädt sich **nicht** von selbst neu; das würde ein Kind mitten
   in einer Aufgabe herausreißen.
 
+### Wenn trotzdem die alte Fassung startet
+
+Das ist die typische Krankheit einer Offline-App, und auf dem iPhone die hartnäckigste:
+Die App vom Startbildschirm wird oft tagelang nicht wirklich neu gestartet, sondern nur wieder
+eingeblendet. Drei Dinge arbeiten dagegen:
+
+1. **Die Seite selbst kommt zuerst aus dem Netz**, nicht aus dem Speicher (2,5 Sekunden
+   Geduld, dann greift der Speicher – offline ist die App also weiter sofort da). Alles
+   andere bleibt speicher-zuerst und damit schnell.
+2. **Bei jedem Start und jedem Zurückholen in den Vordergrund** (höchstens einmal pro Minute)
+   sieht die App nach, ob es etwas Neues gibt.
+3. **Eltern → Fassung dieser App → „Es kommt trotzdem immer die alte Fassung“** enthält den
+   Notausgang: *🧹 Offline-Speicher leeren und neu laden*. Er wirft den Speicher weg und holt
+   alles frisch. **Der Fortschritt bleibt dabei erhalten** – der liegt an anderer Stelle, und
+   der Durchklicktest prüft genau das nach jedem Umbau.
+
 Die Nummer kommt aus `js/version.js`, und diese Datei liegt selbst im Offline-Speicher.
 Angezeigt wird also, was **auf diesem Gerät** läuft – nicht, was auf dem Server steht. Zeigt
 das iPad eine kleinere Nummer als der Rechner, hat es die Aktualisierung noch nicht geholt.

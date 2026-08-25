@@ -301,5 +301,21 @@ await p.waitForSelector('#mission');
 const kopf = await p.textContent('#topName');
 const sw = await p.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length);
 console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
+// Notausgang gegen die festgebissene alte Fassung: Offline-Speicher leeren.
+// Entscheidend ist die Zusicherung im Text daneben – der Fortschritt muss das ueberleben.
+await p.click('.nav-btn[data-route="eltern"]');
+await p.waitForSelector('#hartNeuladen', { state: 'attached' });
+await p.evaluate(() => document.querySelector('#hartNeuladen').closest('details').open = true);
+const vorHartemLaden = await p.evaluate(() =>
+  JSON.parse(localStorage.getItem('kidzootopia.v1')).profile[0].stats.aufgabenGesamt);
+await p.click('#hartNeuladen');
+await p.waitForSelector('#mission', { timeout: 8000 });
+const nachHartemLaden = await p.evaluate(() =>
+  JSON.parse(localStorage.getItem('kidzootopia.v1')).profile[0].stats.aufgabenGesamt);
+if (nachHartemLaden !== vorHartemLaden)
+  throw new Error(`Offline-Speicher leeren kostete Fortschritt: ${vorHartemLaden} -> ${nachHartemLaden}`);
+const restCaches = await p.evaluate(async () => (await caches.keys()).length);
+console.log(`Offline-Speicher geleert: Fortschritt erhalten (${nachHartemLaden} Aufgaben), Speicher danach: ${restCaches}`);
+
 console.log(fehler.length ? 'FEHLER:\n'+fehler.join('\n') : 'keine JS-Fehler ✅');
 await b.close();

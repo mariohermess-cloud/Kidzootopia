@@ -1078,6 +1078,17 @@ function versionsKarte() {
       <div id="updateStatus" class="small muted" style="margin:12px 0"></div>
       <button class="btn ghost" id="updatePruefen">🔄 Nach Aktualisierung suchen</button>
       <details style="margin-top:12px">
+        <summary class="small muted">Es kommt trotzdem immer die alte Fassung</summary>
+        <p class="small muted" style="margin-top:8px">Dann hängt die App an ihrem
+          Offline-Speicher fest – das passiert vor allem auf dem iPhone, wo eine App vom
+          Startbildschirm sehr lange am Gespeicherten festhält. Der Knopf hier wirft den
+          Offline-Speicher weg und holt alles neu.
+          <b>Der Fortschritt Ihres Kindes bleibt erhalten</b> – der liegt woanders.
+          Nur beim ersten Start danach braucht die App kurz eine Verbindung.</p>
+        <button class="btn quiet" id="hartNeuladen" style="margin-top:8px">
+          🧹 Offline-Speicher leeren und neu laden</button>
+      </details>
+      <details style="margin-top:12px">
         <summary class="small muted">Frühere Fassungen</summary>
         ${aelter.map(v => `
           <p class="small" style="margin:10px 0 2px"><b>Version ${v.nr}</b>
@@ -1097,6 +1108,21 @@ function versionVerdrahten() {
     knopf.hidden = true;
     return;
   }
+
+  const hart = view().querySelector('#hartNeuladen');
+  if (hart) hart.onclick = async () => {
+    hart.disabled = true;
+    hart.textContent = '⏳ Räume auf …';
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+      const namen = await caches.keys();
+      await Promise.all(namen.map(n => caches.delete(n)));
+    } catch {}
+    /* Zeitstempel in der Adresse: so umgeht der Neustart auch den Zwischenspeicher
+       des Browsers selbst, nicht nur den der App. */
+    location.replace(location.pathname + '?neu=' + Date.now());
+  };
 
   knopf.onclick = async () => {
     knopf.disabled = true;
