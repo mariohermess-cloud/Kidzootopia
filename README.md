@@ -90,7 +90,14 @@ stellt eine Etappe höher.
    Ein eigenes Fach mit dem Besten aus über hundert Jahren Denksport und Bildung.
    Diese Aufgaben haben überlebt, weil sie sich in einem Satz erklären lassen, zunächst
    unlösbar wirken und mit einem einzigen Gedanken plötzlich einfach werden.
-   * **Knacknüsse** – 24 berühmte Rätsel: Wolf, Ziege und Kohlkopf (Alkuin, um 800),
+   * **Knacknüsse** – **1.394 verschiedene Aufgaben**: 48 handverlesene Klassiker und
+     24 Rätsel-*Familien*, die denselben klassischen Typ mit wechselnden Zahlen stellen –
+     genau so, wie es die alten Rätselbücher hielten. Die Lösung wird jedes Mal
+     ausgerechnet, nicht abgeschrieben: Wo eine Formel bekannt ist, steht sie im Code;
+     wo nicht (Umfüllen, Brücke bei Nacht), sucht ein Löser die tatsächlich beste Lösung.
+     Ein Test rechnet 19.200 erzeugte Rätsel unabhängig nach – per Simulation, Brute Force
+     oder anderer Formel als im Generator.
+     Darunter die berühmten Einzelstücke: Wolf, Ziege und Kohlkopf (Alkuin, um 800),
      die Gauß-Summe, Türme von Hanoi (Lucas 1883), Königsberger Brücken (Euler 1736),
      `SEND + MORE = MONEY` (Dudeney 1924), Nim (Bouton 1901), das Ziegenproblem (1975),
      Schnecke im Brunnen, Wiegeprobleme, Seil-und-Zeit-Aufgaben.
@@ -127,7 +134,7 @@ Motor zieht so lange neu, bis etwas kommt, das dieses Kind noch nicht hatte – 
 Vorrat eines Ziels erschöpft ist, beginnt er von vorn (und vergisst dann die ältesten zuerst).
 
 Aufgaben werden **generiert**, nicht aus einer Liste gezogen – der Vorrat geht nie aus.
-Aktuell: **29 Lernziele × bis zu 5 Wege = 110 Aufgabentypen**, darunter 48 Knacknüsse auf je 5 Schwierigkeitsstufen,
+Aktuell: **29 Lernziele × bis zu 5 Wege = 110 Aufgabentypen**, darunter **1.394 verschiedene Knacknüsse** auf je 5 Schwierigkeitsstufen,
 verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
 
 ---
@@ -218,8 +225,9 @@ Zusätzlich gibt es Export und Import als Datei für ein Backup am Rechner.
 ## Tests
 
 ```bash
-npm run test:aufgaben   # prüft alle Generatoren: 13.200 Aufgaben auf Vollständigkeit & Eindeutigkeit
-npm run test:lernen     # prüft die Lernschleife: erkennt die App den wirksamen Weg?
+npm run test:aufgaben     # alle Generatoren: 33.000 Aufgaben auf Vollständigkeit & Eindeutigkeit
+npm run test:knacknuesse  # Vielfalt (1.394) und Richtigkeit (19.200 unabhängig nachgerechnet)
+npm run test:lernen       # Lernschleife, Wiederholungsfreiheit, Sachaufgaben-Kontrolle
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
@@ -237,7 +245,8 @@ js/data.js            Talente, Lernwege, Lernziele, Talent-Test (5 Teile), Abzei
 js/talenttest.js      Auswertung des Talent-Tests: Blöcke, Gewichte, Feinschliff
 js/sprache.js         Vorlesen über die Gerätestimme (Web Speech API)
 js/geschichten.js     Hörgeschichten mit Verständnisfragen
-js/klassiker.js       Knacknüsse, Wissenskanon, Redewendungen, alte Rechentricks
+js/klassiker.js       Knacknüsse (handverlesen), Wissenskanon, Redewendungen, Rechentricks
+js/knacknuss_familien.js  Rätsel-Familien mit berechneter Lösung, inkl. eigener Löser
 js/philosophie.js     Stoa für Kinder: Zitate, Alltagslagen, Denk-Impulse
 js/hauptwerke.js      Kanon: 61 Hauptwerke aus Literatur, Philosophie, Wissenschaft, Kunst
 js/fortgeschritten.js Denkfehler, Fehlschlüsse, Stilmittel, Wortwurzeln, Syllogismen

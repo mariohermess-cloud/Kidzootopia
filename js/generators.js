@@ -5,6 +5,7 @@
 
 import { GESCHICHTEN } from './geschichten.js';
 import { KNACKNUESSE, KANON, REDEWENDUNGEN, RECHENTRICKS } from './klassiker.js';
+import { FAMILIEN } from './knacknuss_familien.js';
 import { ZITATE, KONTROLLE, SITUATIONEN, IMPULSE, DENKER } from './philosophie.js';
 import { HAUPTWERKE } from './hauptwerke.js';
 import { DENKFEHLER, FEHLSCHLUESSE, STILMITTEL, WORTWURZELN, SYLLOGISMEN } from './fortgeschritten.js';
@@ -467,6 +468,25 @@ knacknuss: (() => {
     // ständig wiederholt, aber nicht so groß, dass es überfordert.
     let passend = KNACKNUESSE.filter(k => k.stufe <= lvl + 1);
     if (passend.length < 12) passend = KNACKNUESSE.filter(k => k.stufe <= lvl + 2);
+
+    // Rätsel-Familien: klassische Typen mit wechselnden Zahlen. Sie stellen den
+    // weitaus größten Teil des Vorrats und werden entsprechend oft gezogen.
+    let familien = FAMILIEN.filter(f => f.stufe <= lvl + 1);
+    if (familien.length < 6) familien = FAMILIEN.filter(f => f.stufe <= lvl + 2);
+    if (familien.length && Math.random() < 0.72) {
+      const f = pick(familien);
+      const a = f.erzeuge();
+      return {
+        typ: 'text',
+        frage: `🏛️ ${RAHMEN[weg]}\n\n${a.frage}`,
+        antwort: a.antwort,
+        tipps: a.tipps,
+        quelle: f.quelle,
+        hilfe: a.tipps.at(-1) || '',
+        knacknuss: true
+      };
+    }
+
     const k = pick(passend.length ? passend : KNACKNUESSE);
     const basis = k.optionen
       ? { typ:'choice', optionen: shuffle([...k.optionen]) }

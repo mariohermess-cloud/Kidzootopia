@@ -8,7 +8,10 @@
     "start": "python3 -m http.server 8765",
     "test:aufgaben": "node tests/aufgaben.mjs",
     "test:lernen": "node tests/lernen.mjs",
-    "test:e2e": "node tests/e2e.mjs ./screens"
+    "test:e2e": "node tests/e2e.mjs ./screens",
+    "test:knacknuesse": "node tests/knacknuesse.mjs"
   },
-  "devDependencies": { "playwright": "^1.49.1" }
+  "devDependencies": {
+    "playwright": "^1.49.1"
+  }
 }

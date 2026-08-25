@@ -1,11 +1,11 @@
 /* Service Worker: App laeuft auch offline (z. B. im Auto oder im Zug). */
-const CACHE = 'kidzootopia-v11';
+const CACHE = 'kidzootopia-v12';
 const DATEIEN = [
   './', './index.html', './app.css', './manifest.webmanifest',
   './icons/icon.svg', './icons/icon-maskable.svg',
   './js/app.js', './js/ui.js', './js/store.js', './js/engine.js',
   './js/generators.js', './js/data.js', './js/chart.js', './js/talenttest.js',
-  './js/sprache.js', './js/geschichten.js', './js/klassiker.js', './js/philosophie.js', './js/hauptwerke.js', './js/fortgeschritten.js', './js/installhilfe.js'
+  './js/sprache.js', './js/geschichten.js', './js/klassiker.js', './js/philosophie.js', './js/hauptwerke.js', './js/fortgeschritten.js', './js/installhilfe.js', './js/knacknuss_familien.js'
 ];
 
 self.addEventListener('install', e => {
