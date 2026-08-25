@@ -40,6 +40,7 @@ function migriere(p) {
   p.stats.aufgabenGesamt  ??= 0;
   p.stats.richtigGesamt   ??= 0;
   p.stats.brueckenRichtig ??= 0;
+  p.stats.ohneTipp        ??= 0;   // Knacknüsse ohne Tipp gelöst
   p.stats.streak          ??= 0;
   p.stats.streakBest      ??= 0;
   p.stats.letzterTag      ??= null;
@@ -151,7 +152,8 @@ export function zieleFuerKlasse(profil) {
 }
 
 /* Ergebnis einer Aufgabe verbuchen */
-export function verbuche(profil, { zielId, weg, level, richtig, bruecke, ms = 0 }) {
+export function verbuche(profil, { zielId, weg, level, richtig, bruecke, ms = 0,
+                                   tippsGenutzt = 0, knacknuss = false }) {
   const z = zielStand(profil, zielId);
   z.gesamt++; if (richtig) { z.richtig++; z.xp += 10 + level * 2; }
   z.serie = richtig ? z.serie + 1 : 0;
@@ -179,6 +181,7 @@ export function verbuche(profil, { zielId, weg, level, richtig, bruecke, ms = 0 
   const s = profil.stats;
   s.aufgabenGesamt++; if (richtig) s.richtigGesamt++;
   if (richtig && bruecke) s.brueckenRichtig++;
+  if (richtig && knacknuss && tippsGenutzt === 0) s.ohneTipp++;
   s.tage[heute()] = (s.tage[heute()]||0) + 1;
   tagesSerie(profil);
   pruefeAbzeichen(profil);
@@ -208,7 +211,8 @@ export function statsFuerAbzeichen(profil) {
     streakBest: profil.stats.streakBest,
     zieleGemeistert: Object.values(profil.ziele).filter(z => z.gemeistert).length,
     wegeGenutzt: Object.keys(profil.wegeGenutzt).length,
-    brueckenRichtig: profil.stats.brueckenRichtig
+    brueckenRichtig: profil.stats.brueckenRichtig,
+    ohneTipp: profil.stats.ohneTipp
   };
 }
 

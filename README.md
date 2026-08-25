@@ -53,9 +53,9 @@ Vier Kinder, vier Wege, ein Ergebnis: Sie können 4 × 6.
    * Widerspricht die Praxis dem Test, sagt der Eltern-Bereich das ausdrücklich:
      *„Im Test lag der Knobel-Weg vorn, in den Aufgaben läuft der Rhythmus-Weg besser.“*
    * Der Test darf jederzeit wiederholt werden – Kinder verändern sich.
-3. **Lernziele statt Aufgabenlisten** – 14 Ziele aus dem Schulstoff
-   (Mathe, Deutsch, Englisch, Allgemeinwissen, Technik & Code, Rätsel & Puzzle). Jedes Ziel
-   beschreibt eine Kompetenz, nicht eine Aufgabenform.
+3. **Lernziele statt Aufgabenlisten** – 18 Ziele aus dem Schulstoff
+   (Mathe, Deutsch, Englisch, Allgemeinwissen, Technik & Code, Rätsel & Puzzle, Klassiker).
+   Jedes Ziel beschreibt eine Kompetenz, nicht eine Aufgabenform.
 4. **Weg-Auswahl** – 4 von 5 Aufgaben laufen über einen Weg, der zur Stärke des Kindes passt.
 5. **Brücken-Aufgaben 🌉** – jede 5. Aufgabe kommt bewusst über einen *anderen* Weg.
    So wächst auch das, was noch schwerfällt – ohne dass der Spaß verloren geht.
@@ -71,12 +71,33 @@ Vier Kinder, vier Wege, ein Ergebnis: Sie können 4 × 6.
    * **Puzzle & Reihenfolge** – Abläufe und Größen durch Antippen in die richtige Ordnung
      bringen (Ei → Raupe → Puppe → Schmetterling).
 
-8. **Eltern-Bereich** – Fortschritt je Lernziel, Aktivität der letzten 7 Tage,
+8. **Klassiker – Fordern statt Beschäftigen** 🏛️
+   Ein eigenes Fach mit dem Besten aus über hundert Jahren Denksport und Bildung.
+   Diese Aufgaben haben überlebt, weil sie sich in einem Satz erklären lassen, zunächst
+   unlösbar wirken und mit einem einzigen Gedanken plötzlich einfach werden.
+   * **Knacknüsse** – 24 berühmte Rätsel: Wolf, Ziege und Kohlkopf (Alkuin, um 800),
+     die Gauß-Summe, Türme von Hanoi (Lucas 1883), Königsberger Brücken (Euler 1736),
+     `SEND + MORE = MONEY` (Dudeney 1924), Nim (Bouton 1901), das Ziegenproblem (1975),
+     Schnecke im Brunnen, Wiegeprobleme, Seil-und-Zeit-Aufgaben.
+   * **Tippleiter statt Lösungsknopf** – Hilfe gibt es nur auf ausdrückliche Anforderung,
+     dann Schritt für Schritt. Wer ohne Tipp löst, bekommt es gesagt; dafür gibt es eigene
+     Abzeichen (🧠 5 ohne Tipp, 🏛️ 20 ohne Tipp).
+   * **Herkunft inklusive** – nach der Lösung steht, wer sich die Aufgabe ausgedacht hat und
+     wann. Auch dort, wo die Überlieferung unsicher ist, wird das gesagt (das „Einstein-Rätsel“
+     stammt nicht von Einstein).
+   * **Rechenkunststücke** – alte Kopfrechen-Kniffe zum Üben: mal 11 im Kopf, Quadrate von
+     Zahlen auf 5, Gauß-Summe, Neunerprobe, russische Bauernmultiplikation, Prozente im Kopf.
+   * **Wissen, das bleibt** – Fleming und das Penicillin, Marie Curies zwei Nobelpreise,
+     Amundsen am Südpol, der Mauerfall, Pythagoras, Fotosynthese, Palindrome.
+   * **Redewendungen** – was sie bedeuten und woher sie kommen (die „lange Bank“ war eine
+     Gerichtstruhe, das „Fettnäpfchen“ stand vor der Haustür).
+
+9. **Eltern-Bereich** – Fortschritt je Lernziel, Aktivität der letzten 7 Tage,
    Klartext-Empfehlungen („So lernt Ihr Kind am leichtesten – und daran arbeiten wir gerade“),
    Export/Import der Daten.
 
 Aufgaben werden **generiert**, nicht aus einer Liste gezogen – der Vorrat geht nie aus.
-Aktuell: 14 Lernziele × bis zu 5 Wege = 55 Aufgabentypen auf je 5 Schwierigkeitsstufen.
+Aktuell: 18 Lernziele × bis zu 5 Wege = 70 Aufgabentypen auf je 5 Schwierigkeitsstufen.
 
 ---
 
@@ -160,6 +181,7 @@ js/data.js            Talente, Lernwege, Lernziele, Talent-Test (5 Teile), Abzei
 js/talenttest.js      Auswertung des Talent-Tests: Blöcke, Gewichte, Feinschliff
 js/sprache.js         Vorlesen über die Gerätestimme (Web Speech API)
 js/geschichten.js     Hörgeschichten mit Verständnisfragen
+js/klassiker.js       Knacknüsse, Wissenskanon, Redewendungen, alte Rechentricks
 js/generators.js      Aufgaben-Generatoren – ein Ziel, viele Wege
 js/engine.js          Auswahl von Ziel & Weg, Brücken-Regel, Elternhinweise
 js/store.js           Profile, Fortschritt, Talentwerte, gemessene Wirksamkeit (lokal)

@@ -39,7 +39,8 @@ export const FAECHER = {
   englisch: { name:'Englisch',        emoji:'🇬🇧' },
   sach:     { name:'Allgemeinwissen', emoji:'🌍' },
   technik:  { name:'Technik & Code',  emoji:'💡' },
-  raetsel:  { name:'Rätsel & Puzzle',  emoji:'🧩' }
+  raetsel:  { name:'Rätsel & Puzzle',  emoji:'🧩' },
+  klassiker:{ name:'Klassiker',        emoji:'🏛️' }
 };
 
 /* ---------------------------------------------------------------------------
@@ -208,6 +209,18 @@ export const ZIELE = [
   { id:'puzzle',     fach:'raetsel',  titel:'Puzzle & Reihenfolge',
     kompetenz:'Teile und Ereignisse in die richtige Ordnung bringen.',
     klasse:[1,6], wege:['bauen','erzaehlen','knobeln','bewegen'] },
+  { id:'knacknuss',  fach:'klassiker',titel:'Knacknüsse',
+    kompetenz:'Berühmte Denkaufgaben aus mehreren Jahrhunderten selbstständig knacken.',
+    klasse:[2,6], wege:['knobeln','erzaehlen','bauen','team'], anspruch:'hoch' },
+  { id:'kopfrechnen',fach:'klassiker',titel:'Rechenkunststücke',
+    kompetenz:'Alte Kopfrechen-Kniffe verstehen und anwenden – schneller als jeder Rechner am Handy.',
+    klasse:[2,6], wege:['knobeln','rhythmus','bauen','code'] },
+  { id:'kanon',      fach:'klassiker',titel:'Wissen, das bleibt',
+    kompetenz:'Die großen Entdeckungen, Werke und Wendepunkte kennen und einordnen.',
+    klasse:[2,6], wege:['entdecken','erzaehlen','knobeln','team'] },
+  { id:'redewendung',fach:'deutsch',  titel:'Redewendungen & Herkunft',
+    kompetenz:'Bildhafte Wendungen verstehen und wissen, woher sie kommen.',
+    klasse:[2,6], wege:['erzaehlen','entdecken','knobeln'] },
   { id:'code',       fach:'technik',  titel:'Erste Programmier-Ideen',
     kompetenz:'Befehlsfolgen lesen, Ergebnis vorhersagen, Fehler finden.',
     klasse:[2,6], wege:['code','bauen','bewegen','knobeln'] }
@@ -226,5 +239,7 @@ export const ABZEICHEN = [
   { id:'woche',    em:'🚀', name:'7 Tage am Stück',  test:s => s.streakBest >= 7 },
   { id:'meister',  em:'🎓', name:'Erstes Ziel gemeistert', test:s => s.zieleGemeistert >= 1 },
   { id:'entdecker',em:'🧭', name:'4 Wege ausprobiert',     test:s => s.wegeGenutzt >= 4 },
-  { id:'brueck',   em:'🌉', name:'Brückenbauer:in',        test:s => s.brueckenRichtig >= 20 }
+  { id:'brueck',   em:'🌉', name:'Brückenbauer:in',        test:s => s.brueckenRichtig >= 20 },
+  { id:'denker',   em:'🧠', name:'5 Knacknüsse ohne Tipp',  test:s => s.ohneTipp >= 5 },
+  { id:'meister',  em:'🏛️', name:'20 Knacknüsse ohne Tipp', test:s => s.ohneTipp >= 20 }
 ];

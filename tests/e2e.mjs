@@ -67,7 +67,8 @@ await p.screenshot({path:S+'/6-ergebnis.png', fullPage:true});
 await p.click('#heim');
 
 // Neue Bereiche: Puzzle/Bilderrätsel und Hörgeschichten gezielt prüfen
-for (const [ziel, name] of [['puzzle','puzzle'],['bildraetsel','bildraetsel'],['zuhoeren','hoergeschichte']]) {
+for (const [ziel, name] of [['puzzle','puzzle'],['bildraetsel','bildraetsel'],['zuhoeren','hoergeschichte'],
+                            ['knacknuss','knacknuss'],['kopfrechnen','kopfrechnen'],['kanon','kanon']]) {
   await p.click(`[data-ziel="${ziel}"]`);
   await p.waitForSelector('.task');
   if (ziel === 'zuhoeren') {
@@ -75,14 +76,26 @@ for (const [ziel, name] of [['puzzle','puzzle'],['bildraetsel','bildraetsel'],['
     await p.click('#zeigeText');
     if (await p.$eval('#hoertext', el => el.hidden)) throw new Error('Text lässt sich nicht einblenden');
   }
+  if (ziel === 'knacknuss') {                        // Tippleiter prüfen
+    if (!await p.$('#tippHolen')) throw new Error('Knacknuss ohne Tipp-Knopf');
+    await p.click('#tippHolen');
+    if (!await p.$('.tipp')) throw new Error('Tipp wird nicht angezeigt');
+  }
   await p.screenshot({path:`${S}/x-${name}.png`, fullPage:true});
   if (await p.$('.teil[data-e]')) { let k=0; while (await p.$('.teil[data-e]') && k++<12) await p.click('.teil[data-e]'); }
   else if (await p.$('#eingabe')) { await p.fill('#eingabe','1'); await p.click('#pruefen'); }
   else await p.click('.choice');
   await p.waitForSelector('#weiter');
+  if (ziel === 'knacknuss' && !await p.$('.quelle')) throw new Error('Herkunftsangabe fehlt');
   await p.click('#raus');
   await p.waitForSelector('#mission');
 }
+
+// Knacknuss vom Startbildschirm aus
+await p.click('#knacknuss');
+await p.waitForSelector('.task');
+await p.click('#raus');
+await p.waitForSelector('#mission');
 
 // Fach-Runde + Ziel-Runde
 await p.click('[data-fach="deutsch"]');

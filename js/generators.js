@@ -4,6 +4,7 @@
    Nur die Verpackung unterscheidet sich – das ist die Idee der App. */
 
 import { GESCHICHTEN } from './geschichten.js';
+import { KNACKNUESSE, KANON, REDEWENDUNGEN, RECHENTRICKS } from './klassiker.js';
 
 const r = (a,b) => a + Math.floor(Math.random()*(b-a+1));
 const pick = a => a[r(0,a.length-1)];
@@ -448,6 +449,105 @@ puzzle: (() => {
       return ordnen(`👟 Mach es in Gedanken mit: ${a.t}\nTippe die Schritte der Reihe nach an.`, a.s,
         'Stell dir vor, du machst es gerade wirklich.'); }
   };
+})(),
+
+/* ---------------- Klassiker: Knacknüsse ---------------- */
+knacknuss: (() => {
+  const RAHMEN = {
+    knobeln:   'Knacknuss – nimm dir Zeit.',
+    erzaehlen: 'Diese Aufgabe wird seit Generationen weitererzählt.',
+    bauen:     'Zeichne es auf oder leg es mit Gegenständen nach.',
+    team:      'Erkläre die Aufgabe jemandem – beim Erklären fällt die Lösung oft von selbst.'
+  };
+  const bauen = (weg, lvl) => {
+    const passend = KNACKNUESSE.filter(k => k.stufe <= lvl + 1);
+    const k = pick(passend.length ? passend : KNACKNUESSE.filter(x => x.stufe <= 2));
+    const basis = k.optionen
+      ? { typ:'choice', optionen: shuffle([...k.optionen]) }
+      : { typ:'text' };
+    return {
+      ...basis,
+      frage: `🏛️ ${RAHMEN[weg]}\n\n${k.frage}`,
+      antwort: k.antwort,
+      tipps: k.tipps || [],
+      quelle: k.quelle,
+      hilfe: (k.tipps || []).at(-1) || '',
+      knacknuss: true
+    };
+  };
+  return {
+    knobeln:   lvl => bauen('knobeln', lvl),
+    erzaehlen: lvl => bauen('erzaehlen', lvl),
+    bauen:     lvl => bauen('bauen', lvl),
+    team:      lvl => bauen('team', lvl)
+  };
+})(),
+
+/* ---------------- Klassiker: Rechenkunststücke ---------------- */
+kopfrechnen: (() => {
+  const trick = id => RECHENTRICKS.find(t => t.id === id);
+  const mit = (aufgabe, t) => ({ ...aufgabe, hilfe: t.erklaerung, quelle: t.quelle });
+
+  const malElf = lvl => { const n = r(12, lvl >= 3 ? 98 : 49);
+    return mit(zahlText(`✖️ Mal 11 im Kopf: ${n} × 11 = ?`, n*11), trick('elf')); };
+
+  const quadratAufFuenf = lvl => { const z = r(1, lvl >= 3 ? 9 : 4), n = z*10 + 5;
+    return mit(zahlText(`✖️ Quadrat einer Zahl auf 5: ${n} × ${n} = ?`, n*n), trick('fuenf')); };
+
+  const gaussSumme = lvl => { const n = pick(lvl >= 3 ? [20,25,30,40,50,100] : [5,6,10,12,15]);
+    return mit(zahlText(`➕ Zähle alle Zahlen von 1 bis ${n} zusammen.\nNicht einzeln – nutze den Kniff!`,
+      n*(n+1)/2), trick('gauss')); };
+
+  const bauernRechnen = lvl => { const a = r(3, 6+lvl*2), b = r(11, 20+lvl*10);
+    return mit(zahlText(`🧱 Halbieren und verdoppeln: ${a} × ${b} = ?`, a*b), trick('bauern')); };
+
+  const neunerprobe = lvl => {
+    const a = r(12, 40+lvl*10), b = r(3, 9), echt = a*b;
+    const falsch = Math.random() < .5;
+    const gezeigt = falsch ? echt + pick([1,2,-1,-2]) : echt;
+    const quer = n => String(n).split('').reduce((x,y)=>x+Number(y),0);
+    return mit(wahl(`🔍 Neunerprobe: Stimmt diese Rechnung?\n${a} × ${b} = ${gezeigt}\n(Quersumme von ${a} ist ${quer(a)}, von ${b} ist ${quer(b)})`,
+      falsch ? 'Nein, da stimmt etwas nicht' : 'Ja, die Rechnung stimmt',
+      [falsch ? 'Ja, die Rechnung stimmt' : 'Nein, da stimmt etwas nicht']), trick('neuner'));
+  };
+
+  const prozente = lvl => { const n = pick([40,60,80,120,200,250,300]).valueOf(),
+        p = pick(lvl >= 3 ? [5,10,15,20,25] : [10,20,50]);
+    return mit(zahlText(`💯 ${p} % von ${n} = ?`, n*p/100), trick('prozent')); };
+
+  return {
+    knobeln:  lvl => (Math.random() < .5 ? malElf(lvl) : quadratAufFuenf(lvl)),
+    rhythmus: lvl => gaussSumme(lvl),
+    bauen:    lvl => bauernRechnen(lvl),
+    code:     lvl => (Math.random() < .5 ? neunerprobe(lvl) : prozente(lvl))
+  };
+})(),
+
+/* ---------------- Klassiker: Wissen, das bleibt ---------------- */
+kanon: (() => {
+  const ausBereichen = (bereiche) => {
+    const menge = KANON.filter(k => bereiche.includes(k.bereich));
+    const k = pick(menge.length ? menge : KANON);
+    return { ...wahl(k.q, k.ok, k.bad, ''), quelle: k.notiz };
+  };
+  return {
+    entdecken: () => ausBereichen(['Entdeckungen','Natur']),
+    erzaehlen: () => ausBereichen(['Kunst','Geschichte']),
+    knobeln:   () => ausBereichen(['Zahlen','Sprache']),
+    team:      () => ausBereichen(['Geschichte','Erde'])
+  };
+})(),
+
+/* ---------------- Redewendungen ---------------- */
+redewendung: (() => {
+  const eine = () => { const w = pick(REDEWENDUNGEN);
+    return { ...wahl(w.q, w.ok, w.bad, 'Stell dir das Bild wörtlich vor.'), quelle: w.herkunft }; };
+  const herkunft = () => { const w = pick(REDEWENDUNGEN);
+    const falsche = shuffle(REDEWENDUNGEN.filter(x => x !== w)).slice(0,2).map(x => x.herkunft);
+    return { ...wahl(`🔎 Woher kommt die Redewendung ${w.q.split('“')[0]}“?`, w.herkunft, falsche,
+      'Denk an das Leben früher.'), quelle: w.ok };
+  };
+  return { erzaehlen: eine, knobeln: eine, entdecken: herkunft };
 })(),
 
 /* ---------------- Code ---------------- */

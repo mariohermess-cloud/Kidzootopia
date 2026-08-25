@@ -320,6 +320,16 @@ function screenLernen(p) {
       <p>8 Aufgaben – auf deinem Weg zusammengestellt.</p>
       <button class="btn" id="mission">Mission starten 🚀</button>
     </div>
+    <div class="card" style="border:2px solid var(--brand)">
+      <div class="row spread">
+        <div style="flex:1">
+          <b>🏛️ Knacknuss</b>
+          <div class="muted small">Ein berühmtes Rätsel – zum Festbeißen.
+            Tipps gibt es nur, wenn du sie holst.</div>
+        </div>
+        <button class="btn small" id="knacknuss">Los</button>
+      </div>
+    </div>
     <div class="card">
       <div class="row spread"><b>Heute geschafft</b><span class="muted small">${heuteAufgaben} / ${tagesziel}</span></div>
       <div class="bar ${heuteAufgaben>=tagesziel?'ok':''}" style="margin-top:8px">
@@ -351,6 +361,7 @@ function screenLernen(p) {
     </div>`;
   view().querySelector('#zumTest')?.addEventListener('click', () => zeige('test'));
   view().querySelector('#mission').onclick = () => zeige('session', { laenge:8 });
+  view().querySelector('#knacknuss').onclick = () => zeige('session', { zielId:'knacknuss', laenge:3 });
   view().querySelectorAll('[data-fach]').forEach(b => b.onclick = () => zeige('session', { fach:b.dataset.fach, laenge:8 }));
   view().querySelectorAll('[data-ziel]').forEach(b => b.onclick = () => zeige('session', { zielId:b.dataset.ziel, laenge:8 }));
 }
@@ -360,8 +371,9 @@ function screenSession(p, opts = {}) {
   const sess = starteSession(p, opts);
   const status = [];
 
-  let startZeit = 0;
+  let startZeit = 0, tippsGenutzt = 0;
   const naechste = () => {
+    tippsGenutzt = 0;
     const a = sess.naechste();
     if (!a) return ende();
     startZeit = performance.now();
@@ -391,6 +403,7 @@ function screenSession(p, opts = {}) {
         </div>
         <p class="task pop">${esc(a.frage)}</p>
         <div id="antwortbereich"></div>
+        <div id="tippBereich"></div>
         <div id="fb"></div>
       </div>
       <p class="muted small center">${esc(a.wegInfo.hinweis)}</p>`;
@@ -467,13 +480,35 @@ function screenSession(p, opts = {}) {
       }
     }
 
+    /* Tippleiter: Wer allein draufkommt, bekommt mehr Anerkennung –
+       wer feststeckt, bekommt einen Anstoß statt der Lösung. */
+    const tippBereich = view().querySelector('#tippBereich');
+    const tippsZeichnen = () => {
+      if (!a.tipps?.length || ergebnis !== null) { tippBereich.innerHTML = ''; return; }
+      tippBereich.innerHTML = `
+        ${a.tipps.slice(0, tippsGenutzt).map((t,i) =>
+          `<div class="tipp">💡 <b>Tipp ${i+1}:</b> ${esc(t)}</div>`).join('')}
+        ${tippsGenutzt < a.tipps.length
+          ? `<button class="btn quiet small" id="tippHolen" style="margin-top:10px">
+               🔎 ${tippsGenutzt ? 'Noch ein Tipp' : 'Ich brauche einen Tipp'}
+               (${a.tipps.length - tippsGenutzt} übrig)</button>`
+          : '<p class="small muted">Mehr Tipps gibt es nicht – jetzt hilft nur Nachdenken.</p>'}`;
+      tippBereich.querySelector('#tippHolen')?.addEventListener('click', () => {
+        tippsGenutzt++; tippsZeichnen();
+      });
+    };
+    tippsZeichnen();
+
     if (ergebnis !== null) {
       view().querySelector('#fb').innerHTML = `
         <div class="feedback ${ergebnis?'ok':'bad'} pop">
           ${ergebnis ? '✅ Richtig! Super gemacht.'
             : `❌ Nicht ganz. Richtig wäre: <u>${esc(a.antwort)}</u>`}
           ${a.hilfe ? `<div class="small" style="margin-top:6px;font-weight:500">💡 ${esc(a.hilfe)}</div>` : ''}
+          ${ergebnis && a.knacknuss && tippsGenutzt === 0
+            ? '<div class="small" style="margin-top:6px">🧠 Ohne Tipp geknackt – stark.</div>' : ''}
         </div>
+        ${a.quelle ? `<div class="quelle">📜 ${esc(a.quelle)}</div>` : ''}
         <button class="btn" id="weiter" style="margin-top:12px">
           ${sess.index >= sess.laenge ? 'Ergebnis ansehen' : 'Weiter →'}</button>`;
       view().querySelector('#weiter').onclick = () => { stopp(); naechste(); };
@@ -488,7 +523,8 @@ function screenSession(p, opts = {}) {
     sess.index++; if (ok) sess.richtig++;
     sess.verlauf.push({ ziel:a.ziel.id, weg:a.weg, ok, bruecke:a.bruecke, ms });
     // Zeit fliesst in die Wirksamkeit eines Weges ein – schnell und sicher zaehlt mehr.
-    S.verbuche(p, { zielId:a.ziel.id, weg:a.weg, level:a.level, richtig:ok, bruecke:a.bruecke, ms });
+    S.verbuche(p, { zielId:a.ziel.id, weg:a.weg, level:a.level, richtig:ok, bruecke:a.bruecke, ms,
+                    tippsGenutzt, knacknuss: !!a.knacknuss });
     if (ok && navigator.vibrate) navigator.vibrate(20);
     render(a, ok, String(eingabe));
   };
@@ -589,6 +625,16 @@ function screenWege(p) {
         <li>🤖 <b>Code-Weg:</b> wiederhole 4 mal { sammle 6 Münzen }</li>
       </ul>
       <p class="small muted">Vier Kinder, vier Wege – am Ende können alle 4 × 6.</p>
+    </div>
+    <div class="card">
+      <h3>🏛️ Warum alte Rätsel?</h3>
+      <p class="small">Die Aufgaben im Fach <b>Klassiker</b> sind zwischen 100 und über 1000 Jahre alt –
+        von Alkuin (um 800) über Gauß und Dudeney bis zum Ziegenproblem von 1975. Sie haben überlebt,
+        weil sie etwas können: Sie lassen sich in einem Satz erklären, wirken zunächst unlösbar und
+        werden mit einem einzigen Gedanken plötzlich einfach.</p>
+      <p class="small">Deshalb gibt es hier keine sofortige Hilfe. Wer nicht weiterkommt, holt sich
+        einen Tipp – und noch einen. Wer ohne Tipp löst, bekommt das ausdrücklich gesagt.
+        Zu jeder Aufgabe steht am Ende, wer sie sich ausgedacht hat und wann.</p>
     </div>
     <h2>Alle Lernziele</h2>
     <div class="card flat"><ul class="clean">
