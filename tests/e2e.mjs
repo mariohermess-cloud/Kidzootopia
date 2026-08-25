@@ -52,7 +52,11 @@ await p.click('#mission');
 for (let i=0;i<8;i++){
   await p.waitForSelector('.task');
   const frage = await p.textContent('.task');
-  if (await p.$('#eingabe')) { await p.fill('#eingabe','42'); await p.click('#pruefen'); }
+  if (await p.$('.teil[data-e]')) {                 // Puzzle: alle Teile der Reihe nach antippen
+    let sicherung = 0;
+    while (await p.$('.teil[data-e]') && sicherung++ < 12) await p.click('.teil[data-e]');
+  }
+  else if (await p.$('#eingabe')) { await p.fill('#eingabe','42'); await p.click('#pruefen'); }
   else { await p.click('.choice'); }
   await p.waitForSelector('#weiter');
   if (i===0) await p.screenshot({path:S+'/5-aufgabe.png', fullPage:true});
@@ -61,6 +65,24 @@ for (let i=0;i<8;i++){
 await p.waitForSelector('#nochmal');
 await p.screenshot({path:S+'/6-ergebnis.png', fullPage:true});
 await p.click('#heim');
+
+// Neue Bereiche: Puzzle/Bilderrätsel und Hörgeschichten gezielt prüfen
+for (const [ziel, name] of [['puzzle','puzzle'],['bildraetsel','bildraetsel'],['zuhoeren','hoergeschichte']]) {
+  await p.click(`[data-ziel="${ziel}"]`);
+  await p.waitForSelector('.task');
+  if (ziel === 'zuhoeren') {
+    if (!await p.$('#playHoer')) throw new Error('Hörgeschichte ohne Abspiel-Knopf');
+    await p.click('#zeigeText');
+    if (await p.$eval('#hoertext', el => el.hidden)) throw new Error('Text lässt sich nicht einblenden');
+  }
+  await p.screenshot({path:`${S}/x-${name}.png`, fullPage:true});
+  if (await p.$('.teil[data-e]')) { let k=0; while (await p.$('.teil[data-e]') && k++<12) await p.click('.teil[data-e]'); }
+  else if (await p.$('#eingabe')) { await p.fill('#eingabe','1'); await p.click('#pruefen'); }
+  else await p.click('.choice');
+  await p.waitForSelector('#weiter');
+  await p.click('#raus');
+  await p.waitForSelector('#mission');
+}
 
 // Fach-Runde + Ziel-Runde
 await p.click('[data-fach="deutsch"]');

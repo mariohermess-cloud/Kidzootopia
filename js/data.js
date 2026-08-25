@@ -38,7 +38,8 @@ export const FAECHER = {
   deutsch:  { name:'Deutsch',         emoji:'✏️' },
   englisch: { name:'Englisch',        emoji:'🇬🇧' },
   sach:     { name:'Allgemeinwissen', emoji:'🌍' },
-  technik:  { name:'Technik & Code',  emoji:'💡' }
+  technik:  { name:'Technik & Code',  emoji:'💡' },
+  raetsel:  { name:'Rätsel & Puzzle',  emoji:'🧩' }
 };
 
 /* ---------------------------------------------------------------------------
@@ -198,6 +199,15 @@ export const ZIELE = [
   { id:'logik',      fach:'technik',  titel:'Muster & Logik',
     kompetenz:'Regeln in Reihen und Mustern erkennen und fortsetzen.',
     klasse:[1,6], wege:['knobeln','bauen','rhythmus'] },
+  { id:'zuhoeren',   fach:'deutsch',  titel:'Zuhören & Verstehen',
+    kompetenz:'Einer vorgelesenen Geschichte folgen und Fragen dazu beantworten.',
+    klasse:[1,6], wege:['erzaehlen','entdecken','knobeln'], vorlesen:true },
+  { id:'bildraetsel',fach:'raetsel',  titel:'Bilderrätsel',
+    kompetenz:'Bilder deuten, verknüpfen und daraus die Lösung erschließen.',
+    klasse:[1,6], wege:['bauen','erzaehlen','knobeln','entdecken'] },
+  { id:'puzzle',     fach:'raetsel',  titel:'Puzzle & Reihenfolge',
+    kompetenz:'Teile und Ereignisse in die richtige Ordnung bringen.',
+    klasse:[1,6], wege:['bauen','erzaehlen','knobeln','bewegen'] },
   { id:'code',       fach:'technik',  titel:'Erste Programmier-Ideen',
     kompetenz:'Befehlsfolgen lesen, Ergebnis vorhersagen, Fehler finden.',
     klasse:[2,6], wege:['code','bauen','bewegen','knobeln'] }

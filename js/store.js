@@ -35,6 +35,7 @@ function migriere(p) {
   p.wegStats    ||= {};   // je Weg: wie gut und wie schnell laeuft es damit?
   p.zielWeg     ||= {};   // je Lernziel und Weg dasselbe – dort zeigt sich der Unterschied
   p.testTeile   ||= null; // Ergebnis der einzelnen Testteile
+  p.vorlesen    ??= false; // Aufgaben automatisch vorlesen (für Leseanfänger)
   p.stats ||= {};
   p.stats.aufgabenGesamt  ??= 0;
   p.stats.richtigGesamt   ??= 0;
