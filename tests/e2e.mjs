@@ -47,9 +47,11 @@ await p.click('#losgehts');
 await p.waitForSelector('#mission');
 await p.screenshot({path:S+'/4-home.png', fullPage:true});
 
-// Mission spielen: 8 Aufgaben
+// Mission spielen, bis das Ergebnis erscheint.
+// (Denk-Impulse verkürzen die Runde, deshalb keine feste Zahl.)
 await p.click('#mission');
-for (let i=0;i<8;i++){
+for (let i=0;i<12;i++){
+  if (await p.$('#nochmal')) break;                 // Runde ist zu Ende
   await p.waitForSelector('.task');
   const frage = await p.textContent('.task');
   if (await p.$('.teil[data-e]')) {                 // Puzzle: alle Teile der Reihe nach antippen

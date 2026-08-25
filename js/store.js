@@ -90,6 +90,7 @@ function migriere(p) {
   p.vorlesen    ??= false; // Aufgaben automatisch vorlesen (für Leseanfänger)
   // Etappe: 1 Grundschule … 5 Erwachsene. Ältere Profile kannten nur die Klasse.
   p.etappe      ??= (p.klasse >= 8 ? 3 : p.klasse >= 5 ? 2 : 1);
+  p.gesehen     ||= {};   // je Ziel die zuletzt gestellten Aufgaben (Kurzkennung)
   p.stats ||= {};
   p.stats.aufgabenGesamt  ??= 0;
   p.stats.richtigGesamt   ??= 0;
@@ -197,6 +198,28 @@ export function talentWerte(profil) {
 
 export function topTalente(profil, n = 3) {
   return Object.entries(talentWerte(profil)).sort((a,b) => b[1]-a[1]).slice(0, n).map(e => e[0]);
+}
+
+/* --- Gedächtnis gegen Wiederholungen ---------------------------------------
+   Jede gestellte Aufgabe hinterlässt eine kurze Kennung. Der Motor zieht so
+   lange neu, bis eine Aufgabe kommt, die dieses Kind noch nicht hatte.
+   Der Vorrat ist begrenzt (feste Rätsel!), deshalb altert die Liste: Ist
+   nahezu alles gesehen, fallen die ältesten Einträge wieder heraus. */
+const GESEHEN_MAX = 60;
+
+export function kennung(aufgabe) {
+  const roh = String(aufgabe.frage || '') + '|' + String(aufgabe.antwort || '');
+  let h = 5381;
+  for (let i = 0; i < roh.length; i++) h = ((h * 33) ^ roh.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
+export const schonGehabt = (profil, zielId, k) => (profil.gesehen[zielId] || []).includes(k);
+
+export function merkeAufgabe(profil, zielId, k) {
+  const liste = profil.gesehen[zielId] ||= [];
+  liste.push(k);
+  if (liste.length > GESEHEN_MAX) liste.splice(0, liste.length - GESEHEN_MAX);
 }
 
 /* --- Ziele --- */

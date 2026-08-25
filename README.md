@@ -122,8 +122,12 @@ stellt eine Etappe höher.
    Klartext-Empfehlungen („So lernt Ihr Kind am leichtesten – und daran arbeiten wir gerade“),
    Export/Import der Daten.
 
+**Keine Wiederholungen:** Jede gestellte Aufgabe hinterlässt beim Kind eine Kennung. Der
+Motor zieht so lange neu, bis etwas kommt, das dieses Kind noch nicht hatte – erst wenn der
+Vorrat eines Ziels erschöpft ist, beginnt er von vorn (und vergisst dann die ältesten zuerst).
+
 Aufgaben werden **generiert**, nicht aus einer Liste gezogen – der Vorrat geht nie aus.
-Aktuell: **29 Lernziele × bis zu 5 Wege = 110 Aufgabentypen** auf je 5 Schwierigkeitsstufen,
+Aktuell: **29 Lernziele × bis zu 5 Wege = 110 Aufgabentypen**, darunter 48 Knacknüsse auf je 5 Schwierigkeitsstufen,
 verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
 
 ---

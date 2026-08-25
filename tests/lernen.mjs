@@ -64,5 +64,34 @@ if (bruecken < 20 || bruecken > 60) fehler.push('Brückenanteil außerhalb des e
 const nurProben = auswerten({ proben:[{ t:'raum', richtig:true, ms:3000 }] });
 if (Object.keys(nurProben.werte).length !== 8) fehler.push('Auswertung mit nur einem Teil unvollständig');
 
+/* Keine Wiederholungen: Ein Kind soll dieselbe Aufgabe nicht zweimal bekommen,
+   solange der Vorrat des Ziels noch etwas Neues hergibt. */
+const wiederholung = [];
+for (const [ziel, mindestens] of [['knacknuss',20],['hauptwerke',20],['gleichungen',20],
+                                  ['denkfehler',20],['stilmittel',20],['wortwurzel',20],
+                                  ['zinsen',20],['analysis',20]]) {
+  const frisch = S.neuesProfil({ name:'V-'+ziel, avatar:'🦊', etappe:5 });
+  const lauf = E.starteSession(frisch, { zielId: ziel, laenge: 20 });
+  const gestellt = [];
+  let x;
+  while ((x = lauf.naechste())) { gestellt.push(x.frage); lauf.index++; }
+  const verschieden = new Set(gestellt).size;
+  console.log(`${ziel.padEnd(12)} 20 Aufgaben → ${verschieden} verschiedene`);
+  if (verschieden < mindestens) wiederholung.push(`${ziel}: nur ${verschieden} von 20`);
+}
+if (wiederholung.length) fehler.push('Wiederholungen: ' + wiederholung.join(', '));
+
+/* Sachaufgaben müssen zur eigenen Lösung passen (früher widersprachen sich
+   Geschichte und Gleichung). */
+const { baueAufgabe } = await import('../js/generators.js');
+for (let i = 0; i < 500; i++) {
+  const a = baueAufgabe('gleichungen', 'erzaehlen', 3);
+  const t = a.frage.match(/In (\d+) Jahr(?:en)? bin ich doppelt so alt wie vor (\d+) Jahr/);
+  if (t && Number(a.antwort) !== Number(t[1]) + 2 * Number(t[2])) {
+    fehler.push('Altersaufgabe widerspricht ihrer Lösung: ' + a.frage);
+    break;
+  }
+}
+
 if (fehler.length) { console.error('\nFEHLER:\n' + fehler.join('\n')); process.exit(1); }
 console.log('\nLernschleife funktioniert ✅');

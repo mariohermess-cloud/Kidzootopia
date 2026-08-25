@@ -156,8 +156,147 @@ export const KNACKNUESSE = [
     optionen:['3','2','11','10'], antwort:'3',
     tipps:['Denke an den ungünstigsten Fall.',
            'Zwei Socken können verschiedenfarbig sein – die dritte muss zu einer passen.'],
-    quelle:'Schubfachprinzip, formuliert von Dirichlet um 1834.', stufe:2 }
+    quelle:'Schubfachprinzip, formuliert von Dirichlet um 1834.', stufe:2 },
+  /* --- Weitere Klassiker, damit sich nichts wiederholt --- */
+
+  { id:'flasche_korken', frage:'Eine Flasche und ein Korken kosten zusammen 1,10 €.\nDie Flasche kostet 1,00 € mehr als der Korken.\nWas kostet der Korken?',
+    optionen:['5 Cent','10 Cent','1 Cent','11 Cent'], antwort:'5 Cent',
+    tipps:['10 Cent ist die Antwort, die sich sofort aufdrängt – prüfe sie nach.',
+           'Wären es 10 Cent, kostete die Flasche 1,10 € – zusammen 1,20 €. Zu viel.'],
+    quelle:'Aus dem „Cognitive Reflection Test“ von Shane Frederick (2005); nur ein Bruchteil der Befragten antwortet richtig.', stufe:3 },
+
+  { id:'maschinen', frage:'5 Maschinen brauchen 5 Minuten, um 5 Teile herzustellen.\nWie lange brauchen 100 Maschinen für 100 Teile?',
+    optionen:['5 Minuten','100 Minuten','20 Minuten','1 Minute'], antwort:'5 Minuten',
+    tipps:['Wie lange braucht EINE Maschine für EIN Teil?','Jede Maschine braucht 5 Minuten pro Teil – unabhängig davon, wie viele es sind.'],
+    quelle:'Ebenfalls aus dem Cognitive Reflection Test, Shane Frederick 2005.', stufe:3 },
+
+  { id:'ziegelstein', frage:'Ein Ziegelstein wiegt ein Kilo und einen halben Ziegelstein.\nWie schwer ist der ganze Ziegelstein?',
+    antwort:'2', tipps:['Ein halber Stein wiegt also genau ein Kilo.'],
+    quelle:'Altes Wiegerätsel, in Rechenbüchern des 19. Jahrhunderts belegt.', stufe:3 },
+
+  { id:'mose', frage:'Wie viele Tiere jeder Art nahm Mose mit auf die Arche?',
+    optionen:['Keine – die Arche war Noah','Zwei','Sieben','Ein Paar von jeder Art'],
+    antwort:'Keine – die Arche war Noah',
+    tipps:['Lies die Frage noch einmal ganz genau. Wer baute die Arche?'],
+    quelle:'Die „Mose-Illusion“, 1981 von Erickson und Mattson beschrieben: Wir überlesen den Fehler, weil der Satz vertraut klingt.', stufe:2 },
+
+  { id:'chirurg', frage:'Ein Vater und sein Sohn haben einen Unfall. Der Vater stirbt.\nDer Junge kommt in die Klinik. Die Chirurgin sagt: „Ich kann ihn nicht operieren – er ist mein Sohn.“\nWie ist das möglich?',
+    optionen:['Die Chirurgin ist seine Mutter','Der Junge hat zwei Väter','Die Chirurgin verwechselt ihn','Es war ein Irrtum im Krankenhaus'],
+    antwort:'Die Chirurgin ist seine Mutter',
+    tipps:['Die Auflösung ist ganz alltäglich – man kommt nur oft nicht darauf.'],
+    quelle:'Seit den 1970er-Jahren als Prüfstein für unbewusste Rollenannahmen verwendet.', stufe:2 },
+
+  { id:'quadrate', frage:'Wie viele Quadrate siehst du in einem Gitter aus 3 × 3 Feldern?\n(Auch die größeren zählen!)',
+    antwort:'14', tipps:['Zähle zuerst die kleinen Felder: 9.','Dann die 2×2-Quadrate: 4. Und das ganz große: 1.'],
+    quelle:'Zählrätsel dieser Art füllten die Rätselspalten des frühen 20. Jahrhunderts.', stufe:3 },
+
+  { id:'muenzrolle', frage:'Eine Münze rollt einmal um eine gleich große, feststehende Münze herum.\nWie oft dreht sie sich dabei um sich selbst?',
+    optionen:['2-mal','1-mal','3-mal','einen halben Umlauf'], antwort:'2-mal',
+    tipps:['Der Umfang ist gleich – trotzdem stimmt „1-mal“ nicht.',
+           'Zur Drehung entlang der Kante kommt die Drehung durch das Herumwandern hinzu.'],
+    quelle:'Das Münzrotationsparadox. 1982 stand in einer US-Prüfung die falsche Antwort als richtig – drei Schüler bewiesen das Gegenteil.', stufe:5 },
+
+  { id:'kamele', frage:'Ein Vater vererbt 17 Kamele: die Hälfte dem Ältesten, ein Drittel dem Mittleren, ein Neuntel dem Jüngsten.\n17 lässt sich nicht teilen. Ein Nachbar bringt sein eigenes Kamel dazu.\nWie viele bekommt der Älteste?',
+    antwort:'9', tipps:['Mit 18 Kamelen lässt sich alles glatt teilen.',
+                        'Die Hälfte von 18 ist 9. Und am Ende bleibt ein Kamel übrig – das des Nachbarn.'],
+    quelle:'Alte orientalische Erbschaftsaufgabe, seit dem Mittelalter überliefert.', stufe:4 },
+
+  { id:'seilschnitte', frage:'Du willst ein Seil in 5 gleich lange Stücke schneiden.\nWie viele Schnitte brauchst du?',
+    antwort:'4', tipps:['Zeichne es auf. Beim ersten Schnitt hast du 2 Stücke.'],
+    quelle:'Klassische Denkfalle aus dem Handwerksunterricht.', stufe:1 },
+
+  { id:'bruecke_nacht', frage:'Vier Menschen müssen nachts über eine wackelige Brücke.\nSie haben eine Lampe, es dürfen höchstens zwei gleichzeitig hinüber, und die Lampe muss zurückgebracht werden.\nSie brauchen 1, 2, 5 und 10 Minuten. Wie schnell schaffen es alle?',
+    optionen:['17 Minuten','19 Minuten','21 Minuten','25 Minuten'], antwort:'17 Minuten',
+    tipps:['Der Schnellste muss nicht jedes Mal zurücklaufen.',
+           'Schicke die beiden Langsamen gemeinsam – dann kosten sie nur einmal 10 Minuten.'],
+    quelle:'„Bridge and Torch“, seit den 1990er-Jahren ein Klassiker in Einstellungsgesprächen.', stufe:5 },
+
+  { id:'moench', frage:'Ein Mönch steigt am Morgen einen Berg hinauf und am nächsten Morgen denselben Weg hinab –\njeweils zwischen 6 und 18 Uhr, mal schneller, mal langsamer.\nGibt es einen Ort, an dem er an beiden Tagen zur selben Uhrzeit war?',
+    optionen:['Ja, immer','Nein, nie','Nur wenn er gleich schnell geht','Das hängt vom Wetter ab'],
+    antwort:'Ja, immer',
+    tipps:['Stell dir vor, zwei Mönche starten am selben Tag – einer unten, einer oben.',
+           'Sie müssen sich unterwegs begegnen. Dieser Begegnungspunkt ist der gesuchte Ort.'],
+    quelle:'Von dem Psychologen Karl Duncker 1945 beschrieben – ein Musterbeispiel für den plötzlichen Einfall.', stufe:5 },
+
+  { id:'geburtstage', frage:'Wie viele Geburtstage hat ein durchschnittlicher Mensch?',
+    optionen:['1','ungefähr 75','365','2'], antwort:'1',
+    tipps:['Geburtstag ist der Tag, an dem man geboren wurde – nicht seine Feier.'],
+    quelle:'Ein Scherzrätsel, das seit Generationen dieselbe Falle stellt.', stufe:1 },
+
+  { id:'wasserlilie2', frage:'In einem Wettrennen überholst du die zweite Person.\nAn welcher Stelle liegst du jetzt?',
+    optionen:['an zweiter Stelle','an erster Stelle','an dritter Stelle','das ist offen'],
+    antwort:'an zweiter Stelle',
+    tipps:['Du übernimmst den Platz dessen, den du überholst.'],
+    quelle:'Standardfrage in Einstellungstests seit den 1950er-Jahren.', stufe:2 },
+
+  { id:'streichholz_römisch', frage:'Mit Streichhölzern liegt da: XI + I = X\nDie Gleichung stimmt nicht.\nWie viele Hölzer musst du mindestens umlegen, damit sie stimmt?',
+    antwort:'1', tipps:['Du darfst auch das Pluszeichen anfassen.',
+                        'Aus XI + I = X wird X + I = XI, wenn ein Holz wandert.'],
+    quelle:'Streichholzrätsel gehörten seit den 1920er-Jahren zum festen Bestand jeder Rätselspalte.', stufe:3 },
+
+  { id:'aufzug', frage:'Ein Mann wohnt im 10. Stock. Morgens fährt er mit dem Aufzug ganz nach unten.\nAbends fährt er nur bis zum 7. Stock und geht den Rest zu Fuß – außer wenn es regnet.\nWarum?',
+    optionen:['Er ist zu klein und erreicht nur die Taste 7 – bei Regen hat er einen Schirm',
+              'Der Aufzug ist abends defekt','Er will Sport treiben','Im 8. Stock wohnt ein Freund'],
+    antwort:'Er ist zu klein und erreicht nur die Taste 7 – bei Regen hat er einen Schirm',
+    tipps:['Warum spielt ausgerechnet Regen eine Rolle?','Was hat man bei Regen dabei, das länger ist als ein Arm?'],
+    quelle:'Berühmtestes Beispiel für „laterales Denken“, verbreitet durch Edward de Bono in den 1960er-Jahren.', stufe:4 },
+
+  { id:'schwimmbad', frage:'Zwei Wasserhähne füllen ein Becken: einer allein in 6 Stunden, der andere allein in 3 Stunden.\nWie lange dauert es, wenn beide gleichzeitig laufen?',
+    antwort:'2', tipps:['Rechne mit Anteilen pro Stunde, nicht mit Stunden.',
+                        'Der eine schafft 1/6 pro Stunde, der andere 1/3 – zusammen 1/2.'],
+    quelle:'Aufgabentyp aus den Rechenbüchern der Antike, u. a. bei Heron von Alexandria.', stufe:4 },
+
+  { id:'achilles', frage:'Achilles läuft zehnmal so schnell wie eine Schildkröte, die 100 Meter Vorsprung hat.\nZenon behauptete: Er holt sie nie ein, denn wenn er ihren Startpunkt erreicht, ist sie schon weiter.\nWas stimmt daran nicht?',
+    optionen:['Unendlich viele Abschnitte können zusammen eine endliche Strecke ergeben',
+              'Achilles ist doch nicht schneller','Die Schildkröte wird müde','Zenon hat sich verrechnet'],
+    antwort:'Unendlich viele Abschnitte können zusammen eine endliche Strecke ergeben',
+    tipps:['Die Abschnitte werden immer kürzer – summiere sie einmal auf.',
+           '100 + 10 + 1 + 0,1 … ergibt keinen unendlichen Wert, sondern etwa 111,1 Meter.'],
+    quelle:'Zenon von Elea, um 450 v. Chr. Erst die Analysis des 17. Jahrhunderts löste den Knoten sauber auf.', stufe:5 },
+
+  { id:'barbier', frage:'Ein Barbier rasiert genau die Männer im Dorf, die sich nicht selbst rasieren.\nRasiert er sich selbst?',
+    optionen:['Beides führt zum Widerspruch – die Regel kann nicht gelten',
+              'Ja','Nein','Nur sonntags'],
+    antwort:'Beides führt zum Widerspruch – die Regel kann nicht gelten',
+    tipps:['Nimm zuerst an, er rasiert sich selbst. Was folgt aus der Regel?',
+           'Und nun das Gegenteil. Beides kann nicht sein.'],
+    quelle:'Bertrand Russells Paradox (1901), hier in der Barbier-Fassung – es erschütterte die Grundlagen der Mathematik.', stufe:5 },
+
+  { id:'hotel', frage:'Ein Hotel hat unendlich viele Zimmer, alle belegt. Ein neuer Gast kommt.\nKann er untergebracht werden?',
+    optionen:['Ja – jeder zieht ein Zimmer weiter','Nein, es ist ja voll','Nur wenn jemand auszieht','Nur bei geraden Zimmernummern'],
+    antwort:'Ja – jeder zieht ein Zimmer weiter',
+    tipps:['Was passiert, wenn der Gast aus Zimmer 1 in Zimmer 2 zieht, der aus 2 in 3 und so weiter?'],
+    quelle:'David Hilberts Hotel, um 1924 als Gedankenspiel über das Unendliche vorgestellt.', stufe:5 },
+
+  { id:'buch_wurm', frage:'Drei Bände stehen der Reihe nach im Regal, jeder Buchblock 4 cm dick, jeder Deckel 2 mm.\nEin Wurm frisst sich von der ersten Seite des ersten Bandes bis zur letzten Seite des dritten.\nWie viele Zentimeter frisst er (Deckel mitgerechnet)?',
+    optionen:['4,8 cm','12,8 cm','8,4 cm','12 cm'], antwort:'4,8 cm',
+    tipps:['Stell die Bücher gedanklich wirklich ins Regal und schau, wo Seite 1 von Band 1 liegt.',
+           'Im Regal zeigt die erste Seite von Band 1 nach rechts – zum zweiten Band hin.'],
+    quelle:'Von Sam Loyd um 1900 populär gemacht; die naheliegende Antwort ist fast immer falsch.', stufe:5 },
+
+  { id:'wieviele_katzen', frage:'In einem Zimmer sitzen 4 Katzen in den vier Ecken.\nJeder Katze gegenüber sitzen 3 Katzen. Auf jedem Katzenschwanz sitzt eine Katze.\nWie viele Katzen sind im Zimmer?',
+    optionen:['4','8','12','16'], antwort:'4',
+    tipps:['Auf wessen Schwanz sitzt eine Katze am ehesten?','Jede Katze sitzt auf ihrem eigenen Schwanz.'],
+    quelle:'Altes Volksrätsel, in vielen Sprachen überliefert.', stufe:2 },
+
+  { id:'zwei_vaeter', frage:'Zwei Väter und zwei Söhne gehen angeln. Jeder fängt genau einen Fisch.\nZusammen sind es aber nur drei Fische. Wie geht das?',
+    optionen:['Es sind Großvater, Vater und Sohn','Einer hat gemogelt','Ein Fisch ist entkommen','Zwei teilen sich einen'],
+    antwort:'Es sind Großvater, Vater und Sohn',
+    tipps:['Kann eine Person gleichzeitig Vater und Sohn sein?'],
+    quelle:'Familienrätsel, seit dem 19. Jahrhundert in Sammlungen abgedruckt.', stufe:2 },
+
+  { id:'kerze_dunkel', frage:'Du kommst in einen dunklen Raum. Du hast ein Streichholz, eine Kerze, einen Ofen und eine Petroleumlampe.\nWas zündest du zuerst an?',
+    optionen:['das Streichholz','die Kerze','den Ofen','die Lampe'], antwort:'das Streichholz',
+    tipps:['Womit zündet man überhaupt etwas an?'],
+    quelle:'Scherzfrage, die vor allem prüft, ob man die Frage wirklich liest.', stufe:1 },
+
+  { id:'teilen_kuchen', frage:'Wie teilst du eine runde Torte mit nur 3 geraden Schnitten in 8 gleich große Stücke?',
+    optionen:['Zweimal durch die Mitte, dann waagerecht durch','Drei Schnitte sternförmig','Das geht nicht','Erst halbieren, dann vierteln'],
+    antwort:'Zweimal durch die Mitte, dann waagerecht durch',
+    tipps:['Eine Torte ist nicht flach – sie hat auch eine Höhe.'],
+    quelle:'Klassische Aufgabe zum räumlichen Denken.', stufe:3 }
 ];
+
 
 /* --------------------- Wissenskanon: was bleibt --------------------- */
 export const KANON = [

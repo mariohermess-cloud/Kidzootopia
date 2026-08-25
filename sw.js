@@ -1,5 +1,5 @@
 /* Service Worker: App laeuft auch offline (z. B. im Auto oder im Zug). */
-const CACHE = 'kidzootopia-v10';
+const CACHE = 'kidzootopia-v11';
 const DATEIEN = [
   './', './index.html', './app.css', './manifest.webmanifest',
   './icons/icon.svg', './icons/icon-maskable.svg',
