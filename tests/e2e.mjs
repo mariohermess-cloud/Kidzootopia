@@ -33,6 +33,22 @@ async function loeseAufgabe(p) {
       await p.mouse.up();
     }
     await p.click('#brettFertig');
+    /* Beim Modus "Mensch zeichnen" folgt der Merkmalsbogen. */
+    if (await p.$('#merkmaleFertig')) {
+      const kaesten = await p.$$('[data-m]');
+      for (let i = 0; i < Math.min(6, kaesten.length); i++) await kaesten[i].click();
+      await p.click('#merkmaleFertig');
+    }
+    return;
+  }
+  if (await p.$('#leseStart')) {
+    /* Lesepult: Im Test gibt es kein Mikrofon. Geprueft wird, dass die
+       Silbenfaerbung steht und der Weg ohne Mikrofon sauber weitergeht. */
+    const silben = await p.$$eval('#leseText .sil', els => els.length);
+    if (silben < 10) throw new Error(`Lesetext kaum in Silben zerlegt: ${silben} Silben`);
+    const gefaerbt = await p.$$eval('#leseText .sil.s1', els => els.length);
+    if (gefaerbt < 3) throw new Error(`Silbenfärbung fehlt: nur ${gefaerbt} eingefärbte Silben`);
+    await p.click('#leseOhne');
     return;
   }
   if (await p.$('.teil[data-e]')) { let n=0; while (await p.$('.teil[data-e]') && n++<12) await p.click('.teil[data-e]'); return; }
@@ -123,12 +139,21 @@ for (const [ziel, name] of [['puzzle','puzzle'],['bildraetsel','bildraetsel'],['
 {
   await p.click('[data-ziel="zeichnen"]');
   await p.waitForSelector('#brett');
+  /* Nicht jede Zeichenaufgabe hat eine Vorlage - "Mensch zeichnen" hat keine.
+     Also so lange weiterspielen, bis eine Aufgabe mit Vorlage kommt. */
+  let linien = await p.evaluate(() => window.__vorlage || null);
+  for (let versuch = 0; !linien && versuch < 6; versuch++) {
+    await loeseAufgabe(p);
+    await p.waitForSelector('#weiter');
+    await p.click('#weiter');
+    if (await p.$('#nochmal')) { await p.click('#heim'); await p.click('[data-ziel="zeichnen"]'); }
+    await p.waitForSelector('#brett');
+    linien = await p.evaluate(() => window.__vorlage || null);
+  }
+  if (!linien) throw new Error('Keine Zeichenaufgabe mit Vorlage gefunden');
   const kasten = await p.$eval('#brett', el => {
     const r = el.getBoundingClientRect(); return { x:r.x, y:r.y, w:r.width, h:r.height };
   });
-  // die Vorlage direkt aus der Aufgabe holen und exakt nachfahren
-  const linien = await p.evaluate(() => window.__vorlage || null);
-  if (!linien) throw new Error('Vorlage nicht zugänglich (Testhaken fehlt)');
   for (const linie of linien) {
     await p.mouse.move(kasten.x + linie[0].x * kasten.w, kasten.y + linie[0].y * kasten.h);
     await p.mouse.down();
@@ -301,6 +326,59 @@ await p.waitForSelector('#mission');
 const kopf = await p.textContent('#topName');
 const sw = await p.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length);
 console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
+// Lautlesen: Silbenfaerbung im Browser und Auswertung im echten Code pruefen.
+{
+  const knopf = await p.$('[data-ziel="lautlesen"]');
+  if (!knopf) throw new Error('Lernziel Vorlesen fehlt in der Mission');
+  await knopf.click();
+  await p.waitForSelector('#leseStart', { timeout: 6000 });
+  const silbenGesamt = await p.$$eval('#leseText .sil', els => els.length);
+  const angezeigt = (await p.textContent('#leseText')).replace(/\s+/g, '');
+  console.log(`Lesepult: Text in ${silbenGesamt} Silben eingefärbt`);
+  /* Der Begleiter muss beim Lesen zur Seite treten - er sass in derselben Ecke
+     wie der Text und verdeckte mitten im Satz zwei Woerter. */
+  const beiseite = await p.$eval('.begleiter', el => el.classList.contains('beiseite')).catch(() => false);
+  if (!beiseite) throw new Error('Begleiter tritt beim Vorlesen nicht zur Seite');
+  await p.screenshot({ path: `${S}/10-lesepult.png`, fullPage: true });
+  if (silbenGesamt < 20) throw new Error('Lesetext zu wenig zerlegt');
+  /* Die Faerbung darf keinen Buchstaben verlieren. */
+  const originale = await p.evaluate(async () => {
+    const L = await import('./js/lesen.js');
+    return L.TEXTE.map(t => t.text.replace(/\s+/g, ''));
+  });
+  if (!originale.includes(angezeigt))
+    throw new Error('Angezeigter Lesetext weicht vom Original ab: ' + angezeigt.slice(0, 80));
+  console.log('Silbenfärbung verliert keinen Buchstaben ✅');
+
+  /* Die Auswertung im Browser mit einer kuenstlichen Aufnahme durchspielen. */
+  const urteil = await p.evaluate(async () => {
+    const L = await import('./js/lesen.js');
+    const kurve = [];
+    const an = n => { for (let i=0;i<n;i++) kurve.push(0.5); };
+    const aus = n => { for (let i=0;i<n;i++) kurve.push(0.02); };
+    an(120); aus(20); an(120); aus(20); an(120);      // 25 ms je Schritt
+    const w = L.auswerten(kurve, { text: 'Die Sonne geht auf. Ein Vogel singt im Baum.', schrittMs: 25 });
+    return { tempo: w.tempo, boegen: w.boegen, stufe: L.einordnung(w, 1).stufe };
+  });
+  if (!(urteil.tempo > 0 && urteil.boegen === 3 && urteil.stufe >= 1 && urteil.stufe <= 4))
+    throw new Error('Leseauswertung im Browser falsch: ' + JSON.stringify(urteil));
+  console.log(`Leseauswertung im Browser: ${urteil.boegen} Bögen, ${urteil.tempo} Silben/Min, Stufe ${urteil.stufe} ✅`);
+  await p.click('#leseOhne');
+  await p.waitForSelector('#weiter', { timeout: 5000 });
+  await p.click('#weiter');
+  /* Die angefangene Runde zu Ende spielen - waehrend einer Runde ist die
+     untere Navigationsleiste ausgeblendet. */
+  for (let i = 0; i < 14 && !(await p.$('#nochmal')); i++) {
+    await p.waitForSelector('.task');
+    await loeseAufgabe(p);
+    await p.waitForSelector('#weiter');
+    await p.click('#weiter');
+  }
+  await p.waitForSelector('#nochmal', { timeout: 8000 });
+  await p.click('#heim');
+  await p.waitForSelector('#mission');
+}
+
 // Notausgang gegen die festgebissene alte Fassung: Offline-Speicher leeren.
 // Entscheidend ist die Zusicherung im Text daneben – der Fortschritt muss das ueberleben.
 await p.click('.nav-btn[data-route="eltern"]');

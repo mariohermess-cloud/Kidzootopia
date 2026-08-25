@@ -135,7 +135,37 @@ stellt eine Etappe höher.
    Der Eltern-Bereich zeigt die Auswertung erst ab drei Zeichnungen und sagt das dort auch.
 
 
-9. **Der Begleiter** 🦖 – das gewählte Lieblingstier lebt in der Ecke des Bildschirms.
+9. **Vorlesen üben** 🎤 – *Leseflüssigkeit, gemessen ohne Zuhören*
+   * **Silbenfärbung** – der Text steht in abwechselnd gefärbten Silben da
+     (Son-nen-blu-me). Das ist die Silbenmethode aus der Grundschulfibel: Wer die Silbe als
+     Ganzes greift, hört auf, Buchstabe für Buchstabe zu entziffern. Die Trennung rechnet
+     `js/silben.js` nach Regeln aus – 152 handgeprüfte Wörter im Test, davon aktuell alle
+     richtig, und für jedes Wort in jedem Lesetext wird geprüft, dass kein Buchstabe verloren
+     geht.
+   * **Derselbe Text dreimal** – nicht immer neue Texte. Wiederholtes Lautlesen
+     (Samuels 1979, *method of repeated readings*) ist das Verfahren, das bei stockendem Lesen
+     am besten belegt ist. Die App zeigt nach jedem Durchgang, was sich verbessert hat.
+   * **Das Mikrofon misst mit – aber es hört nicht zu.** Aufgezeichnet wird ausschließlich die
+     Lautstärke-Hüllkurve: wann wurde gesprochen, wann war Stille. Keine Worterkennung, keine
+     Aufnahme, nichts verlässt das Gerät. Daraus ergeben sich die drei Bestandteile von
+     Leseflüssigkeit (Rasinski; NAEP Oral Reading Fluency Scale 1995):
+
+     | Maß | Was es bedeutet |
+     |---|---|
+     | **Tempo** | Silben pro Minute – in Silben, weil „Ei" und „Sonnenblume" sonst gleich zählen |
+     | **Stockungen** | Pausen über 400 ms, die es mehr gibt, als der Text Satzzeichen hat. Am Komma innezuhalten ist gute Phrasierung; alles darüber sind die **Leselücken** |
+     | **Gleichmaß** | Lange, ähnlich lange Sprechbögen statt vieler kurzer Stücke |
+     | **Betonung** | Schwankung der Lautstärke – bleibt die Stimme monoton oder schwingt sie? |
+
+   * **Keine Note fürs Vorlesen.** Das Kind sieht eine von vier Stufen (🌱 Wort für Wort →
+     🌟 Fließend) und seine Zahlen, aber keine Punktzahl. Wer beim Vorlesen benotet wird, liest
+     vorsichtiger statt flüssiger.
+   * **Was die App nicht kann:** Weil sie den Wortlaut nicht kennt, misst sie **keine
+     Lesegenauigkeit** – ob ein Wort falsch gelesen wurde, hört nur ein Mensch. Und sie ist
+     **keine Diagnose**: Eine Lese-Rechtschreib-Schwäche erkennt man nicht an einer Tonaufnahme.
+     Beides steht so auch im Eltern-Bereich.
+
+10. **Der Begleiter** 🦖 – das gewählte Lieblingstier lebt in der Ecke des Bildschirms.
    Es hüpft und wirft Funken bei Erfolg, wackelt und tröstet bei Fehlern, winkt zum Start
    und dreht sich am Ende. Passiert länger nichts, gähnt es, schaut sich um – und schläft
    nach gut einer Minute mit einem „Zzz“ ein. Antippen weckt es. Für kleine Kinder ist das
@@ -180,7 +210,7 @@ stellt eine Etappe höher.
      werden **bewusst nicht bewertet** und fließen in keine Quote ein – sonst wären es
      Prüfungen statt Fragen.
 
-11. **Eltern-Bereich** – Fortschritt je Lernziel, Aktivität der letzten 7 Tage,
+12. **Eltern-Bereich** – Fortschritt je Lernziel, Aktivität der letzten 7 Tage,
    Klartext-Empfehlungen („So lernt Ihr Kind am leichtesten – und daran arbeiten wir gerade“),
    Export/Import der Daten.
 
@@ -254,7 +284,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 16 · Stand 25.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 17 · Stand 25.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.
@@ -335,6 +365,8 @@ npm run test:knacknuesse  # Vielfalt (1.394) und Richtigkeit (19.200 unabhängig
 npm run test:lernen       # Lernschleife, Wiederholungsfreiheit, Sachaufgaben-Kontrolle
 npm run test:kunst        # Zeichnungsauswertung: jedes Maß gegen seinen Gegenfall geprüft
 npm run test:version      # angezeigte Fassung = ausgelieferte Fassung (Service-Worker-Cache)
+npm run test:silben       # Silbentrennung an 152 handgeprüften Wörtern
+npm run test:lesen        # Leseauswertung an künstlichen Aufnahmen mit bekannter Wahrheit
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
@@ -354,6 +386,8 @@ js/sprache.js         Vorlesen über die Gerätestimme (Web Speech API)
 js/geschichten.js     Hörgeschichten mit Verständnisfragen
 js/zeichnen.js        Zeichenvorlagen, Ein-Strich-Figuren, Bewertung (Abdeckung/Genauigkeit)
 js/avatar.js          Der Begleiter: Reaktionen, Gesten, Leerlauf und Schlaf
+js/silben.js          Deutsche Silbentrennung – Grundlage der Silbenfärbung
+js/lesen.js           Lesetexte und Auswertung der Leseflüssigkeit (Tempo, Pausen, Betonung)
 js/version.js         Fassung, Datum und Änderungsverlauf – die einzige Stelle dafür
 js/kunstanalyse.js    Fachliche Zeichnungsauswertung: Feinmotorik, Entwicklungsstufe,
                       Menschzeichnung (Goodenough/Harris), Kreativität (Torrance)

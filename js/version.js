@@ -9,11 +9,17 @@
    Bei jeder Änderung: NUMMER hier hochzählen UND in sw.js (CACHE) gleichziehen.
    tests/version.mjs prüft, dass beide übereinstimmen. */
 
-export const NUMMER = 16;
+export const NUMMER = 17;
 export const STAND = '25.08.2026';
 
 /* Neueste zuerst. Kurz und in Alltagssprache – das lesen Eltern, nicht Entwickler. */
 export const VERLAUF = [
+  { nr: 17, stand: '25.08.2026', was: [
+    'Vorlesen üben: der Text steht in Silben eingefärbt da, das Mikrofon misst die Leseflüssigkeit',
+    'Derselbe Text kommt dreimal – das ist die Methode, die bei stockendem Lesen wirkt',
+    'Der Ton bleibt auf dem Gerät: keine Worterkennung, keine Aufnahme, nichts wird verschickt',
+    'Im Eltern-Bereich: Tempo, Stockungen und Betonung über die Zeit'
+  ]},
   { nr: 16, stand: '25.08.2026', was: [
     'Wiederholungen endgültig behoben: ist ein Weg leergeübt, wechselt die App den Weg',
     'Derselbe Fragewortlaut kommt in einer Runde nur noch einmal vor',

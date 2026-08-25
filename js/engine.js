@@ -82,7 +82,11 @@ export function starteSession(profil, { zielId = null, fach = null, laenge = 8 }
       const ziel = zielId ? ZIEL_MAP[zielId] : naechstesZiel(profil, fach);
       const stand = zielStand(profil, ziel.id);
       // Hauptwerke richten sich nach der Etappe, nicht nach dem Übungsstand
-      const stufe = ziel.id === 'hauptwerke' ? (profil.etappe || 1) : stand.level;
+      /* Hauptwerke und Lesetexte richten sich nach der Etappe, nicht nach dem
+         Uebungsstand: Ein Erstklaessler soll keinen Kant vorlesen, auch wenn
+         er im Ziel schon weit ist. */
+      const stufe = (ziel.id === 'hauptwerke' || ziel.id === 'lautlesen')
+        ? (profil.etappe || 1) : stand.level;
       // jede 5. Aufgabe bewusst ueber einen anderen Weg
       const erzwinge = (this.index + 1) % 5 === 0 ? true : (this.index === 0 ? false : null);
       const { weg, bruecke } = waehleWeg(profil, ziel, erzwinge);
