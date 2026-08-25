@@ -207,6 +207,20 @@ for (const [r,f] of [['talente','7-talente'],['wege','8-wege'],['eltern','9-elte
   await p.waitForTimeout(180);
   await p.screenshot({path:`${S}/${f}.png`, fullPage:true});
 }
+// Die laufende Fassung muss im Eltern-Bereich sichtbar sein – und mit version.js übereinstimmen
+{
+  const { NUMMER } = await import('../js/version.js');
+  await p.click('.nav-btn[data-route="eltern"]');
+  await p.waitForSelector('#updatePruefen');
+  const gezeigt = await p.textContent('.card:has(#updatePruefen)');
+  if (!gezeigt.includes(`Version ${NUMMER}`))
+    throw new Error(`Eltern-Bereich zeigt nicht Version ${NUMMER}: ${gezeigt.slice(0,120)}`);
+  await p.click('#updatePruefen');
+  await p.waitForFunction(() => !document.querySelector('#updateStatus').textContent.includes('Suche'),
+    null, { timeout: 9000 });
+  console.log('Fassung im Eltern-Bereich sichtbar: Version ' + NUMMER + ' ✅');
+}
+
 // Erwachsenen-Etappe: höhere Ziele müssen erscheinen und lösbar sein
 await p.click('.nav-btn[data-route="eltern"]');
 await p.waitForSelector('#etappeWahl');

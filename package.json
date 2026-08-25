@@ -10,7 +10,8 @@
     "test:lernen": "node tests/lernen.mjs",
     "test:e2e": "node tests/e2e.mjs ./screens",
     "test:knacknuesse": "node tests/knacknuesse.mjs",
-    "test:kunst": "node tests/kunst.mjs"
+    "test:kunst": "node tests/kunst.mjs",
+    "test:version": "node tests/version.mjs"
   },
   "devDependencies": {
     "playwright": "^1.49.1"

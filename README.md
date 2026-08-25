@@ -239,6 +239,30 @@ npm start            # startet einen Webserver auf http://localhost:8765
 
 ---
 
+## Welche Fassung läuft gerade?
+
+Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
+deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
+
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 15 · Stand 25.08.2026“ –
+  auch dann, wenn noch kein Profil angelegt ist.
+* **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
+  ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.
+* Kommt im Hintergrund eine neue Fassung an, erscheint ein Streifen **„✨ Neue Fassung bereit –
+  tippen zum Neustart“**. Die App lädt sich **nicht** von selbst neu; das würde ein Kind mitten
+  in einer Aufgabe herausreißen.
+
+Die Nummer kommt aus `js/version.js`, und diese Datei liegt selbst im Offline-Speicher.
+Angezeigt wird also, was **auf diesem Gerät** läuft – nicht, was auf dem Server steht. Zeigt
+das iPad eine kleinere Nummer als der Rechner, hat es die Aktualisierung noch nicht geholt.
+
+**Der klassische Fehler dabei:** Man ändert etwas, vergisst aber den Cache-Namen in `sw.js` –
+dann lädt kein Gerät die Änderung, und die App behauptet trotzdem, alles sei aktuell.
+`npm run test:version` bricht den Build ab, wenn `sw.js` und `js/version.js` auseinanderlaufen
+oder ein neu geladenes Modul im Offline-Speicher fehlt.
+
+---
+
 ## Datenschutz
 
 Alles bleibt auf dem Gerät (`localStorage`). Keine Server, keine Konten, keine Werbung,
@@ -284,6 +308,7 @@ npm run test:aufgaben     # alle Generatoren: 33.000 Aufgaben auf Vollständigke
 npm run test:knacknuesse  # Vielfalt (1.394) und Richtigkeit (19.200 unabhängig nachgerechnet)
 npm run test:lernen       # Lernschleife, Wiederholungsfreiheit, Sachaufgaben-Kontrolle
 npm run test:kunst        # Zeichnungsauswertung: jedes Maß gegen seinen Gegenfall geprüft
+npm run test:version      # angezeigte Fassung = ausgelieferte Fassung (Service-Worker-Cache)
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
@@ -303,6 +328,7 @@ js/sprache.js         Vorlesen über die Gerätestimme (Web Speech API)
 js/geschichten.js     Hörgeschichten mit Verständnisfragen
 js/zeichnen.js        Zeichenvorlagen, Ein-Strich-Figuren, Bewertung (Abdeckung/Genauigkeit)
 js/avatar.js          Der Begleiter: Reaktionen, Gesten, Leerlauf und Schlaf
+js/version.js         Fassung, Datum und Änderungsverlauf – die einzige Stelle dafür
 js/kunstanalyse.js    Fachliche Zeichnungsauswertung: Feinmotorik, Entwicklungsstufe,
                       Menschzeichnung (Goodenough/Harris), Kreativität (Torrance)
 js/klassiker.js       Knacknüsse (handverlesen), Wissenskanon, Redewendungen, Rechentricks
