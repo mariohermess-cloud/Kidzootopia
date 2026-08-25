@@ -25,7 +25,7 @@ p{margin:0 0 .8em}
 .muted{color:var(--muted)}
 .small{font-size:.85rem}
 .center{text-align:center}
-.view{max-width:640px;margin:0 auto;padding:16px 16px 8px}
+.view{max-width:640px;margin:0 auto;padding:16px 16px 76px}
 
 /* Topbar */
 .topbar{position:sticky;top:0;z-index:5;display:flex;gap:12px;align-items:center;
@@ -172,3 +172,45 @@ details.card > summary::-webkit-details-marker{display:none}
 details.card > summary::before{content:'▸';color:var(--brand);font-size:1.1rem}
 details.card[open] > summary::before{content:'▾'}
 details.card ol{margin:8px 0}
+
+/* ---------------- Begleiter (Avatar in der Ecke) ---------------- */
+.begleiter{position:fixed;right:12px;bottom:calc(84px + var(--safe-b));z-index:20;
+  width:56px;height:56px;pointer-events:none}
+.begleiter .figur{pointer-events:auto;width:56px;height:56px;border-radius:50%;
+  border:2px solid var(--line);background:var(--card);box-shadow:var(--shadow);
+  font-size:34px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.begleiter .blase{pointer-events:none;position:absolute;right:64px;bottom:16px;white-space:nowrap;
+  background:var(--card);border:2px solid var(--line);border-radius:14px;padding:7px 12px;
+  font-size:.85rem;font-weight:700;color:var(--ink);box-shadow:var(--shadow);animation:blaseAuf .18s ease}
+.begleiter .blase::after{content:'';position:absolute;right:-7px;bottom:12px;width:10px;height:10px;
+  background:var(--card);border-right:2px solid var(--line);border-top:2px solid var(--line);
+  transform:rotate(45deg)}
+@keyframes blaseAuf{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+
+.begleiter .funke{position:absolute;right:24px;bottom:34px;font-size:16px;
+  animation:funkeFlug .9s ease-out forwards}
+@keyframes funkeFlug{to{transform:translate(var(--dx),var(--dy)) scale(.4);opacity:0}}
+
+.figur.huepfen{animation:huepfen .5s ease 2}
+@keyframes huepfen{0%,100%{transform:translateY(0) scale(1)}
+  30%{transform:translateY(-18px) scale(1.12)}60%{transform:translateY(0) scale(.94)}}
+.figur.wackeln{animation:wackeln .4s ease 2}
+@keyframes wackeln{0%,100%{transform:rotate(0)}25%{transform:rotate(-12deg)}75%{transform:rotate(12deg)}}
+.figur.drehen{animation:drehen 1.2s ease}
+@keyframes drehen{to{transform:rotate(360deg) scale(1.05)}}
+.figur.winken{animation:winken .6s ease 2}
+@keyframes winken{0%,100%{transform:rotate(0)}50%{transform:rotate(-18deg) translateX(-3px)}}
+.figur.schauen{animation:schauen 1.2s ease}
+@keyframes schauen{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.figur.gaehnen{animation:gaehnen 1.1s ease}
+@keyframes gaehnen{0%,100%{transform:scale(1)}40%{transform:scale(1.18) rotate(-6deg)}70%{transform:scale(.96)}}
+.figur.schlafen{animation:schlafen 3s ease-in-out infinite;opacity:.75}
+@keyframes schlafen{0%,100%{transform:scale(1) rotate(-6deg)}50%{transform:scale(1.05) rotate(-6deg)}}
+
+/* Zeichenbrett */
+.brett-huelle{margin-top:14px;display:flex;flex-direction:column;align-items:center}
+.brett{touch-action:none;border:2px solid var(--line);border-radius:18px;background:var(--card);
+  max-width:100%;box-shadow:var(--shadow)}
+.brett-hinweis{margin-top:8px;font-size:.85rem;color:var(--muted);text-align:center;min-height:1.2em}
+canvas.mini{width:100%;height:auto;aspect-ratio:1;background:var(--bg);
+  border:1px solid var(--line);border-radius:12px}

@@ -91,6 +91,7 @@ function migriere(p) {
   // Etappe: 1 Grundschule … 5 Erwachsene. Ältere Profile kannten nur die Klasse.
   p.etappe      ??= (p.klasse >= 8 ? 3 : p.klasse >= 5 ? 2 : 1);
   p.gesehen     ||= {};   // je Ziel die zuletzt gestellten Aufgaben (Kurzkennung)
+  p.galerie     ||= [];   // freie Zeichnungen (werden nicht bewertet)
   p.stats ||= {};
   p.stats.aufgabenGesamt  ??= 0;
   p.stats.richtigGesamt   ??= 0;
@@ -198,6 +199,19 @@ export function talentWerte(profil) {
 
 export function topTalente(profil, n = 3) {
   return Object.entries(talentWerte(profil)).sort((a,b) => b[1]-a[1]).slice(0, n).map(e => e[0]);
+}
+
+/* Freie Zeichnungen sammeln. Striche werden grob gerundet gespeichert –
+   das reicht zum Wiederanzeigen und hält den Speicher klein. */
+const GALERIE_MAX = 16;
+
+export function inGalerie(profil, { titel, auftrag, striche }) {
+  const sparsam = striche.map(l => l.filter((_, i) => i % 2 === 0)
+    .map(p => [Math.round(p.x * 200) / 200, Math.round(p.y * 200) / 200]));
+  profil.galerie.unshift({ titel: String(titel || '').slice(0, 40), auftrag,
+                           striche: sparsam, datum: heute() });
+  if (profil.galerie.length > GALERIE_MAX) profil.galerie.length = GALERIE_MAX;
+  speichern();
 }
 
 /* --- Gedächtnis gegen Wiederholungen ---------------------------------------

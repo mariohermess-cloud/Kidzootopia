@@ -86,7 +86,32 @@ stellt eine Etappe höher.
    * **Puzzle & Reihenfolge** – Abläufe und Größen durch Antippen in die richtige Ordnung
      bringen (Ei → Raupe → Puppe → Schmetterling).
 
-8. **Klassiker – Fordern statt Beschäftigen** 🏛️
+8. **Zeichnen auf dem Tablet** 🎨 – mit Finger oder Stift
+   * **Nachfahren** – 12 Formen vom Dreieck bis zur Blume. Gemessen wird, wie genau die
+     Linie getroffen wurde.
+   * **Ein Strich ohne Absetzen** – Haus vom Nikolaus, offener Briefumschlag, Gitter.
+     Mathematisch sind das Eulerwege, dieselbe Frage wie bei den Königsberger Brücken.
+   * **Symmetrie** – die linke Hälfte ist vorgegeben, die rechte muss spiegelbildlich dazu.
+   * **Aus dem Gedächtnis** – die Form verschwindet nach fünf Sekunden.
+   * **Freies Kunstwerk** – 12 Aufträge („Zeichne ein Tier, das es nicht gibt“).
+     **Wird ausdrücklich nicht bewertet** und wandert in die Galerie.
+
+   **Wie künstlerische Fähigkeit bewertet wird – und wie nicht.** Schönheit lässt sich nicht
+   messen, und der Versuch würde Kinder vom Zeichnen abbringen. Gemessen wird deshalb nur
+   Handwerkliches: **Abdeckung** (wie viel der Vorlage wurde getroffen) und **Genauigkeit**
+   (wie viel des Gezeichneten liegt auf der Vorlage). Beide werden multipliziert – wer quer
+   über das Blatt kritzelt, trifft zwar viel, malt aber überwiegend daneben und besteht nicht
+   (im Test: 47 von 100). Sorgfältiges, auch zittriges Zeichnen besteht (100 von 100).
+   Zwischenpunkte werden ergänzt, damit schnelles Zeichnen nicht schlechter bewertet wird
+   als langsames. Freies Zeichnen bekommt gar keine Punkte – nur einen Platz in der Galerie.
+
+9. **Der Begleiter** 🦖 – das gewählte Lieblingstier lebt in der Ecke des Bildschirms.
+   Es hüpft und wirft Funken bei Erfolg, wackelt und tröstet bei Fehlern, winkt zum Start
+   und dreht sich am Ende. Passiert länger nichts, gähnt es, schaut sich um – und schläft
+   nach gut einer Minute mit einem „Zzz“ ein. Antippen weckt es. Für kleine Kinder ist das
+   kein Beiwerk: Es macht aus einer Aufgabenliste ein Gegenüber.
+
+10. **Klassiker – Fordern statt Beschäftigen** 🏛️
    Ein eigenes Fach mit dem Besten aus über hundert Jahren Denksport und Bildung.
    Diese Aufgaben haben überlebt, weil sie sich in einem Satz erklären lassen, zunächst
    unlösbar wirken und mit einem einzigen Gedanken plötzlich einfach werden.
@@ -125,7 +150,7 @@ stellt eine Etappe höher.
      werden **bewusst nicht bewertet** und fließen in keine Quote ein – sonst wären es
      Prüfungen statt Fragen.
 
-9. **Eltern-Bereich** – Fortschritt je Lernziel, Aktivität der letzten 7 Tage,
+11. **Eltern-Bereich** – Fortschritt je Lernziel, Aktivität der letzten 7 Tage,
    Klartext-Empfehlungen („So lernt Ihr Kind am leichtesten – und daran arbeiten wir gerade“),
    Export/Import der Daten.
 
@@ -134,7 +159,7 @@ Motor zieht so lange neu, bis etwas kommt, das dieses Kind noch nicht hatte – 
 Vorrat eines Ziels erschöpft ist, beginnt er von vorn (und vergisst dann die ältesten zuerst).
 
 Aufgaben werden **generiert**, nicht aus einer Liste gezogen – der Vorrat geht nie aus.
-Aktuell: **29 Lernziele × bis zu 5 Wege = 110 Aufgabentypen**, darunter **1.394 verschiedene Knacknüsse** auf je 5 Schwierigkeitsstufen,
+Aktuell: **31 Lernziele × bis zu 5 Wege = 110 Aufgabentypen**, darunter **1.394 verschiedene Knacknüsse** auf je 5 Schwierigkeitsstufen,
 verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
 
 ---
@@ -245,6 +270,8 @@ js/data.js            Talente, Lernwege, Lernziele, Talent-Test (5 Teile), Abzei
 js/talenttest.js      Auswertung des Talent-Tests: Blöcke, Gewichte, Feinschliff
 js/sprache.js         Vorlesen über die Gerätestimme (Web Speech API)
 js/geschichten.js     Hörgeschichten mit Verständnisfragen
+js/zeichnen.js        Zeichenvorlagen, Ein-Strich-Figuren, Bewertung (Abdeckung/Genauigkeit)
+js/avatar.js          Der Begleiter: Reaktionen, Gesten, Leerlauf und Schlaf
 js/klassiker.js       Knacknüsse (handverlesen), Wissenskanon, Redewendungen, Rechentricks
 js/knacknuss_familien.js  Rätsel-Familien mit berechneter Lösung, inkl. eigener Löser
 js/philosophie.js     Stoa für Kinder: Zitate, Alltagslagen, Denk-Impulse
