@@ -5,7 +5,8 @@
 
 import { ZIEL_MAP, WEGE, ZIELE, TALENTE } from './data.js';
 import { baueAufgabe } from './generators.js';
-import { talentWerte, zielStand, zieleFuerEtappe as zieleFuerKlasse, zielWegWirksamkeit, wegWirksamkeit } from './store.js';
+import { talentWerte, zielStand, zieleFuerEtappe as zieleFuerKlasse, zielWegWirksamkeit,
+         wegWirksamkeit, kennung, schonGehabt, merkeAufgabe } from './store.js';
 
 const BRUECKEN_ANTEIL = 0.2;
 
@@ -77,7 +78,22 @@ export function starteSession(profil, { zielId = null, fach = null, laenge = 8 }
       // jede 5. Aufgabe bewusst ueber einen anderen Weg
       const erzwinge = (this.index + 1) % 5 === 0 ? true : (this.index === 0 ? false : null);
       const { weg, bruecke } = waehleWeg(profil, ziel, erzwinge);
-      const aufgabe = baueAufgabe(ziel.id, weg, stufe);
+      // Keine Wiederholungen: bis zu 25 Versuche für eine noch ungestellte Aufgabe.
+      // Danach greift die Alterung im Speicher – sonst gäbe es bei festen
+      // Rätselsammlungen irgendwann gar keine Aufgabe mehr.
+      let aufgabe = null, k = null;
+      for (let versuch = 0; versuch < 25; versuch++) {
+        aufgabe = baueAufgabe(ziel.id, weg, stufe);
+        k = kennung(aufgabe);
+        if (!schonGehabt(profil, ziel.id, k)) break;
+        aufgabe = null;
+      }
+      if (!aufgabe) {                       // Vorrat erschöpft: ältestes vergessen
+        (profil.gesehen[ziel.id] || []).splice(0, 10);
+        aufgabe = baueAufgabe(ziel.id, weg, stufe);
+        k = kennung(aufgabe);
+      }
+      merkeAufgabe(profil, ziel.id, k);
       this.aktuell = { ...aufgabe, ziel, bruecke, wegInfo: WEGE[weg] };
       return this.aktuell;
     }

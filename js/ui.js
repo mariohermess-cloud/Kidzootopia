@@ -6,6 +6,7 @@ import * as S from './store.js';
 import { starteSession, empfehlungen, wegRanking, wegeNachWirkung, wegBewertung } from './engine.js';
 import { auswerten, stichPaare, engeTalente } from './talenttest.js';
 import { vorlesen, stopp, kannVorlesen } from './sprache.js';
+import { anleitung, umgebung } from './installhilfe.js';
 import { pruefe } from './generators.js';
 import { radar } from './chart.js';
 
@@ -73,6 +74,7 @@ function screenStart() {
       </div>
       <button class="btn" id="nAnlegen">Profil anlegen</button>
     </div>
+    ${umgebung().standalone ? '' : installHtml()}
     <details class="card">
       <summary style="cursor:pointer;font-weight:700">
         Alten Fortschritt übernehmen (optional)</summary>
@@ -91,8 +93,15 @@ function screenStart() {
       <p class="muted small">Sind die Profile auch dort weg, hilft der Code nicht mehr –
         dann legen Sie oben einfach ein neues an. Ärgerlich, aber schnell wieder aufgeholt.</p>
       <button class="btn quiet" id="holen">🔑 Umzugs-Code einfügen</button>
+      <button class="btn quiet" id="diagnose" style="margin-top:10px">
+        🔍 Was ist auf diesem Gerät gespeichert?</button>
       <div id="holBereich"></div>
     </details>`;
+
+  installVerdrahten(view());
+
+  view().querySelector('#diagnose').onclick = () =>
+    diagnoseAnzeigen(view().querySelector('#holBereich'));
 
   view().querySelector('#holen').onclick = () => {
     const b = view().querySelector('#holBereich');
@@ -149,6 +158,90 @@ function screenProfile() {
       S.loescheProfil(b.dataset.del); zeige(S.aktiv() ? 'profile' : 'start');
     }});
   view().querySelector('#neu').onclick = () => zeige('start');
+}
+
+/* Anleitung zum Ablegen auf dem Startbildschirm – passend zur erkannten Lage. */
+function installHtml() {
+  const a = anleitung();
+  if (!a) return `<div class="card"><h3>📲 Läuft als App ✅</h3>
+    <p class="muted small">Diese Fassung liegt auf dem Startbildschirm und hat einen eigenen,
+      geschützten Speicher. Genau so ist es richtig.</p></div>`;
+  return `
+    <div class="card" ${a.warnung ? 'style="border:2px solid var(--warn)"' : ''}>
+      <h3>${a.titel}</h3>
+      ${a.text ? `<p class="small">${a.text}</p>` : ''}
+      <ol class="small" style="padding-left:20px;line-height:1.8">
+        ${a.schritte.map(x => `<li>${x}</li>`).join('')}
+      </ol>
+      ${a.adresse ? `<p class="small"><b>Adresse zum Eintippen:</b></p>
+        <div class="row">
+          <input type="text" id="adressFeld" readonly value="${esc(location.origin + location.pathname)}"
+            style="font-size:.8rem">
+          <button class="btn small ghost" id="adressKopieren">📋</button>
+        </div>` : ''}
+      ${window.installPrompt ? `<button class="btn" id="installJetzt" style="margin-top:10px">
+        📲 Jetzt installieren</button>` : ''}
+      ${a.hinweise?.length ? `<ul class="clean small" style="margin-top:10px">
+        ${a.hinweise.map(h => `<li>💡 ${esc(h)}</li>`).join('')}</ul>` : ''}
+      <p class="small muted" style="margin-top:10px">Warum das wichtig ist: Nur die abgelegte App
+        hat einen eigenen Speicher. Im Browser räumt das iPhone nach einigen Tagen ohne Nutzung
+        selbsttätig auf – dann sind die Profile weg.</p>
+    </div>`;
+}
+
+function installVerdrahten(wurzel) {
+  wurzel.querySelector('#installJetzt')?.addEventListener('click', async () => {
+    const p = window.installPrompt;
+    if (!p) return;
+    window.installPrompt = null;
+    try { await p.prompt(); } catch {}
+    zeige(aktuelleRoute());
+  });
+  wurzel.querySelector('#adressKopieren')?.addEventListener('click', async () => {
+    const f = wurzel.querySelector('#adressFeld');
+    f.select(); f.setSelectionRange(0, 999999);
+    try { await navigator.clipboard.writeText(f.value); } catch { document.execCommand?.('copy'); }
+    f.style.borderColor = 'var(--ok)';
+  });
+}
+
+/* Zeigt ungeschönt, was im Speicher dieses Geräts liegt. Bei „meine Profile
+   sind weg“ hilft Nachsehen mehr als Vermuten. */
+function diagnoseHtml() {
+  const d = S.diagnose();
+  return `
+    <div class="card flat" style="margin-top:12px;background:var(--bg)">
+      <h4 style="margin:0 0 8px">🔍 Speicher dieses Geräts</h4>
+      <ul class="clean small">
+        <li><b>Läuft als:</b> ${esc(d.modus)}</li>
+        <li><b>Adresse:</b> <span style="word-break:break-all">${esc(d.adresse)}</span></li>
+        <li><b>Speicher lesbar:</b> ${d.speicherLesbar ? 'ja' : 'nein (privater Modus?)'}</li>
+        <li><b>Profile hier:</b> ${d.profile.length
+          ? d.profile.map(p => `${esc(p.name)} (${p.aufgaben} Aufgaben, zuletzt ${esc(p.letzterTag)})`).join(', ')
+          : '<b>keine</b>'}</li>
+        <li><b>Zweitkopie:</b> ${d.sicherungVorhanden
+          ? `vorhanden, ${d.sicherungProfile} Profil(e)` : 'keine'}</li>
+        <li><b>Gespeicherte Einträge:</b> ${d.eintraege.length
+          ? d.eintraege.map(e => `${esc(e.name)} (${e.groesse} Zeichen)`).join(', ')
+          : 'keine'}</li>
+      </ul>
+      ${d.sicherungVorhanden && !d.profile.length
+        ? '<button class="btn" id="sicherungHolen" style="margin-top:10px">♻️ Aus Zweitkopie wiederherstellen</button>'
+        : ''}
+      <p class="small muted" style="margin-top:10px">
+        ${d.profile.length
+          ? 'Hier liegen Profile – sie sollten oben in der Liste erscheinen.'
+          : 'In <b>dieser</b> Fassung liegt nichts. Falls Sie zuvor die andere Fassung benutzt haben (Browser statt App oder umgekehrt), öffnen Sie dort dieselbe Adresse und prüfen Sie es dort ebenso.'}
+      </p>
+    </div>`;
+}
+
+function diagnoseAnzeigen(ziel) {
+  ziel.innerHTML = diagnoseHtml();
+  ziel.querySelector('#sicherungHolen')?.addEventListener('click', () => {
+    try { const r = S.ausSicherung(); alert(`Wiederhergestellt: ${r.gesamt} Profil(e).`); zeige('lernen'); }
+    catch (e) { alert('Hat nicht geklappt: ' + e.message); }
+  });
 }
 
 /* ------------------------------ Talent-Test ------------------------------ */
@@ -778,16 +871,7 @@ function screenEltern(p) {
       <p class="small muted" style="margin-top:8px">Hörgeschichten werden immer vorgelesen –
         dort ist der Text zuerst versteckt, damit wirklich zugehört wird.</p>
     </div>
-    <div class="card" id="installKarte">
-      <h3>Als App aufs Handy</h3>
-      <p class="muted small">Kidzootopia läuft im Browser und lässt sich wie eine App auf den Startbildschirm legen –
-        danach startet sie im Vollbild und funktioniert auch offline.</p>
-      <button class="btn ghost" id="install" hidden>📲 Jetzt installieren</button>
-      <ul class="clean small">
-        <li><b>Android / Chrome:</b> Menü ⋮ → „App installieren“ bzw. „Zum Startbildschirm hinzufügen“.</li>
-        <li><b>iPhone / Safari:</b> Teilen-Symbol → „Zum Home-Bildschirm“.</li>
-      </ul>
-    </div>
+    ${installHtml()}
     <div class="card">
       <h3>Fortschritt sichern &amp; umziehen</h3>
       <p class="muted small">Alles liegt nur auf diesem Gerät – das schützt die Daten Ihres Kindes,
@@ -801,6 +885,8 @@ function screenEltern(p) {
       </ul>
       <div id="speicherStatus" class="small muted" style="margin:10px 0"></div>
       <button class="btn" id="codeZeigen">🔑 Umzugs-Code anzeigen</button>
+      <button class="btn quiet" id="diagnoseEltern" style="margin-top:10px">
+        🔍 Was ist auf diesem Gerät gespeichert?</button>
       <button class="btn ghost" id="codeEinfuegen" style="margin-top:10px">📥 Umzugs-Code einfügen</button>
       <div id="codeBereich"></div>
       <p class="small muted" style="margin-top:12px">Als Datei (für ein Backup am Rechner):</p>
@@ -832,6 +918,8 @@ function screenEltern(p) {
   })();
 
   const bereich = () => view().querySelector('#codeBereich');
+
+  view().querySelector('#diagnoseEltern').onclick = () => diagnoseAnzeigen(bereich());
 
   view().querySelector('#codeZeigen').onclick = () => {
     const code = S.alsCode();

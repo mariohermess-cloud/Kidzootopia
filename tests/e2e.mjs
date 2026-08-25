@@ -47,9 +47,11 @@ await p.click('#losgehts');
 await p.waitForSelector('#mission');
 await p.screenshot({path:S+'/4-home.png', fullPage:true});
 
-// Mission spielen: 8 Aufgaben
+// Mission spielen, bis das Ergebnis erscheint.
+// (Denk-Impulse verkürzen die Runde, deshalb keine feste Zahl.)
 await p.click('#mission');
-for (let i=0;i<8;i++){
+for (let i=0;i<12;i++){
+  if (await p.$('#nochmal')) break;                 // Runde ist zu Ende
   await p.waitForSelector('.task');
   const frage = await p.textContent('.task');
   if (await p.$('.teil[data-e]')) {                 // Puzzle: alle Teile der Reihe nach antippen
@@ -183,6 +185,31 @@ await p.evaluate(() => localStorage.removeItem('kidzootopia.v1'));   // "anderer
 await p.reload();
 await p.waitForSelector('#nAnlegen');        // Profil anlegen ist der Hauptweg
 await p.click('details.card > summary');     // Umzug ist bewusst nur optional aufklappbar
+
+// Diagnose muss den leeren Speicher ehrlich melden und die Zweitkopie anbieten
+await p.click('#diagnose');
+await p.waitForSelector('#sicherungHolen');
+const bericht = await p.textContent('#holBereich');
+if (!/Profile hier:\s*keine/.test(bericht.replace(/\s+/g,' ')))
+  throw new Error('Diagnose meldet nicht, dass keine Profile da sind');
+if (!/Zweitkopie:\s*vorhanden/.test(bericht.replace(/\s+/g,' ')))
+  throw new Error('Diagnose findet die Zweitkopie nicht');
+await p.screenshot({path:S+'/w-diagnose.png', fullPage:true});
+// Wiederherstellung aus der Zweitkopie prüfen
+p.once('dialog', d => d.accept());
+await p.click('#sicherungHolen');
+await p.waitForSelector('#mission', { timeout: 5000 });
+const nachSicherung = await p.evaluate(() =>
+  JSON.parse(localStorage.getItem('kidzootopia.v1')).profile[0].stats.aufgabenGesamt);
+if (nachSicherung !== aufgabenVorher)
+  throw new Error(`Zweitkopie stellte nicht her: ${aufgabenVorher} -> ${nachSicherung}`);
+console.log('Zweitkopie rettet den Fortschritt:', nachSicherung, 'Aufgaben');
+
+// jetzt den Umzugs-Code prüfen: Haupteintrag UND Zweitkopie löschen
+await p.evaluate(() => { localStorage.removeItem('kidzootopia.v1'); localStorage.removeItem('kidzootopia.sicherung'); });
+await p.reload();
+await p.waitForSelector('#nAnlegen');
+await p.click('details.card > summary');
 await p.click('#holen');
 await p.fill('#holFeld', umzugsCode);
 await p.click('#holUebernehmen');

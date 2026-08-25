@@ -5,6 +5,7 @@
 
 import { GESCHICHTEN } from './geschichten.js';
 import { KNACKNUESSE, KANON, REDEWENDUNGEN, RECHENTRICKS } from './klassiker.js';
+import { FAMILIEN } from './knacknuss_familien.js';
 import { ZITATE, KONTROLLE, SITUATIONEN, IMPULSE, DENKER } from './philosophie.js';
 import { HAUPTWERKE } from './hauptwerke.js';
 import { DENKFEHLER, FEHLSCHLUESSE, STILMITTEL, WORTWURZELN, SYLLOGISMEN } from './fortgeschritten.js';
@@ -463,8 +464,30 @@ knacknuss: (() => {
     team:      'Erkläre die Aufgabe jemandem – beim Erklären fällt die Lösung oft von selbst.'
   };
   const bauen = (weg, lvl) => {
-    const passend = KNACKNUESSE.filter(k => k.stufe <= lvl + 1);
-    const k = pick(passend.length ? passend : KNACKNUESSE.filter(x => x.stufe <= 2));
+    // Fenster um die eigene Stufe herum – groß genug, damit sich nichts
+    // ständig wiederholt, aber nicht so groß, dass es überfordert.
+    let passend = KNACKNUESSE.filter(k => k.stufe <= lvl + 1);
+    if (passend.length < 12) passend = KNACKNUESSE.filter(k => k.stufe <= lvl + 2);
+
+    // Rätsel-Familien: klassische Typen mit wechselnden Zahlen. Sie stellen den
+    // weitaus größten Teil des Vorrats und werden entsprechend oft gezogen.
+    let familien = FAMILIEN.filter(f => f.stufe <= lvl + 1);
+    if (familien.length < 6) familien = FAMILIEN.filter(f => f.stufe <= lvl + 2);
+    if (familien.length && Math.random() < 0.72) {
+      const f = pick(familien);
+      const a = f.erzeuge();
+      return {
+        typ: 'text',
+        frage: `🏛️ ${RAHMEN[weg]}\n\n${a.frage}`,
+        antwort: a.antwort,
+        tipps: a.tipps,
+        quelle: f.quelle,
+        hilfe: a.tipps.at(-1) || '',
+        knacknuss: true
+      };
+    }
+
+    const k = pick(passend.length ? passend : KNACKNUESSE);
     const basis = k.optionen
       ? { typ:'choice', optionen: shuffle([...k.optionen]) }
       : { typ:'text' };
@@ -642,9 +665,54 @@ gleichungen: (() => {
   const alsCode = lvl => { const x = r(2, 9+lvl*2), a = r(2,6), b = r(1,12);
     return zahlText(`🤖 Ein Programm rechnet:\n  eingabe x\n  ergebnis = x * ${a} + ${b}\n  zeige ergebnis   →  ${a*x+b}\nWelche Zahl wurde eingegeben?`,
       x, 'Rückwärts rechnen: Zahl abziehen, dann teilen.'); };
-  const geschichte = lvl => { const alter = r(8, 40), faktor = r(2,4), n = pick(NAMEN);
-    return zahlText(`📖 ${n} sagt: „In ${faktor} Jahren bin ich doppelt so alt wie vor ${alter - Math.floor(alter/2) - faktor > 0 ? Math.floor(alter/2) - faktor : 1} Jahren.“\nEinfacher: ${n} ist heute x Jahre alt, und x + ${faktor} = ${alter + faktor}. Wie alt ist ${n}?`,
-      alter, 'Stelle die Gleichung auf und löse nach x.'); };
+  /* Echte Sachaufgaben: Text und Lösung stammen aus derselben Rechnung.
+     (Der frühere Generator würfelte Geschichte und Gleichung getrennt –
+     dabei entstanden Aufgaben, die keine richtige Antwort hatten.) */
+  const SACHAUFGABEN = [
+    // Alter: x + a = 2·(x − b)  ⇒  x = a + 2b
+    lvl => { const a = r(1,5), b = r(2,6), x = a + 2*b, n = pick(NAMEN);
+      return zahlText(
+        `📖 ${n} sagt: „In ${a} ${a===1?'Jahr':'Jahren'} bin ich doppelt so alt wie vor ${b} ${b===1?'Jahr':'Jahren'}.“\nWie alt ist ${n} heute?`,
+        x, `x + ${a} = 2 · (x − ${b}).  Ausmultipliziert: x + ${a} = 2x − ${2*b}.`); },
+
+    // Geschwister: x + k·x = summe
+    lvl => { const k = pick([2,3,4]), klein = r(3,12), summe = klein + k*klein, n = pick(NAMEN);
+      return zahlText(
+        `📖 ${n} ist ${k}-mal so alt wie die kleine Schwester.\nZusammen sind sie ${summe} Jahre alt.\nWie alt ist die Schwester?`,
+        klein, `x + ${k}x = ${summe}, also ${k+1}x = ${summe}.`); },
+
+    // Einkauf: n·preis + rest = gesamt
+    lvl => { const stueck = r(3,7), preis = r(2,9), rest = r(1,15), n = pick(NAMEN);
+      return zahlText(
+        `📖 ${n} kauft ${stueck} Hefte und außerdem einen Stift für ${rest} €.\nZusammen bezahlt ${n} ${stueck*preis + rest} €.\nWas kostet ein Heft?`,
+        preis, `${stueck}x + ${rest} = ${stueck*preis + rest}.`); },
+
+    // Ungleiche Verteilung: zwei Teile, einer um d größer
+    lvl => { const kleiner = r(4,20), d = r(2,10), gesamt = 2*kleiner + d;
+      return zahlText(
+        `📖 Zwei Kinder teilen ${gesamt} Murmeln.\nDas eine bekommt ${d} Murmeln mehr als das andere.\nWie viele bekommt das Kind mit den wenigeren?`,
+        kleiner, `x + (x + ${d}) = ${gesamt}, also 2x = ${gesamt - d}.`); },
+
+    // Rechteck: Länge doppelt so lang wie Breite, Umfang gegeben
+    lvl => { const breite = r(3,15), umfang = 2*(breite + 2*breite);
+      return zahlText(
+        `📖 Ein Rechteck ist doppelt so lang wie breit.\nSein Umfang beträgt ${umfang} cm.\nWie breit ist es?`,
+        breite, `2·(x + 2x) = ${umfang}, also 6x = ${umfang}.`); },
+
+    // Sparen: Startbetrag plus Wochen mal Rate
+    lvl => { const start = r(5,40), rate = r(2,10), wochen = r(3,9), n = pick(NAMEN);
+      return zahlText(
+        `📖 ${n} hat ${start} € gespart und legt jede Woche ${rate} € dazu.\nNach wie vielen Wochen sind es ${start + rate*wochen} €?`,
+        wochen, `${start} + ${rate}x = ${start + rate*wochen}.`); },
+
+    // Zahlenrätsel: das Doppelte einer Zahl, vermindert um c
+    lvl => { const x = r(4,30), c = r(3,15);
+      return zahlText(
+        `📖 Ich denke mir eine Zahl. Ihr Doppeltes, vermindert um ${c}, ergibt ${2*x - c}.\nWelche Zahl ist es?`,
+        x, `2x − ${c} = ${2*x - c}.`); }
+  ];
+  const geschichte = lvl => pick(SACHAUFGABEN)(lvl);
+
   return {
     knobeln:   lvl => (lvl >= 4 ? pick([quadratisch, beidseitig])(lvl) : pick([linear, mitKlammer])(lvl)),
     bauen:     lvl => mitKlammer(lvl),
@@ -738,9 +806,14 @@ analysis: (() => {
     // f(x) = a(x-s)^2  -> Minimum bei x = s
     return zahlText(`📐 Eine nach oben geöffnete Parabel hat die Gleichung f(x) = ${a}(x − ${s})².\nAn welcher Stelle liegt ihr Tiefpunkt?`,
       s, 'Der Scheitel liegt dort, wo die Klammer null wird.'); };
-  const alsCode = lvl => { const a = r(2,5);
-    return zahlText(`🤖 Ein Programm bildet die Ableitung von f(x) = x^${a} nach der Potenzregel.\nWelchen Vorfaktor gibt es aus?`,
-      a, `Aus x^${a} wird ${a}·x^${a-1}.`); };
+  const alsCode = lvl => {
+    const a = r(2, 9), c = r(2, 12);
+    return Math.random() < .5
+      ? zahlText(`🤖 Ein Programm leitet f(x) = ${c}·x^${a} nach der Potenzregel ab.\nWelchen Vorfaktor gibt es aus?`,
+          c*a, `Aus ${c}·x^${a} wird ${c*a}·x^${a-1}.`)
+      : zahlText(`🤖 Ein Programm leitet f(x) = x^${a} ab und setzt danach x = 1 ein.\nWelchen Wert gibt es aus?`,
+          a, `f'(x) = ${a}·x^${a-1}, für x = 1 bleibt ${a}.`);
+  };
   return {
     knobeln: lvl => (lvl >= 3 ? pick([ableitung, steigung])(lvl) : steigung(lvl)),
     bauen:   lvl => extremstelle(lvl),
@@ -793,7 +866,19 @@ logikformal: (() => {
       ['Es regnet und es ist kalt.', 'Es regnet nicht oder es ist nicht kalt.',
        ['Es regnet nicht und es ist nicht kalt.','Es ist warm und trocken.','Es regnet immer.']],
       ['Kein Kind mag Spinat.', 'Mindestens ein Kind mag Spinat.',
-       ['Alle Kinder mögen Spinat.','Einige Kinder mögen keinen Spinat.','Spinat mag keiner.']]
+       ['Alle Kinder mögen Spinat.','Einige Kinder mögen keinen Spinat.','Spinat mag keiner.']],
+      ['Jeder Schüler hat ein Buch dabei.', 'Mindestens ein Schüler hat kein Buch dabei.',
+       ['Kein Schüler hat ein Buch dabei.','Alle haben mehrere Bücher.','Einige haben ein Buch.']],
+      ['Es ist warm oder es ist trocken.', 'Es ist nicht warm und nicht trocken.',
+       ['Es ist kalt oder nass.','Es ist warm und trocken.','Es ist nicht warm oder nicht trocken.']],
+      ['Wenn es klingelt, ist die Pause vorbei.', 'Es klingelt, und die Pause ist nicht vorbei.',
+       ['Wenn es nicht klingelt, ist die Pause nicht vorbei.','Die Pause ist vorbei, ohne dass es klingelt.','Es klingelt nie.']],
+      ['Einige Vögel können nicht fliegen.', 'Alle Vögel können fliegen.',
+       ['Kein Vogel kann fliegen.','Einige Vögel können fliegen.','Alle Vögel sind Pinguine.']],
+      ['Alle Zahlen in der Liste sind gerade.', 'Mindestens eine Zahl in der Liste ist ungerade.',
+       ['Alle Zahlen sind ungerade.','Keine Zahl ist gerade.','Einige Zahlen sind gerade.']],
+      ['Niemand hat den Raum verlassen.', 'Mindestens eine Person hat den Raum verlassen.',
+       ['Alle haben den Raum verlassen.','Einige sind geblieben.','Der Raum war leer.']]
     ];
     const [satz, ok, bad] = pick(paare);
     return { ...wahl(`🧠 Wie lautet die logische Verneinung von:\n„${satz}“`, ok, bad,

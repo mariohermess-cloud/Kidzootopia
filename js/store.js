@@ -19,8 +19,60 @@ export function laden() {
   db.profile.forEach(p => migriere(p));
   return db;
 }
+const SICHERUNG = 'kidzootopia.sicherung';
+
 export function speichern() {
-  try { localStorage.setItem(KEY, JSON.stringify(db)); } catch {}
+  const text = JSON.stringify(db);
+  try { localStorage.setItem(KEY, text); } catch {}
+  // Zweitkopie: schützt gegen einen beschädigten Haupteintrag, nicht gegen Löschen
+  try { if (db.profile.length) localStorage.setItem(SICHERUNG, text); } catch {}
+}
+
+/* Was liegt auf diesem Gerät wirklich? Zeigt statt zu vermuten. */
+export function diagnose() {
+  const bericht = {
+    modus: alsAppGestartet() ? 'App vom Startbildschirm' : 'Browser',
+    adresse: location.origin + location.pathname,
+    speicherLesbar: true,
+    eintraege: [],
+    profile: [],
+    sicherungVorhanden: false,
+    sicherungProfile: 0
+  };
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      const wert = localStorage.getItem(k) || '';
+      bericht.eintraege.push({ name: k, groesse: wert.length });
+    }
+  } catch { bericht.speicherLesbar = false; }
+
+  try {
+    const roh = localStorage.getItem(KEY);
+    if (roh) {
+      const daten = JSON.parse(roh);
+      bericht.profile = (daten.profile || []).map(p => ({
+        name: p.name, aufgaben: p.stats?.aufgabenGesamt ?? 0,
+        letzterTag: p.stats?.letzterTag || '–', angelegt: p.erstellt || '–'
+      }));
+    }
+  } catch {}
+
+  try {
+    const sich = localStorage.getItem(SICHERUNG);
+    if (sich) {
+      bericht.sicherungVorhanden = true;
+      bericht.sicherungProfile = (JSON.parse(sich).profile || []).length;
+    }
+  } catch {}
+  return bericht;
+}
+
+/* Aus der Zweitkopie wiederherstellen, falls der Haupteintrag leer oder kaputt ist. */
+export function ausSicherung() {
+  const sich = localStorage.getItem(SICHERUNG);
+  if (!sich) throw new Error('Auf diesem Gerät gibt es keine Zweitkopie.');
+  return zusammenfuehren(sich);
 }
 export const alleProfile = () => db.profile;
 export const aktiv = () => db.profile.find(p => p.id === db.aktiv) || null;
@@ -38,6 +90,7 @@ function migriere(p) {
   p.vorlesen    ??= false; // Aufgaben automatisch vorlesen (für Leseanfänger)
   // Etappe: 1 Grundschule … 5 Erwachsene. Ältere Profile kannten nur die Klasse.
   p.etappe      ??= (p.klasse >= 8 ? 3 : p.klasse >= 5 ? 2 : 1);
+  p.gesehen     ||= {};   // je Ziel die zuletzt gestellten Aufgaben (Kurzkennung)
   p.stats ||= {};
   p.stats.aufgabenGesamt  ??= 0;
   p.stats.richtigGesamt   ??= 0;
@@ -145,6 +198,28 @@ export function talentWerte(profil) {
 
 export function topTalente(profil, n = 3) {
   return Object.entries(talentWerte(profil)).sort((a,b) => b[1]-a[1]).slice(0, n).map(e => e[0]);
+}
+
+/* --- Gedächtnis gegen Wiederholungen ---------------------------------------
+   Jede gestellte Aufgabe hinterlässt eine kurze Kennung. Der Motor zieht so
+   lange neu, bis eine Aufgabe kommt, die dieses Kind noch nicht hatte.
+   Der Vorrat ist begrenzt (feste Rätsel!), deshalb altert die Liste: Ist
+   nahezu alles gesehen, fallen die ältesten Einträge wieder heraus. */
+const GESEHEN_MAX = 60;
+
+export function kennung(aufgabe) {
+  const roh = String(aufgabe.frage || '') + '|' + String(aufgabe.antwort || '');
+  let h = 5381;
+  for (let i = 0; i < roh.length; i++) h = ((h * 33) ^ roh.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
+export const schonGehabt = (profil, zielId, k) => (profil.gesehen[zielId] || []).includes(k);
+
+export function merkeAufgabe(profil, zielId, k) {
+  const liste = profil.gesehen[zielId] ||= [];
+  liste.push(k);
+  if (liste.length > GESEHEN_MAX) liste.splice(0, liste.length - GESEHEN_MAX);
 }
 
 /* --- Ziele --- */
