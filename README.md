@@ -169,6 +169,9 @@ keine Tracker, kein Netzwerkverkehr. Mehrere Kinder können eigene Profile haben
 
 ## Wenn Profile „verschwunden“ sind
 
+Vorweg: **Zum Benutzen der App wird nie ein Code gebraucht.** Es gibt keine Anmeldung –
+Profil anlegen und loslegen. Der Umzugs-Code holt nur alten Fortschritt herüber.
+
 Zwei Eigenheiten der Browser lassen Fortschritt scheinbar verschwinden – in beiden Fällen
 hilft der **Umzugs-Code** unter *Eltern → Fortschritt sichern & umziehen*:
 

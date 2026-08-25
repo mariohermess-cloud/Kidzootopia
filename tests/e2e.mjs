@@ -181,7 +181,8 @@ await p.screenshot({path:S+'/y-umzug.png', fullPage:true});
 
 await p.evaluate(() => localStorage.removeItem('kidzootopia.v1'));   // "anderer Speicher"
 await p.reload();
-await p.waitForSelector('#holen');                                   // Startbildschirm mit Hilfe
+await p.waitForSelector('#nAnlegen');        // Profil anlegen ist der Hauptweg
+await p.click('details.card > summary');     // Umzug ist bewusst nur optional aufklappbar
 await p.click('#holen');
 await p.fill('#holFeld', umzugsCode);
 await p.click('#holUebernehmen');
