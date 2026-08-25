@@ -9,11 +9,17 @@
    Bei jeder Änderung: NUMMER hier hochzählen UND in sw.js (CACHE) gleichziehen.
    tests/version.mjs prüft, dass beide übereinstimmen. */
 
-export const NUMMER = 18;
+export const NUMMER = 19;
 export const STAND = '25.08.2026';
 
 /* Neueste zuerst. Kurz und in Alltagssprache – das lesen Eltern, nicht Entwickler. */
 export const VERLAUF = [
+  { nr: 19, stand: '25.08.2026', was: [
+    'Eigenes Zahlenfeld mit Minus und Komma – Aufgaben mit −1 oder 12,5 waren vorher nicht lösbar',
+    'Neues Lernziel „Silben hören & bauen": zählen, finden, zusammensetzen, Lücken füllen',
+    'Rückmeldungen, die zur Antwort passen („Die Ziffern sind vertauscht", „nur 1 daneben") – auf Wunsch vorgelesen',
+    'Antwortprüfung berichtigt: „Bau" galt als richtige Antwort auf „Baum"'
+  ]},
   { nr: 18, stand: '25.08.2026', was: [
     'Schmierblatt an jeder Aufgabe: aufmalen, statt alles im Kopf zu behalten',
     'Zähl-Werkzeug – jeder Tipp setzt einen nummerierten Punkt, kein Verzählen mehr',

@@ -252,3 +252,16 @@ canvas.mini{width:100%;height:auto;aspect-ratio:1;background:var(--bg);
 .schmier-inhalt{padding:0 14px 14px}
 .schmier-brett{display:block;width:100%;border-radius:12px;background:var(--card);
   border:1px solid var(--line);touch-action:none;cursor:crosshair}
+
+/* Eigenes Zahlen-Tastenfeld: mit Minus und Komma, groß genug für Kinderfinger */
+.zahlfeld{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.ztaste{min-height:52px;border-radius:14px;border:2px solid var(--line);background:var(--card);
+  color:var(--ink);font:inherit;font-size:1.35rem;font-weight:800;cursor:pointer}
+.ztaste:active{transform:scale(.96);background:var(--brand-soft)}
+.ztaste.neben{color:var(--brand);background:var(--brand-soft);border-color:transparent}
+.ztaste.weg{color:var(--bad);background:var(--bad-soft);border-color:transparent;
+  grid-column:1/-1}   /* über die ganze Breite: das größte Ziel für den häufigsten Griff */
+#eingabe[readonly]{caret-color:transparent;cursor:default}
+
+/* Der gesprochene Kommentar zur Antwort – etwas ruhiger als die Hauptmeldung */
+.kommentar{font-weight:600;font-size:.95rem;margin-bottom:8px;opacity:.92}

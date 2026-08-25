@@ -52,8 +52,23 @@ async function loeseAufgabe(p) {
     return;
   }
   if (await p.$('.teil[data-e]')) { let n=0; while (await p.$('.teil[data-e]') && n++<12) await p.click('.teil[data-e]'); return; }
-  if (await p.$('#eingabe')) { await p.fill('#eingabe','42'); await p.click('#pruefen'); return; }
+  if (await p.$('#eingabe')) {
+    if (await p.$('#zahlfeld')) {                 // eigenes Tastenfeld statt Systemtastatur
+      await p.click('[data-k="4"]'); await p.click('[data-k="2"]');
+    } else {
+      await p.fill('#eingabe', '42');
+    }
+    await p.click('#pruefen');
+    return;
+  }
   await p.click('.choice');
+}
+/* Der Hinweisstreifen "Neue Fassung bereit" liegt über dem unteren Rand und
+   fängt dort Tipper ab. Im Test taucht er auf, weil der Service Worker beim
+   ersten Lauf neu ist – also wegräumen, bevor geklickt wird. */
+async function bannerWeg(p) {
+  const weg = await p.$('.update-weg');
+  if (weg) await weg.click().catch(() => {});
 }
 const BASIS = process.env.BASIS || 'http://localhost:8765';
 
@@ -326,33 +341,113 @@ await p.waitForSelector('#mission');
 const kopf = await p.textContent('#topName');
 const sw = await p.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length);
 console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
+// Silbenaufgaben und der gesprochene Kommentar: beides im echten Browser.
+{
+  await bannerWeg(p);
+  await p.click('[data-ziel="silbenwissen"]');
+  await p.waitForSelector('.task');
+  const frage = await p.textContent('.task');
+  if (!/Silbe/i.test(frage)) throw new Error('Silbenaufgabe sieht falsch aus: ' + frage);
+  console.log('Silbenaufgabe erscheint ✅');
+  await loeseAufgabe(p);
+  await p.waitForSelector('#weiter');
+  /* Zu jeder bewerteten Antwort muss ein Kommentar erscheinen. */
+  const komm = await p.textContent('.kommentar').catch(() => '');
+  if (!komm || komm.trim().length < 4)
+    throw new Error('Kein Kommentar zur Antwort: "' + komm + '"');
+  console.log(`Rückmeldung zur Antwort: „${komm.trim()}" ✅`);
+  await p.click('#weiter');
+  for (let i = 0; i < 14 && !(await p.$('#nochmal')); i++) {
+    await p.waitForSelector('.task'); await loeseAufgabe(p);
+    await p.waitForSelector('#weiter'); await p.click('#weiter');
+  }
+  await p.waitForSelector('#nochmal', { timeout: 8000 });
+  await p.click('#heim'); await p.waitForSelector('#mission');
+}
+
+// Zahlenfeld: Minus und Komma muessen tippbar sein. Genau daran scheiterte
+// die Eingabe auf dem iPad - dort gab es beides nicht.
+{
+  await bannerWeg(p);
+  await p.click('[data-ziel="kopfrechnen"]');
+  await p.waitForSelector('.task');
+  /* Bis eine Aufgabe kommt, die eine Zahl erwartet. */
+  for (let i = 0; i < 8 && !(await p.$('#zahlfeld')); i++) {
+    await loeseAufgabe(p);
+    await p.waitForSelector('#weiter'); await p.click('#weiter');
+    if (await p.$('#nochmal')) { await p.click('#heim'); await p.click('[data-ziel="kopfrechnen"]'); }
+    await p.waitForSelector('.task');
+  }
+  if (!await p.$('#zahlfeld')) throw new Error('Keine Aufgabe mit Zahlenfeld gefunden');
+
+  for (const k of ['1','2',',','5']) await p.click(`[data-k="${k}"]`);
+  let wert = await p.inputValue('#eingabe');
+  if (wert !== '12,5') throw new Error(`Komma lässt sich nicht tippen: "${wert}"`);
+  await p.click('[data-k="-"]');
+  wert = await p.inputValue('#eingabe');
+  if (wert !== '-12,5') throw new Error(`Minus lässt sich nicht tippen: "${wert}"`);
+  await p.click('[data-k="-"]');
+  if (await p.inputValue('#eingabe') !== '12,5') throw new Error('Minus schaltet nicht zurück');
+  await p.click('[data-k="⌫"]');
+  if (await p.inputValue('#eingabe') !== '12,') throw new Error('Löschen geht nicht');
+  console.log('Zahlenfeld: Minus, Komma und Löschen funktionieren ✅');
+  await p.screenshot({ path: `${S}/12-zahlenfeld.png`, fullPage: true });
+
+  /* Die Systemtastatur darf nicht aufgehen - das Feld ist nur lesbar. */
+  const nurLesen = await p.$eval('#eingabe', el => el.readOnly);
+  if (!nurLesen) throw new Error('Eingabefeld ist nicht readonly – die Systemtastatur geht auf');
+
+  await p.click('#pruefen');
+  await p.waitForSelector('#weiter'); await p.click('#weiter');
+  for (let i = 0; i < 14 && !(await p.$('#nochmal')); i++) {
+    await p.waitForSelector('.task'); await loeseAufgabe(p);
+    await p.waitForSelector('#weiter'); await p.click('#weiter');
+  }
+  await p.waitForSelector('#nochmal', { timeout: 8000 });
+  await p.click('#heim'); await p.waitForSelector('#mission');
+}
+
 // Schmierblatt: an einer normalen Aufgabe aufklappen, zeichnen, zaehlen, zurueck.
 {
+  await bannerWeg(p);
   await p.click('[data-ziel="einmaleins"]');
   await p.waitForSelector('.task');
   const blatt = await p.$('.schmier');
   if (!blatt) throw new Error('Schmierblatt fehlt an einer Rechenaufgabe');
   await p.click('.schmier > summary');
   await p.waitForSelector('#schmierBrett', { state: 'visible' });
-  const k = await p.$eval('#schmierBrett', el => {
-    const r = el.getBoundingClientRect(); return { x:r.x, y:r.y, w:r.width, h:r.height };
-  });
+  /* Die Lage des Blattes JEDES MAL frisch holen: Das Aufklappen und das
+     Zahlenfeld verschieben die Seite, eine einmal gemerkte Position wird
+     dadurch falsch. */
+  const lage = async () => {
+    const el = await p.$('#schmierBrett');
+    /* Erst ins Bild scrollen: Mit dem Zahlenfeld darueber rutscht das Blatt
+       sonst unter den unteren Rand, und die Klicks kommen gar nicht an. */
+    await el.scrollIntoViewIfNeeded();
+    return el.boundingBox();
+  };
 
   /* Zeichnen: ein Strich quer ueber das Blatt. */
-  await p.mouse.move(k.x + k.w*.2, k.y + k.h*.3);
+  let k = await lage();
+  await p.mouse.move(k.x + k.width*.2, k.y + k.height*.3);
   await p.mouse.down();
-  for (let i = 0; i <= 10; i++) await p.mouse.move(k.x + k.w*(.2 + i*.05), k.y + k.h*(.3 + i*.03));
+  for (let i = 0; i <= 10; i++)
+    await p.mouse.move(k.x + k.width*(.2 + i*.05), k.y + k.height*(.3 + i*.03));
   await p.mouse.up();
 
   /* Zaehlen: vier Punkte setzen. Die Anzeige muss mitzaehlen. */
   await p.click('[data-wz="zaehlen"]');
+  k = await lage();
   for (const [dx, dy] of [[.2,.7],[.4,.7],[.6,.7],[.8,.7]])
-    await p.mouse.click(k.x + k.w*dx, k.y + k.h*dy);
+    await p.mouse.click(k.x + k.width*dx, k.y + k.height*dy);
   let stand = await p.textContent('#zaehlStand');
   if (!/4 Punkte/.test(stand)) throw new Error('Zählwerk zählt falsch: ' + stand);
 
   /* Nochmal auf denselben Punkt: er verschwindet. */
-  await p.mouse.click(k.x + k.w*.8, k.y + k.h*.7);
+  /* Bewusst dieselbe gemerkte Lage wie eben: Ein erneutes Ausmessen koennte
+     zwischendurch scrollen, dann traefe der Klick eine andere Stelle des
+     Blattes und der Punkt wuerde nicht zurueckgenommen, sondern verdoppelt. */
+  await p.mouse.click(k.x + k.width*.8, k.y + k.height*.7);
   stand = await p.textContent('#zaehlStand');
   if (!/3 Punkte/.test(stand)) throw new Error('Punkt lässt sich nicht zurücknehmen: ' + stand);
 

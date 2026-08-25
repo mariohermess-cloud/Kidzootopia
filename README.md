@@ -187,7 +187,34 @@ stellt eine Etappe höher.
      Weg über ein Bild führt – kein Gütesiegel in die eine oder andere Richtung, sondern ein
      Hinweis darauf, wie das Kind denkt.
 
-11. **Der Begleiter** 🦖 – das gewählte Lieblingstier lebt in der Ecke des Bildschirms.
+11. **Zahlen eingeben – mit Minus und Komma** 🔢
+   Das Antwortfeld stand auf `inputmode="numeric"`. Ein iPad zeigt dafür einen Ziffernblock
+   **ohne Minus und ohne Komma** – Aufgaben mit der Antwort −1 (Kurvendiskussion) oder 12,5
+   (Prozentrechnen) waren dort schlicht **nicht lösbar**. Jetzt hat die App ein eigenes
+   Tastenfeld: gleich auf jedem Gerät, groß genug für Kinderfinger, und die Systemtastatur
+   schiebt nicht mehr die halbe Aufgabe aus dem Bild. Es lässt bewusst keinen Unsinn zu –
+   kein zweites Komma, nie zwei Minuszeichen, keine führende Null. `tests/zahlfeld.mjs`
+   tippt **alle 2037** vorkommenden Zahlantworten durch und prüft, dass jede anerkannt wird.
+
+12. **Silben hören & bauen** 👏 – *neues Lernziel im Fach Deutsch*
+   Vier Formen, alle auf derselben Trennung wie die Silbenfärbung beim Vorlesen:
+   Silben zählen („Wie viele hat *Schmetterling*?"), das Wort mit genau drei Silben finden,
+   durcheinandergewürfelte Silben in die richtige Reihenfolge bringen, und die fehlende Silbe
+   ergänzen (`Son-___-blu-me`). Die falschen Antworten sind echte Silben aus anderen Wörtern –
+   damit muss man wirklich hinsehen.
+
+13. **Rückmeldungen, die zur Antwort passen** 💬 – *auf Wunsch vorgelesen*
+   Statt „Gut gemacht!" sagt die App, was tatsächlich der Fall war: *„Die Ziffern sind
+   vertauscht: 63 statt 36."* · *„So nah dran – nur eins daneben."* · *„Zehnmal zu groß – da ist
+   eine Null zu viel hineingerutscht."* · *„Du hast es aufgemalt – und dann ging es."*
+   Möglich ist das, weil die App über jede Antwort mehr weiß, als aus dem Text hervorginge:
+   Dauer, Tipps, Serie, Abstand zur Lösung, ob das Schmierblatt benutzt wurde.
+   Ist das Vorlesen eingeschaltet, wird der Satz gesprochen.
+   **Nie Lob für die Person.** Kein „du bist so klug", immer „das war" oder „du hast" –
+   Lob für die Person wirkt nachweislich schlechter als Rückmeldung zur Sache
+   (Hattie & Timperley 2007). `tests/kommentar.mjs` prüft das an 400 Fällen.
+
+14. **Der Begleiter** 🦖 – das gewählte Lieblingstier lebt in der Ecke des Bildschirms.
    Es hüpft und wirft Funken bei Erfolg, wackelt und tröstet bei Fehlern, winkt zum Start
    und dreht sich am Ende. Passiert länger nichts, gähnt es, schaut sich um – und schläft
    nach gut einer Minute mit einem „Zzz“ ein. Antippen weckt es. Für kleine Kinder ist das
@@ -232,7 +259,7 @@ stellt eine Etappe höher.
      werden **bewusst nicht bewertet** und fließen in keine Quote ein – sonst wären es
      Prüfungen statt Fragen.
 
-13. **Eltern-Bereich** – Fortschritt je Lernziel, Aktivität der letzten 7 Tage,
+16. **Eltern-Bereich** – Fortschritt je Lernziel, Aktivität der letzten 7 Tage,
    Klartext-Empfehlungen („So lernt Ihr Kind am leichtesten – und daran arbeiten wir gerade“),
    Export/Import der Daten.
 
@@ -306,7 +333,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 18 · Stand 25.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 19 · Stand 25.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.
@@ -390,6 +417,8 @@ npm run test:version      # angezeigte Fassung = ausgelieferte Fassung (Service-
 npm run test:silben       # Silbentrennung an 152 handgeprüften Wörtern
 npm run test:lesen        # Leseauswertung an künstlichen Aufnahmen mit bekannter Wahrheit
 npm run test:skizze       # Schmierblatt: Zählen, Zurücknehmen, Reihenfolge
+npm run test:zahlfeld     # Zahleneingabe: alle 2037 Zahlantworten tippbar und anerkannt
+npm run test:kommentar    # Rückmeldungen: stimmen sie, und loben sie nie die Person?
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
@@ -410,6 +439,8 @@ js/geschichten.js     Hörgeschichten mit Verständnisfragen
 js/zeichnen.js        Zeichenvorlagen, Ein-Strich-Figuren, Bewertung (Abdeckung/Genauigkeit)
 js/avatar.js          Der Begleiter: Reaktionen, Gesten, Leerlauf und Schlaf
 js/skizze.js          Schmierblatt: Striche, Zählmarken, Rückgängig
+js/zahlfeld.js        Zahleneingabe mit Minus und Komma
+js/kommentar.js       Rückmeldung zur einzelnen Antwort (kein Sprachmodell – siehe Kopf)
 js/silben.js          Deutsche Silbentrennung – Grundlage der Silbenfärbung
 js/lesen.js           Lesetexte und Auswertung der Leseflüssigkeit (Tempo, Pausen, Betonung)
 js/version.js         Fassung, Datum und Änderungsverlauf – die einzige Stelle dafür

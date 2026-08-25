@@ -14,6 +14,8 @@ import { NUMMER, STAND, VERLAUF } from './version.js';
 import { textInSilben } from './silben.js';
 import * as Lesen from './lesen.js';
 import * as Skizze from './skizze.js';
+import * as Zahl from './zahlfeld.js';
+import { kommentar, vorlesbar } from './kommentar.js';
 import { pruefe } from './generators.js';
 import { radar } from './chart.js';
 
@@ -1247,14 +1249,30 @@ function screenSession(p, opts = {}) {
       zeichnen();
 
     } else {
+      /* Eigenes Tastenfeld statt der Systemtastatur, sobald eine Zahl gefragt
+         ist. Grund: inputmode="numeric" zeigt auf dem iPad einen Ziffernblock
+         OHNE Minus und OHNE Komma – Aufgaben mit der Antwort -1 oder 12,5 waren
+         dort schlicht nicht lösbar. Außerdem schiebt die Systemtastatur auf dem
+         Handy die halbe Aufgabe aus dem Bild. */
+      const zahlAufgabe = Zahl.brauchtZahlen(a.antwort);
       bereich.innerHTML = `
         <label class="field" style="margin-top:14px"><span class="sr">Antwort</span>
-          <input type="text" inputmode="numeric" id="eingabe" autocomplete="off"
+          <input type="text" inputmode="${zahlAufgabe ? 'decimal' : 'text'}" id="eingabe"
+            autocomplete="off" ${zahlAufgabe ? 'readonly' : ''}
             placeholder="Deine Antwort" ${ergebnis!==null?'disabled':''} value="${esc(eingabe)}"></label>
+        ${zahlAufgabe && ergebnis === null ? `
+          <div class="zahlfeld" id="zahlfeld">
+            ${Zahl.TASTEN.map(k => `<button type="button" class="ztaste${
+              k === '⌫' ? ' weg' : k === '-' || k === ',' ? ' neben' : ''
+            }" data-k="${esc(k)}">${esc(k)}</button>`).join('')}
+          </div>` : ''}
         ${ergebnis===null?'<button class="btn" id="pruefen">Prüfen</button>':''}`;
       const feld = bereich.querySelector('#eingabe');
       if (ergebnis === null) {
-        feld.focus();
+        if (!zahlAufgabe) feld.focus();
+        bereich.querySelectorAll('[data-k]').forEach(b => b.onclick = () => {
+          feld.value = Zahl.taste(feld.value, b.dataset.k);
+        });
         bereich.querySelector('#pruefen').onclick = () => auswerten(a, feld.value);
         feld.addEventListener('keydown', e => { if (e.key === 'Enter') auswerten(a, feld.value); });
       }
@@ -1307,6 +1325,7 @@ function screenSession(p, opts = {}) {
         <button class="btn" id="weiter" style="margin-top:12px">
           ${sess.index >= sess.laenge ? 'Ergebnis ansehen' : 'Weiter →'}</button>` : `
         <div class="feedback ${ergebnis?'ok':'bad'} pop">
+          ${a.kommentar ? `<div class="kommentar">${esc(a.kommentar)}</div>` : ''}
           ${a.leseWerte ? leseRueckmeldung(a) : zeichenAufgabe
             ? (ergebnis ? `✅ Getroffen! ${esc(eingabe)}` : `🖌️ Noch nicht ganz: ${esc(eingabe)}`)
             : ergebnis ? '✅ Richtig! Super gemacht.'
@@ -1351,7 +1370,19 @@ function screenSession(p, opts = {}) {
     S.verbuche(p, { zielId:a.ziel.id, weg:a.weg, level:a.level, richtig:ok, bruecke:a.bruecke, ms,
                     tippsGenutzt, knacknuss: !!a.knacknuss, keineWertung: !!a.keineWertung,
                     skizze: Skizze.benutzt(a.blatt) });
-    Avatar.reagiere(ok ? 'richtig' : 'falsch', { serie: S.zielStand(p, a.ziel.id).serie });
+    /* Ein Satz, der sich auf DIESE Antwort bezieht – nicht ein allgemeines Lob.
+       Die App weiß dafür mehr, als aus der Aufgabe allein hervorginge: wie
+       lange gebraucht, wie viele Tipps, wie knapp daneben, ob gemalt wurde. */
+    const standNachher = S.zielStand(p, a.ziel.id);
+    if (!a.keineWertung) {
+      a.kommentar = kommentar({
+        richtig: ok, antwort: a.antwort, eingabe, ms, tipps: tippsGenutzt,
+        serie: standNachher.serie, levelHoch: standNachher.level > (a.level || 1),
+        skizze: Skizze.benutzt(a.blatt), zielTitel: a.ziel.titel,
+        wegName: a.wegInfo?.name || '', knacknuss: !!a.knacknuss });
+      if (p.vorlesen && vorlesbar(a.kommentar)) vorlesen(a.kommentar);
+    }
+    Avatar.reagiere(ok ? 'richtig' : 'falsch', { serie: standNachher.serie });
     if (ok && navigator.vibrate) navigator.vibrate(20);
     render(a, ok, String(eingabe));
   };
