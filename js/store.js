@@ -1,7 +1,7 @@
 /* Speicher: Profile, Fortschritt, Talent-Werte. Alles lokal im Geraet (localStorage).
    Keine Konten, keine Server, keine Daten von Kindern nach draussen. */
 
-import { TALENTE, WEGE, ZIELE, ABZEICHEN } from './data.js';
+import { TALENTE, WEGE, ZIELE, ABZEICHEN, ETAPPEN } from './data.js';
 import { auswerten } from './talenttest.js';
 
 const KEY = 'kidzootopia.v1';
@@ -36,6 +36,8 @@ function migriere(p) {
   p.zielWeg     ||= {};   // je Lernziel und Weg dasselbe – dort zeigt sich der Unterschied
   p.testTeile   ||= null; // Ergebnis der einzelnen Testteile
   p.vorlesen    ??= false; // Aufgaben automatisch vorlesen (für Leseanfänger)
+  // Etappe: 1 Grundschule … 5 Erwachsene. Ältere Profile kannten nur die Klasse.
+  p.etappe      ??= (p.klasse >= 8 ? 3 : p.klasse >= 5 ? 2 : 1);
   p.stats ||= {};
   p.stats.aufgabenGesamt  ??= 0;
   p.stats.richtigGesamt   ??= 0;
@@ -48,10 +50,13 @@ function migriere(p) {
   return p;
 }
 
-export function neuesProfil({ name, avatar, klasse }) {
+export function neuesProfil({ name, avatar, klasse, etappe }) {
+  const stufe = Number(etappe) || 1;
   const p = migriere({
     id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
-    name: name.trim() || 'Kind', avatar, klasse: Number(klasse) || 3,
+    name: name.trim() || 'Kind', avatar,
+    etappe: stufe,
+    klasse: Number(klasse) || [3, 6, 9, 12, 13][stufe - 1],
     erstellt: heute(), testGemacht: false, testDatum: null
   });
   db.profile.push(p);
@@ -147,9 +152,15 @@ export function zielStand(profil, zielId) {
   return profil.ziele[zielId] ||= { level:1, xp:0, richtig:0, gesamt:0, serie:0, gemeistert:false };
 }
 
-export function zieleFuerKlasse(profil) {
-  return ZIELE.filter(z => profil.klasse >= z.klasse[0] - 1 && profil.klasse <= z.klasse[1] + 1);
+/* Welche Lernziele passen zur Etappe? Eine Etappe darüber und darunter ist
+   erlaubt – Wiederholen schadet nie, und Vorgreifen fordert. */
+export function zieleFuerEtappe(profil) {
+  const e = profil.etappe || 1;
+  return ZIELE.filter(z => e >= z.etappe[0] && e <= z.etappe[1]);
 }
+export const zieleFuerKlasse = zieleFuerEtappe;   // alter Name, weiterhin gültig
+
+export const etappeVon = profil => ETAPPEN.find(x => x.id === (profil.etappe || 1)) || ETAPPEN[0];
 
 /* Ergebnis einer Aufgabe verbuchen */
 export function verbuche(profil, { zielId, weg, level, richtig, bruecke, ms = 0,

@@ -12,7 +12,7 @@ const BASIS = process.env.BASIS || 'http://localhost:8765';
 await p.goto(`${BASIS}/index.html`);
 await p.waitForSelector('#nName');
 await p.fill('#nName','Mia');
-await p.selectOption('#nKlasse','3');
+await p.selectOption('#nEtappe','1');
 await p.click('[data-av="🦄"]');
 await p.click('#nAnlegen');
 // Talent-Test: fünf Teile durchspielen
@@ -143,6 +143,32 @@ for (const [r,f] of [['talente','7-talente'],['wege','8-wege'],['eltern','9-elte
   await p.waitForTimeout(180);
   await p.screenshot({path:`${S}/${f}.png`, fullPage:true});
 }
+// Erwachsenen-Etappe: höhere Ziele müssen erscheinen und lösbar sein
+await p.click('.nav-btn[data-route="eltern"]');
+await p.waitForSelector('#etappeWahl');
+await p.selectOption('#etappeWahl','5');
+await p.waitForSelector('#etappeWahl');
+await p.click('.nav-btn[data-route="lernen"]');
+await p.waitForSelector('#mission');
+for (const ziel of ['analysis','denkfehler','logikformal','hauptwerke','zinsen']) {
+  const knopf = await p.$(`[data-ziel="${ziel}"]`);
+  if (!knopf) throw new Error(`Ziel ${ziel} fehlt in der Erwachsenen-Etappe`);
+  await knopf.click();
+  await p.waitForSelector('.task');
+  if (ziel === 'analysis') await p.screenshot({path:S+'/z-erwachsen.png', fullPage:true});
+  if (await p.$('#eingabe')) { await p.fill('#eingabe','1'); await p.click('#pruefen'); }
+  else await p.click('.choice');
+  await p.waitForSelector('#weiter');
+  await p.click('#raus');
+  await p.waitForSelector('#mission');
+}
+console.log('Erwachsenen-Etappe: alle geprüften Ziele vorhanden und lösbar ✅');
+// zurück auf Grundschule für den Rest des Tests
+await p.click('.nav-btn[data-route="eltern"]');
+await p.waitForSelector('#etappeWahl');
+await p.selectOption('#etappeWahl','1');
+await p.waitForSelector('#etappeWahl');
+
 // Umzugs-Code: Fortschritt sichern, Speicher leeren, wiederherstellen
 await p.click('.nav-btn[data-route="eltern"]');
 await p.waitForSelector('#codeZeigen');

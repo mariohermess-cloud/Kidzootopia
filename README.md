@@ -24,6 +24,21 @@ Vier Kinder, vier Wege, ein Ergebnis: Sie können 4 × 6.
 
 ---
 
+## Fünf Etappen – die App wächst mit
+
+| Etappe | | Beispiele für Lernziele | Hauptwerke dieser Stufe |
+|---|---|---|---|
+| 🌱 Grundschule | 1.–4. Kl. | Einmaleins, Silben, Bilderrätsel | Grimms Märchen, Pippi, Alice im Wunderland |
+| 🌿 Unterstufe | 5.–7. Kl. | Brüche, Leseverstehen, Muster | Der kleine Prinz, Momo, Tom Sawyer |
+| 🌳 Mittelstufe | 8.–10. Kl. | Gleichungen, Stilmittel, Wortwurzeln, Argumente prüfen | Odyssee, Romeo und Julia, Die Verwandlung, Darwin |
+| 🎓 Oberstufe | 11.–13. Kl. | Ableitungen, formale Logik, Denkfehler, Zinseszins | Faust, Der Process, 1984, Newtons Principia |
+| 🏛️ Erwachsene | lebenslang | alles davon, dazu Stochastik und der volle Kanon | Kant, Popper, Arendt, Joyce, Duchamp |
+
+Die Etappe wird beim Anlegen des Profils gewählt und ist im Eltern-Bereich jederzeit
+änderbar. Sie bestimmt, **welche** Ziele erscheinen; die fünf Level innerhalb eines Ziels
+bestimmen, **wie schwer** sie werden. Nichts ist gesperrt: Wer sich unterfordert fühlt,
+stellt eine Etappe höher.
+
 ## Was die App macht
 
 1. **Talent-Test in fünf Teilen** – 8 Talentbereiche (Sprache, Logik, Raum, Technik,
@@ -53,7 +68,7 @@ Vier Kinder, vier Wege, ein Ergebnis: Sie können 4 × 6.
    * Widerspricht die Praxis dem Test, sagt der Eltern-Bereich das ausdrücklich:
      *„Im Test lag der Knobel-Weg vorn, in den Aufgaben läuft der Rhythmus-Weg besser.“*
    * Der Test darf jederzeit wiederholt werden – Kinder verändern sich.
-3. **Lernziele statt Aufgabenlisten** – 19 Ziele aus dem Schulstoff
+3. **Lernziele statt Aufgabenlisten** – 29 Ziele aus dem Schulstoff
    (Mathe, Deutsch, Englisch, Allgemeinwissen, Technik & Code, Rätsel & Puzzle, Klassiker).
    Jedes Ziel beschreibt eine Kompetenz, nicht eine Aufgabenform.
 4. **Weg-Auswahl** – 4 von 5 Aufgaben laufen über einen Weg, der zur Stärke des Kindes passt.
@@ -108,7 +123,8 @@ Vier Kinder, vier Wege, ein Ergebnis: Sie können 4 × 6.
    Export/Import der Daten.
 
 Aufgaben werden **generiert**, nicht aus einer Liste gezogen – der Vorrat geht nie aus.
-Aktuell: 19 Lernziele × bis zu 5 Wege = 74 Aufgabentypen auf je 5 Schwierigkeitsstufen.
+Aktuell: **29 Lernziele × bis zu 5 Wege = 110 Aufgabentypen** auf je 5 Schwierigkeitsstufen,
+verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
 
 ---
 
@@ -194,6 +210,8 @@ js/sprache.js         Vorlesen über die Gerätestimme (Web Speech API)
 js/geschichten.js     Hörgeschichten mit Verständnisfragen
 js/klassiker.js       Knacknüsse, Wissenskanon, Redewendungen, alte Rechentricks
 js/philosophie.js     Stoa für Kinder: Zitate, Alltagslagen, Denk-Impulse
+js/hauptwerke.js      Kanon: 61 Hauptwerke aus Literatur, Philosophie, Wissenschaft, Kunst
+js/fortgeschritten.js Denkfehler, Fehlschlüsse, Stilmittel, Wortwurzeln, Syllogismen
 js/generators.js      Aufgaben-Generatoren – ein Ziel, viele Wege
 js/engine.js          Auswahl von Ziel & Weg, Brücken-Regel, Elternhinweise
 js/store.js           Profile, Fortschritt, Talentwerte, gemessene Wirksamkeit (lokal)

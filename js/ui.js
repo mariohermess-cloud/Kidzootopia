@@ -1,6 +1,6 @@
 /* Oberflaeche: alle Bildschirme. Bewusst gross, ruhig und antippbar (Handy zuerst). */
 
-import { TALENTE, WEGE, FAECHER, ZIELE, ZIEL_MAP, SKALA, AVATARE, ABZEICHEN,
+import { TALENTE, WEGE, FAECHER, ZIELE, ZIEL_MAP, SKALA, AVATARE, ABZEICHEN, ETAPPEN,
          TEST_LIKERT, TEST_PAARE, TEST_SZENARIEN, TEST_PROBEN, TEST_TEILE } from './data.js';
 import * as S from './store.js';
 import { starteSession, empfehlungen, wegRanking, wegeNachWirkung, wegBewertung } from './engine.js';
@@ -38,7 +38,8 @@ function kopfzeile(p) {
   document.getElementById('topName').textContent = p.name;
   const t = S.topTalente(p,1)[0];
   document.getElementById('topSub').textContent =
-    p.testGemacht ? `${TALENTE[t].emoji} ${TALENTE[t].name} · Klasse ${p.klasse}` : `Klasse ${p.klasse} · Talent-Test offen`;
+    p.testGemacht ? `${TALENTE[t].emoji} ${TALENTE[t].name} · ${S.etappeVon(p).name}`
+                  : `${S.etappeVon(p).name} · Talent-Test offen`;
   document.getElementById('streakCount').textContent = S.serieAktuell(p);
 }
 
@@ -54,7 +55,7 @@ function screenStart() {
       <div class="grid">${profile.map(p => `
         <button class="choice" data-open="${p.id}">
           <span style="font-size:26px;margin-right:10px">${p.avatar}</span>${esc(p.name)}
-          <span class="muted small"> · Klasse ${p.klasse}</span>
+          <span class="muted small"> · ${S.etappeVon(p).name}</span>
         </button>`).join('')}</div></div>` : ''}
     <div class="card">
       <h3>Schon einmal genutzt?</h3>
@@ -68,8 +69,11 @@ function screenStart() {
     <div class="card">
       <h2>${profile.length ? 'Neues Kind hinzufügen' : 'Los geht’s'}</h2>
       <label class="field"><span>Name</span><input type="text" id="nName" placeholder="z. B. Mia" maxlength="20"></label>
-      <label class="field"><span>Klasse</span>
-        <select id="nKlasse">${[1,2,3,4,5,6].map(k=>`<option value="${k}" ${k===3?'selected':''}>Klasse ${k}</option>`).join('')}</select></label>
+      <label class="field"><span>Etappe</span>
+        <select id="nEtappe">${ETAPPEN.map(e =>
+          `<option value="${e.id}" ${e.id===1?'selected':''}>${e.emoji} ${e.name} (${e.kurz})</option>`).join('')}</select></label>
+      <p class="muted small" style="margin-top:-6px">Die App wächst mit: Jede Etappe hat eigene Ziele,
+        eigene Hauptwerke und eigene Härte – bis hinauf zu Erwachsenen.</p>
       <label class="field"><span>Lieblingstier</span></label>
       <div class="row wrap" id="avatarWahl" style="margin-bottom:14px">
         ${AVATARE.map((a,i)=>`<button class="avatar-btn ${i===0?'sel':''}" data-av="${a}"
@@ -110,7 +114,7 @@ function screenStart() {
   view().querySelector('#nAnlegen').onclick = () => {
     const name = view().querySelector('#nName').value;
     if (!name.trim()) { view().querySelector('#nName').focus(); return; }
-    S.neuesProfil({ name, avatar: gewaehlt, klasse: view().querySelector('#nKlasse').value });
+    S.neuesProfil({ name, avatar: gewaehlt, etappe: view().querySelector('#nEtappe').value });
     zeige('test');
   };
 }
@@ -120,7 +124,7 @@ function screenProfile() {
     <div class="card">
       ${S.alleProfile().map(p => `<div class="row spread" style="padding:10px 0;border-bottom:1px solid var(--line)">
         <div class="row"><span style="font-size:26px">${p.avatar}</span>
-          <div><b>${esc(p.name)}</b><div class="muted small">Klasse ${p.klasse} · ${p.stats.aufgabenGesamt} Aufgaben</div></div></div>
+          <div><b>${esc(p.name)}</b><div class="muted small">${S.etappeVon(p).emoji} ${S.etappeVon(p).name} · ${p.stats.aufgabenGesamt} Aufgaben</div></div></div>
         <div class="row">
           <button class="btn small ghost" data-use="${p.id}">wählen</button>
           <button class="btn small danger" data-del="${p.id}">löschen</button>
@@ -682,7 +686,8 @@ function screenEltern(p) {
   view().innerHTML = `
     <h1>Eltern-Bereich</h1>
     <div class="card">
-      <div class="row spread"><div><b>${esc(p.name)}</b><div class="muted small">Klasse ${p.klasse}</div></div>
+      <div class="row spread"><div><b>${esc(p.name)}</b>
+          <div class="muted small">${S.etappeVon(p).emoji} ${S.etappeVon(p).name} · ${S.etappeVon(p).kurz}</div></div>
         <button class="btn small ghost" id="profile">Profile</button></div>
       <div class="grid two" style="margin-top:14px">
         <div><div class="muted small">Aufgaben gesamt</div><b style="font-size:1.4rem">${s.aufgabenGesamt}</b></div>
@@ -742,6 +747,16 @@ function screenEltern(p) {
       <ul class="clean">${tipps.map(t=>`<li>${fett(t)}</li>`).join('')}</ul>
     </div>
     <div class="card">
+      <h3>Etappe</h3>
+      <p class="muted small">Bestimmt, welche Lernziele angeboten werden und wie hart sie sind.
+        Eine Etappe höher zu wählen fordert – zu weit oben frustriert.</p>
+      <label class="field"><span class="sr">Etappe</span>
+        <select id="etappeWahl">${ETAPPEN.map(e =>
+          `<option value="${e.id}" ${e.id === (p.etappe||1) ? 'selected' : ''}>
+            ${e.emoji} ${e.name} (${e.kurz})</option>`).join('')}</select></label>
+      <p class="small muted">Aktuell ${S.zieleFuerEtappe(p).length} Lernziele freigeschaltet.</p>
+    </div>
+    <div class="card">
       <h3>Vorlesen</h3>
       <p class="muted small">Für Leseanfänger und Kinder mit Leseschwäche: Die App liest jede Aufgabe
         automatisch mit der Stimme des Geräts vor. Der Lautsprecher-Knopf 🔊 in der Aufgabe
@@ -786,6 +801,9 @@ function screenEltern(p) {
     </div>
 `;
   view().querySelector('#profile').onclick = () => zeige('profile');
+  view().querySelector('#etappeWahl').onchange = e => {
+    p.etappe = Number(e.target.value); S.speichern(); zeige('eltern');
+  };
   view().querySelector('#vorleseSchalter').onclick = () => {
     p.vorlesen = !p.vorlesen; S.speichern(); zeige('eltern');
   };
