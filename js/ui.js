@@ -441,6 +441,16 @@ function screenSession(p, opts = {}) {
         b.disabled = true;
       });
 
+    } else if (a.typ === 'nachdenken') {
+      /* Keine richtige Antwort: Jede Wahl bekommt eine eigene Rückmeldung. */
+      bereich.innerHTML = `<div class="choices">${a.optionen.map(o =>
+        `<button class="choice denk" data-o="${esc(o)}" ${ergebnis!==null?'disabled':''}
+          >${esc(o)}</button>`).join('')}</div>`;
+      if (ergebnis === null) bereich.querySelectorAll('[data-o]').forEach(b =>
+        b.onclick = () => auswerten(a, b.dataset.o));
+      else bereich.querySelectorAll('[data-o]').forEach(b =>
+        b.classList.toggle('gewaehlt', b.dataset.o === eingabe));
+
     } else if (a.typ === 'ordnen') {
       /* Zum Legen: Teile nacheinander antippen, Reihenfolge entsteht oben. */
       let gelegt = ergebnis !== null ? String(eingabe).split(' ~ ') : [];
@@ -500,7 +510,18 @@ function screenSession(p, opts = {}) {
     tippsZeichnen();
 
     if (ergebnis !== null) {
-      view().querySelector('#fb').innerHTML = `
+      const denkAufgabe = a.typ === 'nachdenken';
+      view().querySelector('#fb').innerHTML = denkAufgabe ? `
+        <div class="feedback denk pop">
+          <div style="font-weight:700;margin-bottom:6px">🏛️ Danke fürs Nachdenken.</div>
+          ${esc(a.rueckmeldungen?.[eingabe] || '')}
+          <div class="small" style="margin-top:8px;font-weight:500">
+            Hier gibt es kein Richtig und kein Falsch – deshalb zählt diese Aufgabe
+            auch in keiner Quote mit.</div>
+        </div>
+        ${a.quelle ? `<div class="quelle">📜 ${esc(a.quelle)}</div>` : ''}
+        <button class="btn" id="weiter" style="margin-top:12px">
+          ${sess.index >= sess.laenge ? 'Ergebnis ansehen' : 'Weiter →'}</button>` : `
         <div class="feedback ${ergebnis?'ok':'bad'} pop">
           ${ergebnis ? '✅ Richtig! Super gemacht.'
             : `❌ Nicht ganz. Richtig wäre: <u>${esc(a.antwort)}</u>`}
@@ -518,13 +539,15 @@ function screenSession(p, opts = {}) {
   const auswerten = (a, eingabe) => {
     if (a.typ === 'text' && !String(eingabe).trim()) return;
     const ms = startZeit ? performance.now() - startZeit : 0;
-    const ok = pruefe(a, eingabe);
-    status[sess.index] = ok ? 'done' : 'miss';
-    sess.index++; if (ok) sess.richtig++;
-    sess.verlauf.push({ ziel:a.ziel.id, weg:a.weg, ok, bruecke:a.bruecke, ms });
+    const ok = a.keineWertung ? true : pruefe(a, eingabe);
+    status[sess.index] = a.keineWertung ? 'denk' : (ok ? 'done' : 'miss');
+    sess.index++;
+    if (a.keineWertung) sess.laenge--;          // zählt nicht in die Quote der Runde
+    else if (ok) sess.richtig++;
+    if (!a.keineWertung) sess.verlauf.push({ ziel:a.ziel.id, weg:a.weg, ok, bruecke:a.bruecke, ms });
     // Zeit fliesst in die Wirksamkeit eines Weges ein – schnell und sicher zaehlt mehr.
     S.verbuche(p, { zielId:a.ziel.id, weg:a.weg, level:a.level, richtig:ok, bruecke:a.bruecke, ms,
-                    tippsGenutzt, knacknuss: !!a.knacknuss });
+                    tippsGenutzt, knacknuss: !!a.knacknuss, keineWertung: !!a.keineWertung });
     if (ok && navigator.vibrate) navigator.vibrate(20);
     render(a, ok, String(eingabe));
   };

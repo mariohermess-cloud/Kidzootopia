@@ -153,7 +153,20 @@ export function zieleFuerKlasse(profil) {
 
 /* Ergebnis einer Aufgabe verbuchen */
 export function verbuche(profil, { zielId, weg, level, richtig, bruecke, ms = 0,
-                                   tippsGenutzt = 0, knacknuss = false }) {
+                                   tippsGenutzt = 0, knacknuss = false, keineWertung = false }) {
+  /* Denk-Impulse haben keine richtige Antwort. Sie zählen als getane Arbeit,
+     fließen aber in keine Erfolgsquote ein – sonst wäre es eine Prüfung. */
+  if (keineWertung) {
+    const s = profil.stats;
+    s.aufgabenGesamt++;
+    s.tage[heute()] = (s.tage[heute()]||0) + 1;
+    profil.wegeGenutzt[weg] = (profil.wegeGenutzt[weg]||0) + 1;
+    tagesSerie(profil);
+    pruefeAbzeichen(profil);
+    speichern();
+    return zielStand(profil, zielId);
+  }
+
   const z = zielStand(profil, zielId);
   z.gesamt++; if (richtig) { z.richtig++; z.xp += 10 + level * 2; }
   z.serie = richtig ? z.serie + 1 : 0;

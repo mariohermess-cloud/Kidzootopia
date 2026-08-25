@@ -53,7 +53,7 @@ Vier Kinder, vier Wege, ein Ergebnis: Sie können 4 × 6.
    * Widerspricht die Praxis dem Test, sagt der Eltern-Bereich das ausdrücklich:
      *„Im Test lag der Knobel-Weg vorn, in den Aufgaben läuft der Rhythmus-Weg besser.“*
    * Der Test darf jederzeit wiederholt werden – Kinder verändern sich.
-3. **Lernziele statt Aufgabenlisten** – 18 Ziele aus dem Schulstoff
+3. **Lernziele statt Aufgabenlisten** – 19 Ziele aus dem Schulstoff
    (Mathe, Deutsch, Englisch, Allgemeinwissen, Technik & Code, Rätsel & Puzzle, Klassiker).
    Jedes Ziel beschreibt eine Kompetenz, nicht eine Aufgabenform.
 4. **Weg-Auswahl** – 4 von 5 Aufgaben laufen über einen Weg, der zur Stärke des Kindes passt.
@@ -91,13 +91,24 @@ Vier Kinder, vier Wege, ein Ergebnis: Sie können 4 × 6.
      Amundsen am Südpol, der Mauerfall, Pythagoras, Fotosynthese, Palindrome.
    * **Redewendungen** – was sie bedeuten und woher sie kommen (die „lange Bank“ war eine
      Gerichtstruhe, das „Fettnäpfchen“ stand vor der Haustür).
+   * **Lebenskunst** – Philosophie der Stoa, kindgerecht: Seneca, Epiktet und Marc Aurel
+     schreiben über Ärger, Neid, Ungeduld und die Angst vor Dingen, die nie eintreten.
+     Vier Formen: Zitate deuten, Epiktets Unterscheidung üben („Was liegt in deiner Hand?“),
+     Alltagslagen entscheiden („Du hast geübt und trotzdem eine schlechte Note“) und
+     erkennen, wer es gesagt hat. Alle Zitate mit Fundstelle; unsichere Zuschreibungen
+     sind als solche gekennzeichnet.
+   * **Denk-Impulse ohne richtige Antwort** – jede vierte Aufgabe der Lebenskunst ist eine
+     echte Frage, etwa Senecas abendliche Selbstprüfung „Was hast du heute besser gemacht?“.
+     Jede Antwort erhält eine eigene Rückmeldung, auch „Mir fällt nichts ein“. Diese Aufgaben
+     werden **bewusst nicht bewertet** und fließen in keine Quote ein – sonst wären es
+     Prüfungen statt Fragen.
 
 9. **Eltern-Bereich** – Fortschritt je Lernziel, Aktivität der letzten 7 Tage,
    Klartext-Empfehlungen („So lernt Ihr Kind am leichtesten – und daran arbeiten wir gerade“),
    Export/Import der Daten.
 
 Aufgaben werden **generiert**, nicht aus einer Liste gezogen – der Vorrat geht nie aus.
-Aktuell: 18 Lernziele × bis zu 5 Wege = 70 Aufgabentypen auf je 5 Schwierigkeitsstufen.
+Aktuell: 19 Lernziele × bis zu 5 Wege = 74 Aufgabentypen auf je 5 Schwierigkeitsstufen.
 
 ---
 
@@ -182,6 +193,7 @@ js/talenttest.js      Auswertung des Talent-Tests: Blöcke, Gewichte, Feinschlif
 js/sprache.js         Vorlesen über die Gerätestimme (Web Speech API)
 js/geschichten.js     Hörgeschichten mit Verständnisfragen
 js/klassiker.js       Knacknüsse, Wissenskanon, Redewendungen, alte Rechentricks
+js/philosophie.js     Stoa für Kinder: Zitate, Alltagslagen, Denk-Impulse
 js/generators.js      Aufgaben-Generatoren – ein Ziel, viele Wege
 js/engine.js          Auswahl von Ziel & Weg, Brücken-Regel, Elternhinweise
 js/store.js           Profile, Fortschritt, Talentwerte, gemessene Wirksamkeit (lokal)

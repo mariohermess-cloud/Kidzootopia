@@ -68,7 +68,8 @@ await p.click('#heim');
 
 // Neue Bereiche: Puzzle/Bilderrätsel und Hörgeschichten gezielt prüfen
 for (const [ziel, name] of [['puzzle','puzzle'],['bildraetsel','bildraetsel'],['zuhoeren','hoergeschichte'],
-                            ['knacknuss','knacknuss'],['kopfrechnen','kopfrechnen'],['kanon','kanon']]) {
+                            ['knacknuss','knacknuss'],['kopfrechnen','kopfrechnen'],['kanon','kanon'],
+                            ['lebenskunst','lebenskunst']]) {
   await p.click(`[data-ziel="${ziel}"]`);
   await p.waitForSelector('.task');
   if (ziel === 'zuhoeren') {
@@ -89,6 +90,36 @@ for (const [ziel, name] of [['puzzle','puzzle'],['bildraetsel','bildraetsel'],['
   if (ziel === 'knacknuss' && !await p.$('.quelle')) throw new Error('Herkunftsangabe fehlt');
   await p.click('#raus');
   await p.waitForSelector('#mission');
+}
+
+// Denk-Impulse: müssen erscheinen und dürfen die Quote nicht verändern
+{
+  let impulsGesehen = false, versuche = 0;
+  const quoteVorher = await p.evaluate(() => {
+    const d = JSON.parse(localStorage.getItem('kidzootopia.v1')).profile[0];
+    return d.ziele?.lebenskunst ? {r:d.ziele.lebenskunst.richtig, g:d.ziele.lebenskunst.gesamt} : {r:0,g:0};
+  });
+  let impulsQuote = null;
+  while (!impulsGesehen && versuche++ < 25) {
+    await p.click('[data-ziel="lebenskunst"]');
+    await p.waitForSelector('.task');
+    if (await p.$('.choice.denk')) {
+      impulsGesehen = true;
+      await p.click('.choice.denk');
+      await p.waitForSelector('.feedback.denk');
+      if (!await p.$('.quelle')) throw new Error('Denk-Impuls ohne Herkunftsangabe');
+      impulsQuote = await p.evaluate(() => {
+        const d = JSON.parse(localStorage.getItem('kidzootopia.v1')).profile[0];
+        return {r:d.ziele.lebenskunst.richtig, g:d.ziele.lebenskunst.gesamt};
+      });
+    }
+    await p.click('#raus');
+    await p.waitForSelector('#mission');
+  }
+  if (!impulsGesehen) throw new Error('In 25 Versuchen kein Denk-Impuls erschienen');
+  if (impulsQuote.g !== quoteVorher.g || impulsQuote.r !== quoteVorher.r)
+    throw new Error(`Denk-Impuls wurde bewertet: ${JSON.stringify(quoteVorher)} -> ${JSON.stringify(impulsQuote)}`);
+  console.log('Denk-Impuls erscheint und bleibt unbewertet ✅');
 }
 
 // Knacknuss vom Startbildschirm aus

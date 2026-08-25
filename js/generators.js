@@ -5,6 +5,7 @@
 
 import { GESCHICHTEN } from './geschichten.js';
 import { KNACKNUESSE, KANON, REDEWENDUNGEN, RECHENTRICKS } from './klassiker.js';
+import { ZITATE, KONTROLLE, SITUATIONEN, IMPULSE, DENKER } from './philosophie.js';
 
 const r = (a,b) => a + Math.floor(Math.random()*(b-a+1));
 const pick = a => a[r(0,a.length-1)];
@@ -520,6 +521,69 @@ kopfrechnen: (() => {
     rhythmus: lvl => gaussSumme(lvl),
     bauen:    lvl => bauernRechnen(lvl),
     code:     lvl => (Math.random() < .5 ? neunerprobe(lvl) : prozente(lvl))
+  };
+})(),
+
+/* ---------------- Klassiker: Lebenskunst (Stoa) ---------------- */
+lebenskunst: (() => {
+  /* Ein Denk-Impuls hat keine richtige Antwort. Er wird auch nicht bewertet –
+     sonst wäre es keine Frage mehr, sondern eine Prüfung. */
+  const impuls = () => {
+    const i = pick(IMPULSE);
+    return {
+      frage: `🏛️ ${i.frage}`,
+      typ: 'nachdenken',
+      optionen: shuffle(i.optionen.map(o => o.text)),
+      rueckmeldungen: Object.fromEntries(i.optionen.map(o => [o.text, o.antwort])),
+      antwort: i.optionen[0].text,
+      quelle: i.quelle,
+      keineWertung: true
+    };
+  };
+
+  const zitatVerstehen = () => { const z = pick(ZITATE);
+    return { ...wahl(`🏛️ ${z.text}\n\nWas ist damit gemeint?`, z.ok, z.bad,
+      'Lies das Zitat noch einmal langsam – Wort für Wort.'), quelle: z.quelle }; };
+
+  const inMeinerHand = () => {
+    const meins = pick(KONTROLLE.filter(k => k.meins));
+    const fremd = shuffle(KONTROLLE.filter(k => !k.meins)).slice(0,3);
+    return { ...wahl('🧠 Epiktet fragt: Was davon liegt wirklich in deiner Hand?',
+      meins.sache, fremd.map(f => f.sache),
+      'Alles, was andere oder das Wetter entscheiden, liegt nicht bei dir.'),
+      quelle:'Epiktet, Handbüchlein der Moral 1 – die berühmte Unterscheidung zwischen dem, was uns gehört, und dem, was nicht.' };
+  };
+
+  const nichtInMeinerHand = () => {
+    const fremd = pick(KONTROLLE.filter(k => !k.meins));
+    const meine = shuffle(KONTROLLE.filter(k => k.meins)).slice(0,3);
+    return { ...wahl('🧠 Und umgekehrt: Was davon liegt NICHT in deiner Hand?',
+      fremd.sache, meine.map(m => m.sache),
+      'Was du selbst tust oder lässt, liegt bei dir.'),
+      quelle:'Epiktet, Handbüchlein der Moral 1' };
+  };
+
+  const alltag = () => { const s = pick(SITUATIONEN);
+    return { ...wahl(`🤝 ${s.q}\n\nWas ist die klügste Antwort darauf?`, s.ok, s.bad, s.prinzip),
+      quelle: `${s.prinzip} — ${s.quelle}` }; };
+
+  const werSagts = () => {
+    const menge = ZITATE.filter(z => DENKER[z.denker]);
+    const z = pick(menge);
+    const andere = shuffle(Object.keys(DENKER).filter(k => k !== z.denker)).slice(0,3);
+    return { ...wahl(`🔎 Wer sagte das?\n\n${z.text}`, DENKER[z.denker].name,
+      andere.map(k => DENKER[k].name), 'Achte auf den Ton: Kaiser, Sklave oder Lehrer?'),
+      quelle: `${z.quelle}. ${DENKER[z.denker].name} lebte ${DENKER[z.denker].lebte}. ${DENKER[z.denker].wer}` };
+  };
+
+  /* Jede vierte Aufgabe ist ein Impuls ohne richtige Antwort. */
+  const vielleichtImpuls = fn => () => (Math.random() < 0.25 ? impuls() : fn());
+
+  return {
+    erzaehlen: vielleichtImpuls(zitatVerstehen),
+    knobeln:   vielleichtImpuls(() => (Math.random() < .5 ? inMeinerHand() : nichtInMeinerHand())),
+    team:      vielleichtImpuls(alltag),
+    entdecken: vielleichtImpuls(werSagts)
   };
 })(),
 
