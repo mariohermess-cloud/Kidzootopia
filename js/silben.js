@@ -265,3 +265,38 @@ export const silbenZahl = text =>
 
 export const wortZahl = text =>
   String(text).split(/\s+/).filter(w => /\p{L}/u.test(w)).length;
+
+/* --------------------------------------------------------------------------
+   Woerter zum Ueben, nach Etappen geordnet.
+
+   Ausgewaehlt nach zwei Regeln: Sie muessen im Kinderalltag vorkommen, und
+   die Silbentrennung muss eindeutig sein - Zweifelsfaelle gehoeren nicht in
+   eine Uebung, bei der das Kind eine Zahl nennen soll.
+   -------------------------------------------------------------------------- */
+export const UEBWOERTER = {
+  1: ['Nase','Blume','Hase','Vogel','Sonne','Katze','Baum','Haus','Hund','Ball',
+      'Kinder','Wolke','Garten','Regen','Wagen','Fenster','Mutter','Bruder',
+      'Apfel','Banane','Tomate','Melone','Schule','Tafel','Stuhl','Tisch'],
+  2: ['Schmetterling','Sonnenblume','Regenbogen','Taschenlampe','Kinderzimmer',
+      'Marienkäfer','Erdbeere','Kartoffel','Schokolade','Krokodil','Elefant',
+      'Giraffe','Feuerwehr','Bilderbuch','Apfelbaum','Klassenzimmer','Frühling',
+      'Schwester','Geschichte','Fahrrad','Turnhalle','Winterjacke'],
+  3: ['Verabredung','Überraschung','Freundschaft','Zusammenhang','Aufmerksamkeit',
+      'Beobachtung','Entscheidung','Werkzeugkasten','Naturkatastrophe',
+      'Jahreszeiten','Mannschaftssport','Gerechtigkeit','Verantwortung'],
+  4: ['Wahrscheinlichkeit','Voraussetzung','Beobachtungsgabe','Widerspruch',
+      'Gegenargument','Schlussfolgerung','Zusammenfassung','Selbstverständlich',
+      'Wissenschaftler','Untersuchung','Behauptung','Begründung'],
+  5: ['Unmündigkeit','Selbstverschuldet','Entschlossenheit','Gelassenheit',
+      'Widerstandsfähigkeit','Verhältnismäßigkeit','Nachvollziehbarkeit',
+      'Voraussetzungslos','Erkenntnistheorie','Wahrnehmungstäuschung']
+};
+
+/* Alle Uebungswoerter bis zu einer Etappe - so bleiben leichtere Woerter
+   auch spaeter dabei und die Aufgaben werden nicht ploetzlich alle schwer. */
+export const uebwoerterBis = etappe => {
+  const bis = Math.max(1, Math.min(5, etappe || 1));
+  const raus = [];
+  for (let e = Math.max(1, bis - 1); e <= bis; e++) raus.push(...(UEBWOERTER[e] || []));
+  return raus;
+};

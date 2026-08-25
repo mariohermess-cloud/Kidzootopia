@@ -10,6 +10,7 @@ import { VORLAGEN, EINSTRICH, SYMMETRIE, AUFTRAEGE, spiegeln } from './zeichnen.
 import { ZITATE, KONTROLLE, SITUATIONEN, IMPULSE, DENKER } from './philosophie.js';
 import { HAUPTWERKE } from './hauptwerke.js';
 import { TEXTE as LESETEXTE, texteFuer } from './lesen.js';
+import { silben, uebwoerterBis } from './silben.js';
 import { DENKFEHLER, FEHLSCHLUESSE, STILMITTEL, WORTWURZELN, SYLLOGISMEN } from './fortgeschritten.js';
 
 const r = (a,b) => a + Math.floor(Math.random()*(b-a+1));
@@ -454,6 +455,97 @@ puzzle: (() => {
     bewegen(){ const a = pick(ABLAEUFE.slice(2));
       return ordnen(`👟 Mach es in Gedanken mit: ${a.t}\nTippe die Schritte der Reihe nach an.`, a.s,
         'Stell dir vor, du machst es gerade wirklich.'); }
+  };
+})(),
+
+/* ---------------- Silben: der Schritt vom Buchstaben zum Wort ----------------
+   Silbenarbeit ist in der Grundschule das Mittel gegen muehsames Entziffern.
+   Vier Formen, damit es nicht immer dieselbe Frage ist. Alle rechnen mit
+   derselben Trennung, die auch die Faerbung beim Vorlesen benutzt. */
+silbenwissen: (() => {
+  const trenn = w => silben(w).join('-');
+
+  /* 1. Wie viele Silben? Die Antwortmoeglichkeiten liegen dicht beieinander,
+        sonst raet man richtig, ohne zu zaehlen. */
+  const zaehlen = (lvl) => {
+    const w = pick(uebwoerterBis(lvl));
+    const n = silben(w).length;
+    const nah = [n-2, n-1, n, n+1, n+2].filter(x => x >= 1 && x !== n);
+    return { typ:'choice', frage:`👏 Klatsche im Kopf mit: Wie viele Silben hat „${w}"?`,
+      antwort:String(n), optionen: shuffle([String(n), ...nah.slice(0,3).map(String)]),
+      hilfe:'Sprich das Wort langsam und klatsche bei jedem Stoß einmal.',
+      quelle:`${w} = ${trenn(w)} → ${n} Silben` };
+  };
+
+  /* 2. Welches Wort hat genau so viele Silben? Umgekehrte Richtung. */
+  const finden = (lvl) => {
+    const menge = uebwoerterBis(lvl);
+    const nachZahl = {};
+    for (const w of menge) (nachZahl[silben(w).length] ||= []).push(w);
+    const zahlen = Object.keys(nachZahl).filter(k => nachZahl[k].length >= 1);
+    const ziel = Number(pick(zahlen));
+    const richtig = pick(nachZahl[ziel]);
+    const andere = menge.filter(w => silben(w).length !== ziel);
+    return { typ:'choice',
+      frage:`🔎 Welches Wort hat genau ${ziel} Silben?`,
+      antwort: richtig,
+      optionen: shuffle([richtig, ...shuffle(andere).slice(0, 3)]),
+      hilfe:'Geh die Wörter der Reihe nach durch und klatsche jedes einmal ab.',
+      quelle:`${richtig} = ${trenn(richtig)}` };
+  };
+
+  /* 3. Silben in die richtige Reihenfolge - baut das Wort wieder zusammen.
+        Nutzt den vorhandenen Ordnen-Typ. */
+  /* Woerter mit zwei gleichen Silben scheiden aus: Beim Zusammensetzen waeren
+     die Teile ununterscheidbar, und beide Reihenfolgen waeren richtig. */
+  const eindeutig = w => {
+    const s = silben(w).map(x => x.toLowerCase());
+    return new Set(s).size === s.length;
+  };
+
+  const bauen = (lvl) => {
+    const lang = uebwoerterBis(lvl).filter(w => silben(w).length >= 3 && eindeutig(w));
+    const w = pick(lang.length ? lang : uebwoerterBis(lvl).filter(eindeutig));
+    const teile = silben(w);
+    return { typ:'ordnen',
+      frage:'🧩 Setz die Silben in die richtige Reihenfolge – welches Wort wird daraus?',
+      elemente: shuffle([...teile]), antwort: teile.join(' → '),
+      hilfe:'Sprich die Silben laut – meistens hörst du sofort, was zuerst kommt.',
+      quelle:`${w} = ${trenn(w)}` };
+  };
+
+  /* 4. Welche Silbe fehlt? Zeigt das Wort mit einer Luecke. */
+  const luecke = (lvl) => {
+    const lang = uebwoerterBis(lvl).filter(w => silben(w).length >= 3);
+    const w = pick(lang.length ? lang : uebwoerterBis(lvl));
+    const teile = silben(w);
+    const i = 1 + Math.floor(Math.random() * (teile.length - 1));
+    const fehlt = teile[i];
+    const gezeigt = teile.map((s, k) => k === i ? '___' : s).join('-');
+    /* Falsche Antworten sind echte Silben aus anderen Woertern - sie sehen
+       damit ploetzlich moeglich aus und man muss wirklich hinsehen. */
+    /* Falsche Antworten muessen untereinander UND von der richtigen
+       verschieden sein - sonst gaebe es zwei richtige Knoepfe. */
+    const gesehen = new Set([fehlt.toLowerCase()]);
+    const fremde = [];
+    for (const s of shuffle(uebwoerterBis(lvl).flatMap(x => silben(x)))) {
+      if (gesehen.has(s.toLowerCase())) continue;
+      gesehen.add(s.toLowerCase());
+      fremde.push(s);
+      if (fremde.length === 3) break;
+    }
+    return { typ:'choice', frage:`🧱 Welche Silbe fehlt?\n${gezeigt}`,
+      antwort: fehlt, optionen: shuffle([fehlt, ...fremde]),
+      hilfe:'Lies die Silben laut hintereinander und probiere, was passt.',
+      quelle:`${w} = ${trenn(w)}` };
+  };
+
+  return {
+    rhythmus:  zaehlen,
+    knobeln:   luecke,
+    bauen:     bauen,
+    entdecken: finden,
+    erzaehlen: (lvl) => pick([zaehlen, finden, bauen, luecke])(lvl)
   };
 })(),
 
@@ -1084,7 +1176,17 @@ export function baueAufgabe(zielId, weg, level = 1) {
 }
 
 export function pruefe(aufgabe, eingabe) {
-  const norm = s => String(s ?? '').trim().toLowerCase()
-    .replace(/\s+/g,' ').replace(',', '.').replace(/[.!?]$/,'').replace(/\s*€|\s*cm|\s*m$/,'');
+  /* Einheiten dürfen wegfallen: Wer "12" statt "12 cm" schreibt, hat recht.
+     ABER nur bei Zahlen. Vorher wurde stur jedes "m" am Ende abgeschnitten –
+     damit galt "Bau" als richtige Antwort auf "Baum", und bei den Silben
+     wurden "lam" und "la" zu derselben Lösung. Aufgefallen ist das erst, als
+     Wörter als Antwort dazukamen. */
+  const norm = s => {
+    let x = String(s ?? '').trim().toLowerCase().replace(/\s+/g, ' ').replace(',', '.');
+    x = x.replace(/[.!?]$/, '');
+    const ohneEinheit = x.replace(/\s*(€|cm|mm|km|kg|m)$/, '').trim();
+    /* Nur abschneiden, wenn danach wirklich eine Zahl übrig bleibt. */
+    return /^-?\d+(\.\d+)?$/.test(ohneEinheit) ? ohneEinheit : x;
+  };
   return norm(eingabe) === norm(aufgabe.antwort);
 }

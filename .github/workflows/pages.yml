@@ -30,6 +30,9 @@ jobs:
       - run: node tests/silben.mjs
       - run: node tests/lesen.mjs
       - run: node tests/skizze.mjs
+      - run: node tests/zahlfeld.mjs
+      - run: node tests/kommentar.mjs
+      - run: node tests/aussprache.mjs
 
   deploy:
     needs: test

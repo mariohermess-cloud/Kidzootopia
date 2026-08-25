@@ -65,5 +65,11 @@ if ('serviceWorker' in navigator) {
     streifen.querySelector('.update-text').onclick = () => location.reload();
     streifen.querySelector('.update-weg').onclick = () => streifen.remove();
     document.body.appendChild(streifen);
+
+    /* Nach 20 Sekunden von selbst weg. Ein Balken, der dauerhaft über dem
+       unteren Bildschirmrand liegt, verdeckt Knöpfe und fängt Tipper ab –
+       wer die neue Fassung will, findet sie im Eltern-Bereich unter
+       "Nach Aktualisierung suchen". */
+    setTimeout(() => streifen.remove(), 20000);
   }
 }

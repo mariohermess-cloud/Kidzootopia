@@ -13,7 +13,10 @@ import * as Avatar from './avatar.js';
 import { NUMMER, STAND, VERLAUF } from './version.js';
 import { textInSilben } from './silben.js';
 import * as Lesen from './lesen.js';
+import * as Aussprache from './aussprache.js';
 import * as Skizze from './skizze.js';
+import * as Zahl from './zahlfeld.js';
+import { kommentar, vorlesbar } from './kommentar.js';
 import { pruefe } from './generators.js';
 import { radar } from './chart.js';
 
@@ -237,6 +240,19 @@ function leseProfilKarte(p) {
           schneller als beim ersten. Genau das ist der Sinn der Übung.</p>` : ''}
       </div>
 
+      ${(() => {
+        const st = S.stolperWoerter(p);
+        if (!st.length) return '';
+        return `<div class="card flat" style="background:var(--bg);margin-top:12px">
+          <p class="small" style="margin:0 0 6px"><b>Wörter, an denen es hakt</b></p>
+          <div class="row wrap">${st.map(x =>
+            `<span class="pill grey">${esc(x.wort)}</span>`).join('')}</div>
+          <p class="small muted" style="margin:8px 0 0">Diese Wörter haben beim Vorlesen
+            mehrfach gestockt. Wörter, die flüssig werden, verschwinden von selbst wieder
+            aus der Liste – gespeichert wird dafür nur eine Zahl je Wort, kein Ton.
+            Es lohnt sich, sie einmal gemeinsam laut zu lesen.</p>
+        </div>`;
+      })()}
       <details style="margin-top:12px">
         <summary class="small muted">Was hier gemessen wird – und was nicht</summary>
         <p class="small muted" style="margin-top:8px">
@@ -254,6 +270,11 @@ function leseProfilKarte(p) {
           Beratungsstelle oder eine Fachdiagnostik der richtige Weg – nicht diese App.
           Was sie kann, ist üben helfen: Wiederholtes lautes Lesen desselben kurzen Textes
           gehört zu den am besten belegten Verfahren gegen stockendes Lesen.</p>
+        <p class="small muted">
+          <b>Die Farben Silbe für Silbe</b> zeigen den <b>Fluss</b>: wo gestockt und wo
+          gedehnt wurde. Sie zeigen <b>nicht</b>, ob ein Laut richtig gebildet wurde –
+          ob ein „Sch" sauber klingt, hört nur ein Mensch. Ein rotes Feld heißt
+          „hier hast du gehalten", nie „das war falsch gesprochen".</p>
       </details>
     </div>`;
 }
@@ -440,13 +461,18 @@ const SCHRITT_MS = 25;
    Zeilenende haengt. */
 function silbenHtml(text) {
   const stuecke = textInSilben(text);
-  let html = '', wort = '', n = 0;
+  let html = '', wort = '', n = 0, nummer = 0;
   const wortSchliessen = () => {
     if (wort) html += `<span class="wort">${wort}</span>`;
     wort = ''; n = 0;
   };
   for (const s of stuecke) {
-    if (s.typ === 'silbe') { wort += `<span class="sil s${n++ % 2}">${esc(s.text)}</span>`; continue; }
+    if (s.typ === 'silbe') {
+      /* Jede Silbe bekommt eine laufende Nummer. Damit lässt sie sich während
+         des Lesens einzeln hervorheben und danach einzeln einfärben. */
+      wort += `<span class="sil s${n++ % 2}" data-sil="${nummer++}">${esc(s.text)}</span>`;
+      continue;
+    }
     /* Wortende heisst nur: Farbwechsel von vorn. Geschlossen wird erst beim
        Leerzeichen - sonst faellt ein Punkt allein auf die naechste Zeile. */
     if (s.typ === 'wortende') { n = 0; continue; }
@@ -456,6 +482,37 @@ function silbenHtml(text) {
   }
   wortSchliessen();
   return html;
+}
+
+
+/* Die Silben des Textes als flache Liste – dieselbe Reihenfolge wie die
+   nummerierten Felder auf dem Bildschirm. Das ist die Brücke zwischen dem,
+   was zu lesen war, und dem, was gehört wurde. */
+function silbenListe(text) {
+  const raus = [];
+  let wortSilben = [], wortText = '';
+  for (const s of textInSilben(text)) {
+    if (s.typ === 'silbe') { wortSilben.push(s.text); wortText += s.text; continue; }
+    if (s.typ === 'wortende') {
+      wortSilben.forEach((x, i) => raus.push({ text: x, wort: wortText, imWort: i,
+                                               vonWort: wortSilben.length }));
+      wortSilben = []; wortText = '';
+    }
+  }
+  wortSilben.forEach((x, i) => raus.push({ text: x, wort: wortText, imWort: i,
+                                           vonWort: wortSilben.length }));
+  return raus;
+}
+
+/* Silben nach Wörtern gruppieren – so wird die Betonung je Wort geprüft. */
+function nachWoertern(silben) {
+  const raus = [];
+  let aktuell = null;
+  for (const s of silben) {
+    if (s.imWort === 0) { aktuell = { wort: s.wort, silben: [] }; raus.push(aktuell); }
+    aktuell?.silben.push(s);
+  }
+  return raus;
 }
 
 /* Nimmt auf und liefert die Lautstärke-Hüllkurve. Der Ton selbst wird nie
@@ -543,10 +600,22 @@ function lesepult(p, a, bereich, fertig) {
     }
 
     const beginn = Date.now();
+    const felder = [...bereich.querySelectorAll('[data-sil]')];
+    const wieVieleSilben = felder.length;
+
     const uhr = setInterval(() => {
       bereich.querySelector('#leseUhr').textContent =
         ((Date.now() - beginn) / 1000).toFixed(1).replace('.', ',') + ' s';
-    }, 100);
+
+      /* Mitlesen: Die App zählt in der laufenden Aufnahme die Silbengipfel und
+         hebt hervor, wo sie das Kind vermutet. Erkannt wird dabei nichts – sie
+         weiß ja, was dasteht, und muss nur zuordnen. Bei einem Verzähler
+         verrutscht die Markierung; deshalb ist sie eine Hilfe, kein Urteil. */
+      const bisher = Aussprache.gipfel(auf.huellkurve, SCHRITT_MS).length;
+      const wo = Math.min(bisher, wieVieleSilben) - 1;
+      felder.forEach((f, i) => f.classList.toggle('jetzt', i === wo));
+      if (wo >= 0 && felder[wo]) felder[wo].scrollIntoView({ block:'nearest', behavior:'smooth' });
+    }, 220);
 
     knopf.disabled = false;
     knopf.textContent = '✓ Fertig gelesen';
@@ -555,11 +624,60 @@ function lesepult(p, a, bereich, fertig) {
     knopf.onclick = () => {
       clearInterval(uhr);
       auf.stopp();
+      felder.forEach(f => f.classList.remove('jetzt'));
       fertig(auf.huellkurve, { schrittMs: SCHRITT_MS });
     };
   };
 }
 
+
+
+/* Der gelesene Text, Silbe für Silbe eingefärbt.
+
+   Die Farben stehen für FLUSS, nicht für Aussprache-Richtigkeit. Ob ein Laut
+   korrekt gebildet wurde, hört nur ein Mensch – die App misst, wo gestockt und
+   wo gedehnt wurde. Genau das steht auch daneben, damit ein rotes Feld nicht
+   als "falsch gesprochen" gelesen wird. */
+function silbenBildHtml(a) {
+  const bild = a.silbenBild;
+  if (!bild || !bild.silben.length) return '';
+
+  if (!bild.sicher) return `
+    <div class="small muted" style="margin-bottom:10px">
+      🎧 Diesmal ließ sich nicht sicher zuordnen, wo welche Silbe lag
+      (${bild.gefunden} gehört, ${bild.erwartet} im Text). Deshalb ohne Färbung –
+      lieber nichts zeigen als etwas Falsches.</div>`;
+
+  let n = 0;
+  const gefaerbt = textInSilben(a.lesetext).map(s => {
+    if (s.typ === 'wortende') return '';
+    if (s.typ === 'zeichen') return esc(s.text);
+    const info = bild.silben[n++];
+    const farbe = info?.farbe || 'gruen';
+    const titel = info?.gefunden
+      ? `${Math.round(info.dauerMs)} ms${info.pauseMs > 200 ? `, davor ${Math.round(info.pauseMs)} ms Pause` : ''}`
+      : 'nicht wiedergefunden';
+    return `<span class="silbild ${farbe}" title="${esc(titel)}">${esc(s.text)}</span>`;
+  }).join('');
+
+  const b = a.silbenBlick;
+  const bet = a.betonung || [];
+  const betRichtig = bet.filter(x => x.stimmt).length;
+
+  return `
+    <div class="silbenbild">${gefaerbt}</div>
+    <div class="silblegende small">
+      <span><i class="pkt gruen"></i>flüssig ${b.gruen}</span>
+      <span><i class="pkt gelb"></i>gedehnt ${b.gelb}</span>
+      <span><i class="pkt orange"></i>gestockt ${b.orange}</span>
+      <span><i class="pkt rot"></i>langer Halt ${b.rot}</span>
+    </div>
+    ${bet.length >= 2 ? `<div class="small" style="margin:8px 0;font-weight:600">
+      🎵 Betonung: bei ${betRichtig} von ${bet.length} Wörtern auf der richtigen Silbe.</div>` : ''}
+    <div class="small muted" style="margin-bottom:10px">
+      Die Farben zeigen, <b>wo du gestockt hast</b> – nicht, ob ein Laut falsch war.
+      Das hört nur ein Mensch.</div>`;
+}
 
 /* Rueckmeldung nach dem Vorlesen. Bewusst OHNE Punktzahl und ohne Note:
    Wer beim Vorlesen benotet wird, liest vorsichtiger statt fluessiger. */
@@ -567,6 +685,7 @@ function leseRueckmeldung(a) {
   const w = a.leseWerte, u = a.leseUrteil, f = a.leseFortschritt;
   const STERNE = { 1: '🌱', 2: '🌿', 3: '🌳', 4: '🌟' };
   return `
+    ${silbenBildHtml(a)}
     <div style="font-weight:800;font-size:1.05rem;margin-bottom:6px">
       ${STERNE[u.stufe]} ${esc(u.name)}</div>
     <div class="small" style="font-weight:500;margin-bottom:10px">${esc(u.text)}</div>
@@ -1158,6 +1277,15 @@ function screenSession(p, opts = {}) {
           const werte = Lesen.auswerten(huellkurve, {
             text: a.lesetext, schrittMs: extra.schrittMs, durchgang: a.durchgang });
           a.leseWerte = werte;
+
+          /* Silbe für Silbe zuordnen: Wo im Text hat es gehakt? Das geht nur,
+             weil die App den Text kennt – erkannt wird nichts. */
+          const liste = silbenListe(a.lesetext);
+          a.silbenBild = Aussprache.zuordnen(liste, huellkurve, { schrittMs: extra.schrittMs });
+          a.betonung = a.silbenBild.sicher
+            ? Aussprache.betonungPruefen(nachWoertern(a.silbenBild.silben)) : [];
+          a.silbenBlick = Aussprache.zusammenfassung(a.silbenBild, a.betonung);
+          if (a.silbenBild.sicher) S.merkeStolper(p, a.silbenBlick.stolpersteine);
           a.leseUrteil = Lesen.einordnung(werte, p.etappe || 1);
           /* Der vorige Durchgang desselben Textes - der Vergleich ist der Kern
              des wiederholten Lautlesens. */
@@ -1247,14 +1375,30 @@ function screenSession(p, opts = {}) {
       zeichnen();
 
     } else {
+      /* Eigenes Tastenfeld statt der Systemtastatur, sobald eine Zahl gefragt
+         ist. Grund: inputmode="numeric" zeigt auf dem iPad einen Ziffernblock
+         OHNE Minus und OHNE Komma – Aufgaben mit der Antwort -1 oder 12,5 waren
+         dort schlicht nicht lösbar. Außerdem schiebt die Systemtastatur auf dem
+         Handy die halbe Aufgabe aus dem Bild. */
+      const zahlAufgabe = Zahl.brauchtZahlen(a.antwort);
       bereich.innerHTML = `
         <label class="field" style="margin-top:14px"><span class="sr">Antwort</span>
-          <input type="text" inputmode="numeric" id="eingabe" autocomplete="off"
+          <input type="text" inputmode="${zahlAufgabe ? 'decimal' : 'text'}" id="eingabe"
+            autocomplete="off" ${zahlAufgabe ? 'readonly' : ''}
             placeholder="Deine Antwort" ${ergebnis!==null?'disabled':''} value="${esc(eingabe)}"></label>
+        ${zahlAufgabe && ergebnis === null ? `
+          <div class="zahlfeld" id="zahlfeld">
+            ${Zahl.TASTEN.map(k => `<button type="button" class="ztaste${
+              k === '⌫' ? ' weg' : k === '-' || k === ',' ? ' neben' : ''
+            }" data-k="${esc(k)}">${esc(k)}</button>`).join('')}
+          </div>` : ''}
         ${ergebnis===null?'<button class="btn" id="pruefen">Prüfen</button>':''}`;
       const feld = bereich.querySelector('#eingabe');
       if (ergebnis === null) {
-        feld.focus();
+        if (!zahlAufgabe) feld.focus();
+        bereich.querySelectorAll('[data-k]').forEach(b => b.onclick = () => {
+          feld.value = Zahl.taste(feld.value, b.dataset.k);
+        });
         bereich.querySelector('#pruefen').onclick = () => auswerten(a, feld.value);
         feld.addEventListener('keydown', e => { if (e.key === 'Enter') auswerten(a, feld.value); });
       }
@@ -1307,6 +1451,7 @@ function screenSession(p, opts = {}) {
         <button class="btn" id="weiter" style="margin-top:12px">
           ${sess.index >= sess.laenge ? 'Ergebnis ansehen' : 'Weiter →'}</button>` : `
         <div class="feedback ${ergebnis?'ok':'bad'} pop">
+          ${a.kommentar ? `<div class="kommentar">${esc(a.kommentar)}</div>` : ''}
           ${a.leseWerte ? leseRueckmeldung(a) : zeichenAufgabe
             ? (ergebnis ? `✅ Getroffen! ${esc(eingabe)}` : `🖌️ Noch nicht ganz: ${esc(eingabe)}`)
             : ergebnis ? '✅ Richtig! Super gemacht.'
@@ -1351,7 +1496,19 @@ function screenSession(p, opts = {}) {
     S.verbuche(p, { zielId:a.ziel.id, weg:a.weg, level:a.level, richtig:ok, bruecke:a.bruecke, ms,
                     tippsGenutzt, knacknuss: !!a.knacknuss, keineWertung: !!a.keineWertung,
                     skizze: Skizze.benutzt(a.blatt) });
-    Avatar.reagiere(ok ? 'richtig' : 'falsch', { serie: S.zielStand(p, a.ziel.id).serie });
+    /* Ein Satz, der sich auf DIESE Antwort bezieht – nicht ein allgemeines Lob.
+       Die App weiß dafür mehr, als aus der Aufgabe allein hervorginge: wie
+       lange gebraucht, wie viele Tipps, wie knapp daneben, ob gemalt wurde. */
+    const standNachher = S.zielStand(p, a.ziel.id);
+    if (!a.keineWertung) {
+      a.kommentar = kommentar({
+        richtig: ok, antwort: a.antwort, eingabe, ms, tipps: tippsGenutzt,
+        serie: standNachher.serie, levelHoch: standNachher.level > (a.level || 1),
+        skizze: Skizze.benutzt(a.blatt), zielTitel: a.ziel.titel,
+        wegName: a.wegInfo?.name || '', knacknuss: !!a.knacknuss });
+      if (p.vorlesen && vorlesbar(a.kommentar)) vorlesen(a.kommentar);
+    }
+    Avatar.reagiere(ok ? 'richtig' : 'falsch', { serie: standNachher.serie });
     if (ok && navigator.vibrate) navigator.vibrate(20);
     render(a, ok, String(eingabe));
   };
