@@ -29,6 +29,7 @@ jobs:
       - run: node tests/version.mjs
       - run: node tests/silben.mjs
       - run: node tests/lesen.mjs
+      - run: node tests/skizze.mjs
 
   deploy:
     needs: test

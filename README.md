@@ -165,7 +165,29 @@ stellt eine Etappe höher.
      **keine Diagnose**: Eine Lese-Rechtschreib-Schwäche erkennt man nicht an einer Tonaufnahme.
      Beides steht so auch im Eltern-Bereich.
 
-10. **Der Begleiter** 🦖 – das gewählte Lieblingstier lebt in der Ecke des Bildschirms.
+10. **Schmierblatt an jeder Aufgabe** 📝 – *die Nebenrechnung zum Mitmalen*
+   „Zeichne eine Skizze" ist die älteste und robusteste Problemlöse-Strategie überhaupt – bei
+   Polya ein eigener Schritt, in der Grundschule der übliche Weg von der Sprache zur Rechnung.
+   Ein Kind, das bei „Anna hat 3 Tüten mit je 4 Äpfeln" nicht weiterkommt, kommt fast immer
+   weiter, sobald es drei Tüten malen darf. Bisher gab es eine Zeichenfläche nur im Fach
+   Zeichnen – also ausgerechnet dort nicht, wo sie am meisten hilft.
+   * **✏️ Zeichnen** – frei aufmalen: Tüten, Balken, Pfeile, Striche. Mit Raster im
+     Hintergrund, damit Untereinanderschreiben gelingt.
+   * **🔵 Zählen** – jeder Tipp setzt einen **nummerierten** Punkt und der Zähler läuft mit.
+     Genau dafür, wozu Kinder sonst Striche machen und sich verzählen. Nochmal auf einen Punkt
+     tippen nimmt ihn weg.
+   * **⬅️ Zurück** nimmt das *zuletzt* Getane – egal ob Strich oder Punkt. Klingt
+     selbstverständlich, ist es nicht: Ohne Zeitstempel verschwindet die Arbeit von vorhin
+     statt des Versehens von eben.
+   * Standardmäßig zugeklappt, damit es die Aufgabe nicht verdeckt. Es bleibt nach der Antwort
+     stehen – wer falsch lag, will seine Skizze neben der Lösung sehen. Jede neue Aufgabe
+     bekommt ein frisches Blatt.
+   * **Wird nie bewertet** und wandert nicht in die Galerie. Es ist Schmierpapier. Gespeichert
+     wird nur, *dass* es benutzt wurde: Der Eltern-Bereich zeigt, bei welchen Lernzielen der
+     Weg über ein Bild führt – kein Gütesiegel in die eine oder andere Richtung, sondern ein
+     Hinweis darauf, wie das Kind denkt.
+
+11. **Der Begleiter** 🦖 – das gewählte Lieblingstier lebt in der Ecke des Bildschirms.
    Es hüpft und wirft Funken bei Erfolg, wackelt und tröstet bei Fehlern, winkt zum Start
    und dreht sich am Ende. Passiert länger nichts, gähnt es, schaut sich um – und schläft
    nach gut einer Minute mit einem „Zzz“ ein. Antippen weckt es. Für kleine Kinder ist das
@@ -210,7 +232,7 @@ stellt eine Etappe höher.
      werden **bewusst nicht bewertet** und fließen in keine Quote ein – sonst wären es
      Prüfungen statt Fragen.
 
-12. **Eltern-Bereich** – Fortschritt je Lernziel, Aktivität der letzten 7 Tage,
+13. **Eltern-Bereich** – Fortschritt je Lernziel, Aktivität der letzten 7 Tage,
    Klartext-Empfehlungen („So lernt Ihr Kind am leichtesten – und daran arbeiten wir gerade“),
    Export/Import der Daten.
 
@@ -284,7 +306,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 17 · Stand 25.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 18 · Stand 25.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.
@@ -367,6 +389,7 @@ npm run test:kunst        # Zeichnungsauswertung: jedes Maß gegen seinen Gegenf
 npm run test:version      # angezeigte Fassung = ausgelieferte Fassung (Service-Worker-Cache)
 npm run test:silben       # Silbentrennung an 152 handgeprüften Wörtern
 npm run test:lesen        # Leseauswertung an künstlichen Aufnahmen mit bekannter Wahrheit
+npm run test:skizze       # Schmierblatt: Zählen, Zurücknehmen, Reihenfolge
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
@@ -386,6 +409,7 @@ js/sprache.js         Vorlesen über die Gerätestimme (Web Speech API)
 js/geschichten.js     Hörgeschichten mit Verständnisfragen
 js/zeichnen.js        Zeichenvorlagen, Ein-Strich-Figuren, Bewertung (Abdeckung/Genauigkeit)
 js/avatar.js          Der Begleiter: Reaktionen, Gesten, Leerlauf und Schlaf
+js/skizze.js          Schmierblatt: Striche, Zählmarken, Rückgängig
 js/silben.js          Deutsche Silbentrennung – Grundlage der Silbenfärbung
 js/lesen.js           Lesetexte und Auswertung der Leseflüssigkeit (Tempo, Pausen, Betonung)
 js/version.js         Fassung, Datum und Änderungsverlauf – die einzige Stelle dafür

@@ -13,6 +13,7 @@ import * as Avatar from './avatar.js';
 import { NUMMER, STAND, VERLAUF } from './version.js';
 import { textInSilben } from './silben.js';
 import * as Lesen from './lesen.js';
+import * as Skizze from './skizze.js';
 import { pruefe } from './generators.js';
 import { radar } from './chart.js';
 
@@ -255,6 +256,171 @@ function leseProfilKarte(p) {
           gehört zu den am besten belegten Verfahren gegen stockendes Lesen.</p>
       </details>
     </div>`;
+}
+
+
+
+/* Wo greift das Kind zum Schmierblatt? Kein Gütesiegel in beide Richtungen –
+   viel Malen ist nicht besser als wenig, es zeigt nur den Zugang. */
+function skizzenKarte(p) {
+  const b = S.skizzenBild(p);
+  if (!b) return '';
+  const NAMEN = Object.fromEntries(ZIELE.map(z => [z.id, z.titel]));
+  return `
+    <div class="card">
+      <h3>📝 Wo eine Skizze hilft</h3>
+      <p class="muted small">Ihr Kind hat bei <b>${b.gesamt}</b> Aufgaben zum Schmierblatt
+        gegriffen – gemalt, gezählt oder aufgeschrieben, bevor es geantwortet hat.
+        Am häufigsten hier:</p>
+      <ul class="clean small" style="margin-top:8px">
+        ${b.ziele.map(([id, n]) =>
+          `<li>· <b>${esc(NAMEN[id] || id)}</b> – ${n}×</li>`).join('')}
+      </ul>
+      <p class="small muted" style="margin-top:10px">Das ist kein gutes oder schlechtes
+        Zeichen. Es zeigt, wo der Weg über ein Bild führt statt über den Kopf – und genau
+        dort lohnt es sich, zu Hause auch mit Stift und Papier zu arbeiten.
+        „Zeichne eine Skizze" ist bei Polya ein eigener Schritt beim Problemlösen.</p>
+    </div>`;
+}
+
+/* ------------------------------ Schmierblatt ------------------------------
+   Nebenrechnung zum Mitmalen, an jeder Aufgabe. Standardmäßig zugeklappt,
+   damit es die Aufgabe nicht verdeckt – aber immer einen Tipp entfernt.
+   Wird nie bewertet und wandert nicht in die Galerie. */
+function schmierblatt(a, host) {
+  a.blatt ||= Skizze.leeresBlatt();
+  const blatt = a.blatt;
+
+  const huelle = document.createElement('details');
+  huelle.className = 'schmier';
+  huelle.open = !!a.blattOffen;
+  huelle.innerHTML = `
+    <summary>📝 Schmierblatt <span class="small muted">– zum Aufmalen, wird nicht bewertet</span></summary>
+    <div class="schmier-inhalt">
+      <div class="row wrap" style="margin-bottom:8px">
+        <button type="button" class="btn small" data-wz="stift">✏️ Zeichnen</button>
+        <button type="button" class="btn small quiet" data-wz="zaehlen">🔵 Zählen</button>
+        <span class="pill grey" id="zaehlStand" hidden></span>
+      </div>
+      <canvas class="schmier-brett" id="schmierBrett"></canvas>
+      <div class="row" style="margin-top:8px">
+        <button type="button" class="btn small ghost" id="schmierZurueck">⬅️ Zurück</button>
+        <button type="button" class="btn small quiet" id="schmierLeeren">↺ Leeren</button>
+      </div>
+      <p class="small muted" style="margin-top:8px" id="schmierTipp"></p>
+    </div>`;
+  host.appendChild(huelle);
+
+  const leinwand = huelle.querySelector('#schmierBrett');
+  const stift = leinwand.getContext('2d');
+  const stand = huelle.querySelector('#zaehlStand');
+  const tipp = huelle.querySelector('#schmierTipp');
+  let werkzeug = a.blattWerkzeug || 'stift', aktuell = null;
+
+  const TIPPS = {
+    stift: 'Male die Aufgabe auf: Tütchen, Balken, Pfeile – was dir hilft.',
+    zaehlen: 'Tippe für jedes Ding einen Punkt. Nochmal auf einen Punkt tippen nimmt ihn weg.'
+  };
+
+  const groesse = () => {
+    const breite = Math.min(huelle.clientWidth || 320, 460);
+    const hoehe = Math.round(breite * 0.62);
+    const q = window.devicePixelRatio || 1;
+    leinwand.width = Math.round(breite * q); leinwand.height = Math.round(hoehe * q);
+    leinwand.style.width = breite + 'px'; leinwand.style.height = hoehe + 'px';
+    malen();
+  };
+
+  const malen = () => {
+    const stil = getComputedStyle(document.body);
+    const B = leinwand.width, H = leinwand.height;
+    stift.clearRect(0, 0, B, H);
+
+    /* Ein Raster im Hintergrund. Karopapier ist keine Zier: Es hilft beim
+       Untereinanderschreiben und beim gleich großen Malen. */
+    stift.strokeStyle = stil.getPropertyValue('--line');
+    stift.lineWidth = 1; stift.globalAlpha = .5;
+    const schritt = B / 12;
+    for (let x = schritt; x < B; x += schritt) {
+      stift.beginPath(); stift.moveTo(x, 0); stift.lineTo(x, H); stift.stroke();
+    }
+    for (let y = schritt; y < H; y += schritt) {
+      stift.beginPath(); stift.moveTo(0, y); stift.lineTo(B, y); stift.stroke();
+    }
+    stift.globalAlpha = 1;
+
+    stift.strokeStyle = stil.getPropertyValue('--ink');
+    stift.lineWidth = Math.max(3, B * 0.008);
+    stift.lineJoin = 'round'; stift.lineCap = 'round';
+    for (const l of blatt.striche) {
+      if (!l.length) continue;
+      stift.beginPath();
+      stift.moveTo(l[0].x * B, l[0].y * H);
+      for (const p of l.slice(1)) stift.lineTo(p.x * B, p.y * H);
+      if (l.length === 1) stift.lineTo(l[0].x * B + .1, l[0].y * H);
+      stift.stroke();
+    }
+
+    /* Zählpunkte werden nummeriert – dann muss niemand am Ende nachzählen. */
+    const r = Math.max(11, B * 0.028);
+    blatt.marken.forEach((m, i) => {
+      stift.beginPath();
+      stift.arc(m.x * B, m.y * H, r, 0, 7);
+      stift.fillStyle = stil.getPropertyValue('--brand'); stift.fill();
+      stift.fillStyle = '#fff';
+      stift.font = `700 ${Math.round(r * 1.1)}px system-ui, sans-serif`;
+      stift.textAlign = 'center'; stift.textBaseline = 'middle';
+      stift.fillText(String(i + 1), m.x * B, m.y * H);
+    });
+
+    stand.hidden = blatt.marken.length === 0;
+    stand.textContent = `${blatt.marken.length} ${blatt.marken.length === 1 ? 'Punkt' : 'Punkte'}`;
+  };
+
+  const stelle = e => {
+    const r = leinwand.getBoundingClientRect();
+    return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height,
+             t: Math.round(performance.now()) };
+  };
+
+  leinwand.addEventListener('pointerdown', e => {
+    e.preventDefault(); e.stopPropagation();
+    leinwand.setPointerCapture(e.pointerId);
+    if (werkzeug === 'zaehlen') { Skizze.marke(blatt, stelle(e)); malen(); return; }
+    aktuell = Skizze.neuerStrich(blatt, stelle(e));
+    malen();
+  });
+  leinwand.addEventListener('pointermove', e => {
+    if (!aktuell) return;
+    e.preventDefault();
+    aktuell.push(stelle(e));
+    malen();
+  });
+  const loslassen = () => { aktuell = null; };
+  ['pointerup','pointercancel','pointerleave'].forEach(n =>
+    leinwand.addEventListener(n, loslassen));
+
+  const werkzeugZeigen = () => {
+    huelle.querySelectorAll('[data-wz]').forEach(b => {
+      const an = b.dataset.wz === werkzeug;
+      b.classList.toggle('quiet', !an);
+    });
+    tipp.textContent = TIPPS[werkzeug];
+    a.blattWerkzeug = werkzeug;
+  };
+  huelle.querySelectorAll('[data-wz]').forEach(b => b.onclick = () => {
+    werkzeug = b.dataset.wz; werkzeugZeigen();
+  });
+  huelle.querySelector('#schmierZurueck').onclick = () => { Skizze.zurueck(blatt); malen(); };
+  huelle.querySelector('#schmierLeeren').onclick = () => { Skizze.leeren(blatt); malen(); };
+  huelle.addEventListener('toggle', () => {
+    a.blattOffen = huelle.open;
+    if (huelle.open) groesse();
+  });
+
+  werkzeugZeigen();
+  if (huelle.open) groesse(); else setTimeout(groesse, 0);
+  return huelle;
 }
 
 /* ------------------------------ Lesepult ------------------------------
@@ -942,6 +1108,7 @@ function screenSession(p, opts = {}) {
         <div id="antwortbereich"></div>
         <div id="tippBereich"></div>
         <div id="fb"></div>
+        <div id="blattBereich"></div>
       </div>
       <p class="muted small center">${esc(a.wegInfo.hinweis)}</p>`;
     view().querySelector('#raus').onclick = () => { stopp(); zeige('lernen'); };
@@ -1112,6 +1279,18 @@ function screenSession(p, opts = {}) {
     };
     tippsZeichnen();
 
+    /* Schmierblatt an fast jede Aufgabe. Ausgenommen sind nur die, die selbst
+       schon eine Zeichenfläche haben (Fach Zeichnen) und das Vorlesen – dort
+       soll das Kind auf die Zeile schauen, nicht malen.
+       Es bleibt auch nach der Antwort stehen: Wer falsch lag, will seine Skizze
+       neben der Lösung sehen, nicht neu anfangen. */
+    if (a.typ !== 'zeichnen' && a.typ !== 'lesen') {
+      /* Unter der Rückmeldung: Solange noch nichts beantwortet ist, ist die
+         Rückmeldung leer, das Blatt sitzt also direkt unter den Tipps. Danach
+         steht die Lösung samt "Weiter" darüber und wird nicht verdeckt. */
+      schmierblatt(a, view().querySelector('#blattBereich'));
+    }
+
     if (ergebnis !== null) {
       const zeichenAufgabe = a.typ === 'zeichnen' && !a.keineWertung;
       const denkAufgabe = a.typ === 'nachdenken' || (a.typ === 'zeichnen' && a.keineWertung)
@@ -1170,7 +1349,8 @@ function screenSession(p, opts = {}) {
     if (!a.keineWertung) sess.verlauf.push({ ziel:a.ziel.id, weg:a.weg, ok, bruecke:a.bruecke, ms });
     // Zeit fliesst in die Wirksamkeit eines Weges ein – schnell und sicher zaehlt mehr.
     S.verbuche(p, { zielId:a.ziel.id, weg:a.weg, level:a.level, richtig:ok, bruecke:a.bruecke, ms,
-                    tippsGenutzt, knacknuss: !!a.knacknuss, keineWertung: !!a.keineWertung });
+                    tippsGenutzt, knacknuss: !!a.knacknuss, keineWertung: !!a.keineWertung,
+                    skizze: Skizze.benutzt(a.blatt) });
     Avatar.reagiere(ok ? 'richtig' : 'falsch', { serie: S.zielStand(p, a.ziel.id).serie });
     if (ok && navigator.vibrate) navigator.vibrate(20);
     render(a, ok, String(eingabe));
@@ -1604,6 +1784,7 @@ function screenEltern(p) {
       <input type="file" id="importFile" accept="application/json" hidden>
       <button class="btn danger" id="reset" style="margin-top:14px">Alle Daten löschen</button>
     </div>
+    ${skizzenKarte(p)}
     ${leseProfilKarte(p)}
     ${versionsKarte()}
 `;
