@@ -9,6 +9,7 @@ import { FAMILIEN } from './knacknuss_familien.js';
 import { VORLAGEN, EINSTRICH, SYMMETRIE, AUFTRAEGE, spiegeln } from './zeichnen.js';
 import { ZITATE, KONTROLLE, SITUATIONEN, IMPULSE, DENKER } from './philosophie.js';
 import { HAUPTWERKE } from './hauptwerke.js';
+import { TEXTE as LESETEXTE, texteFuer } from './lesen.js';
 import { DENKFEHLER, FEHLSCHLUESSE, STILMITTEL, WORTWURZELN, SYLLOGISMEN } from './fortgeschritten.js';
 
 const r = (a,b) => a + Math.floor(Math.random()*(b-a+1));
@@ -454,6 +455,35 @@ puzzle: (() => {
       return ordnen(`👟 Mach es in Gedanken mit: ${a.t}\nTippe die Schritte der Reihe nach an.`, a.s,
         'Stell dir vor, du machst es gerade wirklich.'); }
   };
+})(),
+
+/* ---------------- Lautlesen: derselbe Text dreimal ----------------
+   Wiederholtes Lautlesen (Samuels 1979) ist das Verfahren, das bei stockendem
+   Lesen nachweislich wirkt - nicht immer neue Texte, sondern derselbe Text
+   mehrmals. Deshalb kommt jeder Text in drei Durchgaengen, und der Durchgang
+   steht mit in der Aufgabe. */
+lautlesen: (() => {
+  const RAHMEN = {
+    rhythmus:  'Lies im Takt – die Silben sind eingefärbt, damit du sie als Ganzes greifst.',
+    erzaehlen: 'Lies so vor, als säße jemand vor dir, der die Geschichte noch nicht kennt.',
+    bewegen:   'Setz dich gerade hin und atme einmal durch. Dann los.'
+  };
+  /* lvl ist hier die Etappe, nicht der Uebungsstand - siehe engine.js. */
+  const bau = (weg) => (lvl) => {
+    const menge = texteFuer(Math.min(5, Math.max(1, lvl)));
+    const t = pick(menge.length ? menge : LESETEXTE);
+    /* Der Durchgang wird mitgewuerfelt: Beim ersten Mal ist der Text neu,
+       beim dritten sitzt er. Die Oberflaeche zeigt "Durchgang n von 3". */
+    const durchgang = 1 + Math.floor(Math.random() * 3);
+    return {
+      typ:'lesen', lesetext: t.text, lesetitel: t.titel, durchgang,
+      frage:`🎤 Lies laut vor: „${t.titel}"${durchgang > 1 ? ` (Durchgang ${durchgang})` : ''}\n${RAHMEN[weg]}`,
+      antwort:'vorgelesen',
+      hilfe:'Fahr mit dem Finger unter der Zeile mit. Bei einem Punkt darfst du Luft holen.',
+      quelle:'Wiederholtes Lautlesen: derselbe Text zwei- bis dreimal gelesen wirkt besser als immer neue Texte.'
+    };
+  };
+  return { rhythmus: bau('rhythmus'), erzaehlen: bau('erzaehlen'), bewegen: bau('bewegen') };
 })(),
 
 /* ---------------- Zeichnen: messbare Aufgaben ---------------- */

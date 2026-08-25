@@ -39,6 +39,15 @@ export function aufbauen(emoji) {
 
 export function verstecken() { if (wurzel) wurzel.hidden = true; leerlaufStoppen(); }
 
+/* Beim Vorlesen zieht sich der Begleiter zurueck: Er sitzt in derselben Ecke
+   wie der Text und verdeckte im Bildschirmfoto mitten im Satz zwei Woerter.
+   Wer laut liest, soll auf die Zeile schauen und nicht auf ein huepfendes Tier. */
+export function beiseite(ja = true) {
+  if (!wurzel) return;
+  wurzel.classList.toggle('beiseite', !!ja);
+  if (ja) leerlaufStoppen(); else leerlaufStarten();
+}
+
 function gestik(name, dauer = 900) {
   if (!figur) return;
   figur.classList.remove(...GESTEN, 'schlafen');

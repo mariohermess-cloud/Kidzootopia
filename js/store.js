@@ -91,6 +91,7 @@ function migriere(p) {
   // Etappe: 1 Grundschule … 5 Erwachsene. Ältere Profile kannten nur die Klasse.
   p.etappe      ??= (p.klasse >= 8 ? 3 : p.klasse >= 5 ? 2 : 1);
   p.gesehen     ||= {};   // je Ziel die zuletzt gestellten Aufgaben (Kurzkennung)
+  p.lesungen    ||= [];   // Leseflüssigkeit je Durchgang (nur Zahlen, nie Ton)
   p.galerie     ||= [];   // freie Zeichnungen (werden nicht bewertet)
   p.kunst       ||= { messungen: [], mensch: null };  // fachliches Zeichenprofil
   p.stats ||= {};
@@ -443,3 +444,60 @@ export function alsAppGestartet() {
 }
 
 export function allesLoeschen() { db = leer(); speichern(); }
+
+/* --------------------------- Lautlesen ---------------------------
+   Gespeichert werden ausschliesslich Kennzahlen - nie eine Aufnahme, nie
+   Ton, nie Text. Auch diese Zahlen bleiben auf dem Geraet. */
+const LESUNGEN_MAX = 120;
+
+export function merkeLesung(profil, werte) {
+  profil.lesungen ||= [];
+  profil.lesungen.push({ ...werte, wann: Date.now() });
+  if (profil.lesungen.length > LESUNGEN_MAX)
+    profil.lesungen.splice(0, profil.lesungen.length - LESUNGEN_MAX);
+  speichern();
+}
+
+/* Der vorige Durchgang DESSELBEN Textes. Nur das ist vergleichbar - zwei
+   verschiedene Texte unterscheiden sich staerker als zwei Leseversuche. */
+export function letzteLesung(profil, titel, durchgang) {
+  if (!durchgang || durchgang < 1) return null;
+  const passend = (profil.lesungen || [])
+    .filter(l => l.titel === titel && l.durchgang === durchgang);
+  return passend.length ? passend[passend.length - 1] : null;
+}
+
+/* Entwicklung der Leseflüssigkeit fuer den Eltern-Bereich. Verglichen werden
+   nur ERSTE Durchgaenge: Der dritte Durchgang eines geuebten Textes ist immer
+   besser und wuerde einen Fortschritt vortaeuschen, den es nicht gibt. */
+export function leseVerlauf(profil) {
+  const erste = (profil.lesungen || []).filter(l => l.durchgang === 1);
+  if (!erste.length) return null;
+  const schnitt = (liste, feld) => liste.length
+    ? Math.round(liste.reduce((s, l) => s + (l[feld] || 0), 0) / liste.length) : 0;
+  const haelfte = Math.floor(erste.length / 2);
+  const alt = erste.slice(0, haelfte), neu = erste.slice(haelfte);
+  return {
+    anzahl: erste.length,
+    gesamt: (profil.lesungen || []).length,
+    tempo: schnitt(erste, 'tempo'),
+    tempoFrueher: haelfte ? schnitt(alt, 'tempo') : null,
+    tempoZuletzt: schnitt(neu, 'tempo'),
+    stockungen: schnitt(erste, 'stockungen'),
+    stockungenFrueher: haelfte ? schnitt(alt, 'stockungen') : null,
+    stockungenZuletzt: schnitt(neu, 'stockungen'),
+    gleichmass: schnitt(erste, 'gleichmass'),
+    betonung: schnitt(erste, 'betonung'),
+    stufe: schnitt(erste, 'stufe'),
+    /* Der ehrlichste Wert: Wie viel bringt das Wiederholen im selben Text? */
+    wiederholung: (() => {
+      const paare = [];
+      for (const l of (profil.lesungen || []).filter(x => x.durchgang === 1)) {
+        const spaeter = (profil.lesungen || []).find(x =>
+          x.titel === l.titel && x.durchgang === 3 && x.wann > l.wann);
+        if (spaeter) paare.push(spaeter.tempo - l.tempo);
+      }
+      return paare.length ? Math.round(paare.reduce((a, b) => a + b, 0) / paare.length) : null;
+    })()
+  };
+}

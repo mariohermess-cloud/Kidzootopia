@@ -11,6 +11,8 @@ import { bewerte, BESTANDEN } from './zeichnen.js';
 import * as Kunst from './kunstanalyse.js';
 import * as Avatar from './avatar.js';
 import { NUMMER, STAND, VERLAUF } from './version.js';
+import { textInSilben } from './silben.js';
+import * as Lesen from './lesen.js';
 import { pruefe } from './generators.js';
 import { radar } from './chart.js';
 
@@ -167,6 +169,252 @@ function screenProfile() {
       S.loescheProfil(b.dataset.del); zeige(S.aktiv() ? 'profile' : 'start');
     }});
   view().querySelector('#neu').onclick = () => zeige('start');
+}
+
+
+
+/* Leseflüssigkeit im Eltern-Bereich. Verglichen werden nur ERSTE Durchgänge –
+   der dritte Durchgang eines geübten Textes ist immer besser und würde einen
+   Fortschritt vortäuschen, den es nicht gibt. */
+function leseProfilKarte(p) {
+  const v = S.leseVerlauf(p);
+  if (!v || v.anzahl < 3) return `
+    <div class="card">
+      <h3>🎤 Leseflüssigkeit</h3>
+      <p class="muted small">Sobald Ihr Kind dreimal laut vorgelesen hat, steht hier die
+        Entwicklung: Tempo, Stockungen und Betonung. Bisher: ${v ? v.anzahl : 0} von 3.</p>
+    </div>`;
+
+  const pfeil = (jetzt, frueher, hochIstGut = true) => {
+    if (frueher === null || frueher === 0) return '';
+    const diff = jetzt - frueher;
+    if (Math.abs(diff) < 2) return '<span class="muted">→ gleich</span>';
+    const gut = hochIstGut ? diff > 0 : diff < 0;
+    return `<span style="color:var(--${gut ? 'ok' : 'bad'})">${diff > 0 ? '↑' : '↓'} ${Math.abs(diff)}</span>`;
+  };
+
+  const STUFEN = { 1:'Wort für Wort', 2:'In Stücken', 3:'Meistens flüssig', 4:'Fließend' };
+  return `
+    <div class="card">
+      <h3>🎤 Leseflüssigkeit</h3>
+      <p class="muted small">Aus ${v.anzahl} ersten Durchgängen (${v.gesamt} Lesungen insgesamt).
+        Nur erste Durchgänge werden verglichen – ein zum dritten Mal gelesener Text ist
+        immer flüssiger und würde einen Fortschritt vortäuschen.</p>
+
+      <div class="talent-row" style="margin-top:14px">
+        <span class="em">🎵</span>
+        <div class="tx"><b>Tempo</b>
+          <div class="small muted">Silben pro Minute · ${pfeil(v.tempoZuletzt, v.tempoFrueher)}</div></div>
+        <span class="val">${v.tempo}</span>
+      </div>
+      <div class="talent-row">
+        <span class="em">⚠️</span>
+        <div class="tx"><b>Stockungen</b>
+          <div class="small muted">Pausen mehr, als der Text Satzzeichen hat ·
+            ${pfeil(v.stockungenZuletzt, v.stockungenFrueher, false)}</div></div>
+        <span class="val">${v.stockungen}</span>
+      </div>
+      <div class="talent-row">
+        <span class="em">🎶</span>
+        <div class="tx"><b>Betonung</b>
+          <div class="small muted">Schwingt die Stimme oder bleibt sie gleich?</div></div>
+        <span class="val">${v.betonung}</span>
+      </div>
+      <div class="talent-row">
+        <span class="em">🧵</span>
+        <div class="tx"><b>Gleichmaß der Bögen</b>
+          <div class="small muted">Lange, ähnliche Abschnitte statt vieler kurzer Stücke</div></div>
+        <span class="val">${v.gleichmass}</span>
+      </div>
+
+      <div class="card flat" style="background:var(--bg);margin-top:12px">
+        <p class="small" style="margin:0"><b>Einordnung im Schnitt:</b>
+          ${esc(STUFEN[Math.max(1, Math.min(4, v.stufe))] || '–')}</p>
+        ${v.wiederholung !== null ? `<p class="small" style="margin:8px 0 0">
+          <b>Was das Wiederholen bringt:</b> Beim dritten Durchgang desselben Textes liest Ihr Kind
+          im Schnitt <b>${v.wiederholung > 0 ? '+' : ''}${v.wiederholung} Silben pro Minute</b>
+          schneller als beim ersten. Genau das ist der Sinn der Übung.</p>` : ''}
+      </div>
+
+      <details style="margin-top:12px">
+        <summary class="small muted">Was hier gemessen wird – und was nicht</summary>
+        <p class="small muted" style="margin-top:8px">
+          Die App <b>hört nicht zu</b>. Sie erkennt keine Wörter, speichert keinen Ton und
+          verschickt nichts. Gemessen wird allein die Lautstärke: wann gesprochen wurde und
+          wann Pause war. Daraus ergeben sich Tempo, Phrasierung und Betonung – die drei
+          Bestandteile von Leseflüssigkeit.</p>
+        <p class="small muted">
+          Weil die App den Wortlaut nicht kennt, misst sie <b>keine Lesegenauigkeit</b>:
+          Ob ein Wort falsch gelesen wurde, hört nur ein Mensch. Setzen Sie sich für diesen
+          Teil dazu – das ist ohnehin die wirksamere Übung.</p>
+        <p class="small muted">
+          <b>Kein Test und keine Diagnose.</b> Eine Lese-Rechtschreib-Schwäche erkennt man
+          nicht an einer Tonaufnahme. Wenn Sie den Verdacht haben, ist die schulische
+          Beratungsstelle oder eine Fachdiagnostik der richtige Weg – nicht diese App.
+          Was sie kann, ist üben helfen: Wiederholtes lautes Lesen desselben kurzen Textes
+          gehört zu den am besten belegten Verfahren gegen stockendes Lesen.</p>
+      </details>
+    </div>`;
+}
+
+/* ------------------------------ Lesepult ------------------------------
+   Lautlesetraining. Der Text steht in Silben gefärbt da, ein Mitlese-Balken
+   kann mitwandern, und das Mikrofon misst mit – aber nur die Lautstärke.
+   Es wird nichts erkannt, nichts gespeichert, nichts verschickt. */
+
+const SCHRITT_MS = 25;
+
+/* Setzt den Text mit Silbenfaerbung. Zwei Feinheiten, die beim ersten Versuch
+   falsch waren und im Bildschirmfoto sofort auffielen:
+   - Vor einem Satzzeichen darf kein Leerzeichen stehen ("Blume ." war falsch).
+   - Die Farben wechseln INNERHALB eines Wortes und beginnen bei jedem Wort neu.
+     Laeuft der Wechsel ueber die Wortgrenze weiter, markiert die Farbe nicht
+     mehr die Silbe, sondern den Zufall.
+   Ausserdem wird jedes Wort zusammengehalten, damit keine Silbe allein am
+   Zeilenende haengt. */
+function silbenHtml(text) {
+  const stuecke = textInSilben(text);
+  let html = '', wort = '', n = 0;
+  const wortSchliessen = () => {
+    if (wort) html += `<span class="wort">${wort}</span>`;
+    wort = ''; n = 0;
+  };
+  for (const s of stuecke) {
+    if (s.typ === 'silbe') { wort += `<span class="sil s${n++ % 2}">${esc(s.text)}</span>`; continue; }
+    /* Wortende heisst nur: Farbwechsel von vorn. Geschlossen wird erst beim
+       Leerzeichen - sonst faellt ein Punkt allein auf die naechste Zeile. */
+    if (s.typ === 'wortende') { n = 0; continue; }
+    if (/^\s+$/.test(s.text)) { wortSchliessen(); html += ' '; continue; }
+    /* Satzzeichen gehoeren an das Wort daneben, nie auf eine eigene Zeile. */
+    wort += `<span class="zei">${esc(s.text)}</span>`;
+  }
+  wortSchliessen();
+  return html;
+}
+
+/* Nimmt auf und liefert die Lautstärke-Hüllkurve. Der Ton selbst wird nie
+   gespeichert – aus dem Datenstrom entsteht direkt eine Zahlenfolge. */
+function aufnahme() {
+  let stopFn = null;
+  const huellkurve = [];
+  const start = async (beiPegel) => {
+    const strom = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+    });
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const quelle = ctx.createMediaStreamSource(strom);
+    const messer = ctx.createAnalyser();
+    messer.fftSize = 1024;
+    quelle.connect(messer);
+    const puffer = new Float32Array(messer.fftSize);
+    const takt = setInterval(() => {
+      messer.getFloatTimeDomainData(puffer);
+      let summe = 0;
+      for (let i = 0; i < puffer.length; i++) summe += puffer[i] * puffer[i];
+      const pegel = Math.sqrt(summe / puffer.length);
+      huellkurve.push(pegel);
+      beiPegel?.(pegel);
+    }, SCHRITT_MS);
+    stopFn = () => {
+      clearInterval(takt);
+      strom.getTracks().forEach(s => s.stop());
+      ctx.close().catch(()=>{});
+    };
+  };
+  return { start, stopp: () => stopFn?.(), huellkurve };
+}
+
+function lesepult(p, a, bereich, fertig) {
+  const text = a.lesetext;
+  bereich.innerHTML = `
+    <div class="lesepult">
+      <div class="row spread small muted" style="margin-bottom:8px">
+        <span>Durchgang ${a.durchgang} von 3</span>
+        <span id="leseUhr">0,0 s</span>
+      </div>
+      <div id="leseText" class="lesetext">${silbenHtml(text)}</div>
+      <div id="pegel" class="pegel"><i></i></div>
+      <div id="leseHinweis" class="small muted" style="margin-top:10px"></div>
+      <div class="row wrap" style="margin-top:12px">
+        <button class="btn" id="leseStart">🎤 Los, ich lese vor</button>
+        <button class="btn ghost" id="leseOhne">Ohne Mikrofon lesen</button>
+      </div>
+      <p class="small muted" style="margin-top:10px">
+        🔒 Der Ton bleibt auf diesem Gerät. Die App erkennt keine Wörter und speichert
+        keine Aufnahme – gemessen wird nur, wann gesprochen wurde und wann Pause war.</p>
+    </div>`;
+
+  const zeigeHinweis = t => bereich.querySelector('#leseHinweis').innerHTML = t;
+  const balken = bereich.querySelector('#pegel').firstElementChild;
+
+  bereich.querySelector('#leseOhne').onclick = () => {
+    /* Ohne Mikrofon zählt nur, dass gelesen wurde – keine Messung, keine Zahlen. */
+    fertig(null, { ohneMikro: true });
+  };
+
+  bereich.querySelector('#leseStart').onclick = async () => {
+    const knopf = bereich.querySelector('#leseStart');
+    const ohne = bereich.querySelector('#leseOhne');
+    knopf.disabled = true; ohne.disabled = true;
+    zeigeHinweis('⏳ Mikrofon wird gefragt …');
+
+    const auf = aufnahme();
+    try {
+      await auf.start(pegel => {
+        balken.style.width = Math.min(100, Math.round(pegel * 400)) + '%';
+      });
+    } catch (e) {
+      zeigeHinweis(`🎤 Das Mikrofon ist nicht verfügbar. ${
+        location.protocol === 'http:' ? 'Das geht nur über eine sichere Verbindung (https).'
+        : 'Vielleicht wurde die Erlaubnis abgelehnt – dann geht es über die Einstellungen des Browsers.'}
+        <br>Lies den Text trotzdem laut vor und tippe danach auf „Fertig".`);
+      knopf.hidden = true; ohne.hidden = true;
+      const b = document.createElement('button');
+      b.className = 'btn'; b.textContent = '✓ Fertig gelesen';
+      b.onclick = () => fertig(null, { ohneMikro: true });
+      bereich.querySelector('.lesepult').appendChild(b);
+      return;
+    }
+
+    const beginn = Date.now();
+    const uhr = setInterval(() => {
+      bereich.querySelector('#leseUhr').textContent =
+        ((Date.now() - beginn) / 1000).toFixed(1).replace('.', ',') + ' s';
+    }, 100);
+
+    knopf.disabled = false;
+    knopf.textContent = '✓ Fertig gelesen';
+    knopf.classList.add('danger');
+    zeigeHinweis('🔴 Läuft. Lies laut und in deinem Tempo – niemand hört zu außer dir.');
+    knopf.onclick = () => {
+      clearInterval(uhr);
+      auf.stopp();
+      fertig(auf.huellkurve, { schrittMs: SCHRITT_MS });
+    };
+  };
+}
+
+
+/* Rueckmeldung nach dem Vorlesen. Bewusst OHNE Punktzahl und ohne Note:
+   Wer beim Vorlesen benotet wird, liest vorsichtiger statt fluessiger. */
+function leseRueckmeldung(a) {
+  const w = a.leseWerte, u = a.leseUrteil, f = a.leseFortschritt;
+  const STERNE = { 1: '🌱', 2: '🌿', 3: '🌳', 4: '🌟' };
+  return `
+    <div style="font-weight:800;font-size:1.05rem;margin-bottom:6px">
+      ${STERNE[u.stufe]} ${esc(u.name)}</div>
+    <div class="small" style="font-weight:500;margin-bottom:10px">${esc(u.text)}</div>
+    ${f ? `<div class="small" style="font-weight:700;margin-bottom:8px">
+      ${f.besser ? '📈 Besser als eben:' : '↔️'} ${esc(f.text)}</div>` : ''}
+    <div class="lesezahlen small">
+      <span>⏱️ ${(w.dauerMs/1000).toFixed(1).replace('.', ',')} s</span>
+      <span>🎵 ${w.tempo} Silben/Min</span>
+      <span>🌬️ ${w.pausen} ${w.pausen === 1 ? 'Pause' : 'Pausen'}</span>
+      ${w.stockungen > 0 ? `<span>⚠️ ${w.stockungen} ${w.stockungen === 1 ? 'Stockung' : 'Stockungen'}</span>`
+                         : '<span>✨ keine Stockung</span>'}
+    </div>
+    ${a.durchgang < 3 ? `<div class="small" style="margin-top:10px;font-weight:600">
+      🔁 Gleich noch einmal derselbe Text – beim zweiten Mal wird es fast immer flüssiger.</div>` : ''}`;
 }
 
 /* ------------------------------ Zeichenbrett ------------------------------
@@ -730,6 +978,33 @@ function screenSession(p, opts = {}) {
         b.disabled = true;
       });
 
+    } else if (a.typ === 'lesen') {
+      if (ergebnis === null) {
+        Avatar.beiseite(true);           // beim Lesen nicht ablenken
+        lesepult(p, a, bereich, (huellkurve, extra) => {
+          Avatar.beiseite(false);
+          if (!huellkurve) {                       // ohne Mikrofon: nur gelesen, nicht gemessen
+            a.keineWertung = true;
+            auswerten(a, 'ohne Messung gelesen');
+            return;
+          }
+          const werte = Lesen.auswerten(huellkurve, {
+            text: a.lesetext, schrittMs: extra.schrittMs, durchgang: a.durchgang });
+          a.leseWerte = werte;
+          a.leseUrteil = Lesen.einordnung(werte, p.etappe || 1);
+          /* Der vorige Durchgang desselben Textes - der Vergleich ist der Kern
+             des wiederholten Lautlesens. */
+          a.leseFortschritt = Lesen.fortschritt(S.letzteLesung(p, a.lesetitel, a.durchgang - 1), werte);
+          S.merkeLesung(p, { titel: a.lesetitel, durchgang: a.durchgang, ...werte, stufe: a.leseUrteil.stufe });
+          /* Bestanden ist, wer gelesen hat. Es gibt keine Note fuers Vorlesen -
+             wer bewertet wird, liest vorsichtiger statt fluessiger. */
+          /* Vorlesen wird immer als geschafft gewertet. Wer beim Vorlesen
+             benotet wird, liest vorsichtiger statt fluessiger - und genau
+             das ist das Gegenteil dessen, was hier geuebt werden soll. */
+          auswerten(a, `Stufe ${a.leseUrteil.stufe}: ${a.leseUrteil.name}`, true);
+        });
+      }
+
     } else if (a.typ === 'zeichnen') {
       if (ergebnis === null) {
         Avatar.reagiere('zeichnen');
@@ -839,7 +1114,8 @@ function screenSession(p, opts = {}) {
 
     if (ergebnis !== null) {
       const zeichenAufgabe = a.typ === 'zeichnen' && !a.keineWertung;
-      const denkAufgabe = a.typ === 'nachdenken' || (a.typ === 'zeichnen' && a.keineWertung);
+      const denkAufgabe = a.typ === 'nachdenken' || (a.typ === 'zeichnen' && a.keineWertung)
+                        || (a.typ === 'lesen' && a.keineWertung);
       view().querySelector('#fb').innerHTML = denkAufgabe ? `
         <div class="feedback denk pop">
           <div style="font-weight:700;margin-bottom:6px">🏛️ Danke fürs Nachdenken.</div>
@@ -852,7 +1128,7 @@ function screenSession(p, opts = {}) {
         <button class="btn" id="weiter" style="margin-top:12px">
           ${sess.index >= sess.laenge ? 'Ergebnis ansehen' : 'Weiter →'}</button>` : `
         <div class="feedback ${ergebnis?'ok':'bad'} pop">
-          ${zeichenAufgabe
+          ${a.leseWerte ? leseRueckmeldung(a) : zeichenAufgabe
             ? (ergebnis ? `✅ Getroffen! ${esc(eingabe)}` : `🖌️ Noch nicht ganz: ${esc(eingabe)}`)
             : ergebnis ? '✅ Richtig! Super gemacht.'
                        : `❌ Nicht ganz. Richtig wäre: <u>${esc(a.antwort)}</u>`}
@@ -1078,6 +1354,17 @@ function versionsKarte() {
       <div id="updateStatus" class="small muted" style="margin:12px 0"></div>
       <button class="btn ghost" id="updatePruefen">🔄 Nach Aktualisierung suchen</button>
       <details style="margin-top:12px">
+        <summary class="small muted">Es kommt trotzdem immer die alte Fassung</summary>
+        <p class="small muted" style="margin-top:8px">Dann hängt die App an ihrem
+          Offline-Speicher fest – das passiert vor allem auf dem iPhone, wo eine App vom
+          Startbildschirm sehr lange am Gespeicherten festhält. Der Knopf hier wirft den
+          Offline-Speicher weg und holt alles neu.
+          <b>Der Fortschritt Ihres Kindes bleibt erhalten</b> – der liegt woanders.
+          Nur beim ersten Start danach braucht die App kurz eine Verbindung.</p>
+        <button class="btn quiet" id="hartNeuladen" style="margin-top:8px">
+          🧹 Offline-Speicher leeren und neu laden</button>
+      </details>
+      <details style="margin-top:12px">
         <summary class="small muted">Frühere Fassungen</summary>
         ${aelter.map(v => `
           <p class="small" style="margin:10px 0 2px"><b>Version ${v.nr}</b>
@@ -1097,6 +1384,21 @@ function versionVerdrahten() {
     knopf.hidden = true;
     return;
   }
+
+  const hart = view().querySelector('#hartNeuladen');
+  if (hart) hart.onclick = async () => {
+    hart.disabled = true;
+    hart.textContent = '⏳ Räume auf …';
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+      const namen = await caches.keys();
+      await Promise.all(namen.map(n => caches.delete(n)));
+    } catch {}
+    /* Zeitstempel in der Adresse: so umgeht der Neustart auch den Zwischenspeicher
+       des Browsers selbst, nicht nur den der App. */
+    location.replace(location.pathname + '?neu=' + Date.now());
+  };
 
   knopf.onclick = async () => {
     knopf.disabled = true;
@@ -1302,6 +1604,7 @@ function screenEltern(p) {
       <input type="file" id="importFile" accept="application/json" hidden>
       <button class="btn danger" id="reset" style="margin-top:14px">Alle Daten löschen</button>
     </div>
+    ${leseProfilKarte(p)}
     ${versionsKarte()}
 `;
   view().querySelector('#profile').onclick = () => zeige('profile');

@@ -27,6 +27,8 @@ jobs:
       - run: node tests/knacknuesse.mjs
       - run: node tests/kunst.mjs
       - run: node tests/version.mjs
+      - run: node tests/silben.mjs
+      - run: node tests/lesen.mjs
 
   deploy:
     needs: test
