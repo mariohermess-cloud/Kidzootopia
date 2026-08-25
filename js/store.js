@@ -19,8 +19,60 @@ export function laden() {
   db.profile.forEach(p => migriere(p));
   return db;
 }
+const SICHERUNG = 'kidzootopia.sicherung';
+
 export function speichern() {
-  try { localStorage.setItem(KEY, JSON.stringify(db)); } catch {}
+  const text = JSON.stringify(db);
+  try { localStorage.setItem(KEY, text); } catch {}
+  // Zweitkopie: schützt gegen einen beschädigten Haupteintrag, nicht gegen Löschen
+  try { if (db.profile.length) localStorage.setItem(SICHERUNG, text); } catch {}
+}
+
+/* Was liegt auf diesem Gerät wirklich? Zeigt statt zu vermuten. */
+export function diagnose() {
+  const bericht = {
+    modus: alsAppGestartet() ? 'App vom Startbildschirm' : 'Browser',
+    adresse: location.origin + location.pathname,
+    speicherLesbar: true,
+    eintraege: [],
+    profile: [],
+    sicherungVorhanden: false,
+    sicherungProfile: 0
+  };
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      const wert = localStorage.getItem(k) || '';
+      bericht.eintraege.push({ name: k, groesse: wert.length });
+    }
+  } catch { bericht.speicherLesbar = false; }
+
+  try {
+    const roh = localStorage.getItem(KEY);
+    if (roh) {
+      const daten = JSON.parse(roh);
+      bericht.profile = (daten.profile || []).map(p => ({
+        name: p.name, aufgaben: p.stats?.aufgabenGesamt ?? 0,
+        letzterTag: p.stats?.letzterTag || '–', angelegt: p.erstellt || '–'
+      }));
+    }
+  } catch {}
+
+  try {
+    const sich = localStorage.getItem(SICHERUNG);
+    if (sich) {
+      bericht.sicherungVorhanden = true;
+      bericht.sicherungProfile = (JSON.parse(sich).profile || []).length;
+    }
+  } catch {}
+  return bericht;
+}
+
+/* Aus der Zweitkopie wiederherstellen, falls der Haupteintrag leer oder kaputt ist. */
+export function ausSicherung() {
+  const sich = localStorage.getItem(SICHERUNG);
+  if (!sich) throw new Error('Auf diesem Gerät gibt es keine Zweitkopie.');
+  return zusammenfuehren(sich);
 }
 export const alleProfile = () => db.profile;
 export const aktiv = () => db.profile.find(p => p.id === db.aktiv) || null;

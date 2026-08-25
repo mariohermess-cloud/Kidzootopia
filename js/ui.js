@@ -91,8 +91,13 @@ function screenStart() {
       <p class="muted small">Sind die Profile auch dort weg, hilft der Code nicht mehr –
         dann legen Sie oben einfach ein neues an. Ärgerlich, aber schnell wieder aufgeholt.</p>
       <button class="btn quiet" id="holen">🔑 Umzugs-Code einfügen</button>
+      <button class="btn quiet" id="diagnose" style="margin-top:10px">
+        🔍 Was ist auf diesem Gerät gespeichert?</button>
       <div id="holBereich"></div>
     </details>`;
+
+  view().querySelector('#diagnose').onclick = () =>
+    diagnoseAnzeigen(view().querySelector('#holBereich'));
 
   view().querySelector('#holen').onclick = () => {
     const b = view().querySelector('#holBereich');
@@ -149,6 +154,45 @@ function screenProfile() {
       S.loescheProfil(b.dataset.del); zeige(S.aktiv() ? 'profile' : 'start');
     }});
   view().querySelector('#neu').onclick = () => zeige('start');
+}
+
+/* Zeigt ungeschönt, was im Speicher dieses Geräts liegt. Bei „meine Profile
+   sind weg“ hilft Nachsehen mehr als Vermuten. */
+function diagnoseHtml() {
+  const d = S.diagnose();
+  return `
+    <div class="card flat" style="margin-top:12px;background:var(--bg)">
+      <h4 style="margin:0 0 8px">🔍 Speicher dieses Geräts</h4>
+      <ul class="clean small">
+        <li><b>Läuft als:</b> ${esc(d.modus)}</li>
+        <li><b>Adresse:</b> <span style="word-break:break-all">${esc(d.adresse)}</span></li>
+        <li><b>Speicher lesbar:</b> ${d.speicherLesbar ? 'ja' : 'nein (privater Modus?)'}</li>
+        <li><b>Profile hier:</b> ${d.profile.length
+          ? d.profile.map(p => `${esc(p.name)} (${p.aufgaben} Aufgaben, zuletzt ${esc(p.letzterTag)})`).join(', ')
+          : '<b>keine</b>'}</li>
+        <li><b>Zweitkopie:</b> ${d.sicherungVorhanden
+          ? `vorhanden, ${d.sicherungProfile} Profil(e)` : 'keine'}</li>
+        <li><b>Gespeicherte Einträge:</b> ${d.eintraege.length
+          ? d.eintraege.map(e => `${esc(e.name)} (${e.groesse} Zeichen)`).join(', ')
+          : 'keine'}</li>
+      </ul>
+      ${d.sicherungVorhanden && !d.profile.length
+        ? '<button class="btn" id="sicherungHolen" style="margin-top:10px">♻️ Aus Zweitkopie wiederherstellen</button>'
+        : ''}
+      <p class="small muted" style="margin-top:10px">
+        ${d.profile.length
+          ? 'Hier liegen Profile – sie sollten oben in der Liste erscheinen.'
+          : 'In <b>dieser</b> Fassung liegt nichts. Falls Sie zuvor die andere Fassung benutzt haben (Browser statt App oder umgekehrt), öffnen Sie dort dieselbe Adresse und prüfen Sie es dort ebenso.'}
+      </p>
+    </div>`;
+}
+
+function diagnoseAnzeigen(ziel) {
+  ziel.innerHTML = diagnoseHtml();
+  ziel.querySelector('#sicherungHolen')?.addEventListener('click', () => {
+    try { const r = S.ausSicherung(); alert(`Wiederhergestellt: ${r.gesamt} Profil(e).`); zeige('lernen'); }
+    catch (e) { alert('Hat nicht geklappt: ' + e.message); }
+  });
 }
 
 /* ------------------------------ Talent-Test ------------------------------ */
@@ -801,6 +845,8 @@ function screenEltern(p) {
       </ul>
       <div id="speicherStatus" class="small muted" style="margin:10px 0"></div>
       <button class="btn" id="codeZeigen">🔑 Umzugs-Code anzeigen</button>
+      <button class="btn quiet" id="diagnoseEltern" style="margin-top:10px">
+        🔍 Was ist auf diesem Gerät gespeichert?</button>
       <button class="btn ghost" id="codeEinfuegen" style="margin-top:10px">📥 Umzugs-Code einfügen</button>
       <div id="codeBereich"></div>
       <p class="small muted" style="margin-top:12px">Als Datei (für ein Backup am Rechner):</p>
@@ -832,6 +878,8 @@ function screenEltern(p) {
   })();
 
   const bereich = () => view().querySelector('#codeBereich');
+
+  view().querySelector('#diagnoseEltern').onclick = () => diagnoseAnzeigen(bereich());
 
   view().querySelector('#codeZeigen').onclick = () => {
     const code = S.alsCode();

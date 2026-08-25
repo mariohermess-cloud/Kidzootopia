@@ -182,6 +182,17 @@ hilft der **Umzugs-Code** unter *Eltern → Fortschritt sichern & umziehen*:
    beim Start dauerhaften Speicher an (`navigator.storage.persist()`); das hilft zuverlässig
    in Chrome und bei installierten Apps, in Safari nur eingeschränkt.
 
+**Nachsehen statt vermuten:** Unter *Alten Fortschritt übernehmen → 🔍 Was ist auf diesem Gerät
+gespeichert?* (auch im Eltern-Bereich) zeigt die App ungeschönt, was im Speicher liegt: ob sie
+als App oder im Browser läuft, unter welcher Adresse, welche Profile vorhanden sind und wann sie
+zuletzt benutzt wurden. Steht dort „Profile hier: keine“, liegt in *dieser* Fassung wirklich
+nichts – dann lohnt der Blick in die andere Fassung.
+
+**Zweitkopie:** Bei jedem Speichern legt die App zusätzlich eine Sicherung unter einem zweiten
+Schlüssel ab. Ist der Haupteintrag leer oder beschädigt, bietet die Diagnose die
+Wiederherstellung an. Gegen ein vollständiges Löschen der Website-Daten hilft auch das nicht –
+dagegen hilft nur der Umzugs-Code oder die Datei-Sicherung.
+
 Der Umzugs-Code ist der ganze Fortschritt als kopierbarer Text – kein Konto, keine Datei,
 kein Server. Beim Einfügen wird **zusammengeführt statt überschrieben**: Bei gleichem Kind
 gewinnt der weiter fortgeschrittene Stand, andere Profile bleiben erhalten.
