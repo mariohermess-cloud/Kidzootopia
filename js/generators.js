@@ -6,6 +6,7 @@
 import { GESCHICHTEN } from './geschichten.js';
 import { KNACKNUESSE, KANON, REDEWENDUNGEN, RECHENTRICKS } from './klassiker.js';
 import { FAMILIEN } from './knacknuss_familien.js';
+import { VORLAGEN, EINSTRICH, SYMMETRIE, AUFTRAEGE, spiegeln } from './zeichnen.js';
 import { ZITATE, KONTROLLE, SITUATIONEN, IMPULSE, DENKER } from './philosophie.js';
 import { HAUPTWERKE } from './hauptwerke.js';
 import { DENKFEHLER, FEHLSCHLUESSE, STILMITTEL, WORTWURZELN, SYLLOGISMEN } from './fortgeschritten.js';
@@ -453,6 +454,61 @@ puzzle: (() => {
       return ordnen(`👟 Mach es in Gedanken mit: ${a.t}\nTippe die Schritte der Reihe nach an.`, a.s,
         'Stell dir vor, du machst es gerade wirklich.'); }
   };
+})(),
+
+/* ---------------- Zeichnen: messbare Aufgaben ---------------- */
+zeichnen: (() => {
+  const nachfahren = lvl => {
+    const menge = VORLAGEN.filter(v => v.stufe <= Math.min(4, lvl + 1));
+    const v = pick(menge.length ? menge : VORLAGEN);
+    return { typ:'zeichnen', modus:'nachfahren', vorlage:v.linien, titel:v.name,
+      frage:`✏️ Fahre die Form mit dem Finger nach: ${v.name}\nNimm dir Zeit – Genauigkeit zählt, nicht Tempo.`,
+      antwort:'nachgezeichnet', hilfe:'Setze ruhig ab und mach weiter – wichtig ist, dass die Linie getroffen wird.' };
+  };
+  const einStrich = () => {
+    const f = pick(EINSTRICH);
+    return { typ:'zeichnen', modus:'einstrich', vorlage:f.linien, titel:f.name,
+      frage:`🖊️ ${f.name}: Zeichne die Figur in EINEM Strich, ohne abzusetzen –\nund ohne eine Linie zweimal zu fahren.`,
+      antwort:'in einem Strich', quelle:f.quelle,
+      hilfe:'Fang an der richtigen Ecke an – bei den meisten Figuren geht es nur von unten.' };
+  };
+  const symmetrie = () => {
+    const f = pick(SYMMETRIE);
+    return { typ:'zeichnen', modus:'symmetrie', vorlage:f.haelfte, zielLinien:spiegeln(f.haelfte), titel:f.name,
+      frage:`🪞 Die linke Hälfte ist vorgegeben.\nZeichne die rechte Hälfte spiegelbildlich dazu: ${f.name}`,
+      antwort:'gespiegelt', hilfe:'Miss mit dem Auge: Gleich weit von der Mittellinie entfernt, gleiche Höhe.' };
+  };
+  const gedaechtnis = lvl => {
+    const menge = VORLAGEN.filter(v => v.stufe <= 2);
+    const v = pick(menge);
+    return { typ:'zeichnen', modus:'gedaechtnis', vorlage:v.linien, titel:v.name,
+      frage:`🧠 Merk dir die Form – sie verschwindet gleich!\nZeichne sie danach aus dem Gedächtnis: ${v.name}`,
+      antwort:'aus dem Gedächtnis', hilfe:'Präg dir zuerst die Umrisse ein, dann die Einzelheiten.' };
+  };
+  const mensch = () => ({
+    typ:'zeichnen', modus:'mensch', titel:'Mensch',
+    frage:'🧍 Zeichne einen Menschen – so vollständig du kannst.\nDanach schaust du dein Bild genau an und hakst ab, was darauf zu sehen ist.',
+    antwort:'gezeichnet', keineWertung:true,
+    quelle:'Nach Florence Goodenough (1926), erweitert von Dale Harris (1963): Gezählt werden vorhandene Merkmale, nicht die Ausführung. Hier als Selbstauskunft – keine standardisierte Testdurchführung und keine Aussage über Begabung.',
+    hilfe:'Nimm dir Zeit. Denk an Hals, Finger, Kleidung – Dinge, die man leicht vergisst.'
+  });
+  return {
+    bauen:     lvl => (Math.random() < .18 ? mensch() : nachfahren(lvl)),
+    knobeln:   () => einStrich(),
+    entdecken: () => symmetrie(),
+    bewegen:   lvl => (Math.random() < .18 ? mensch() : gedaechtnis(lvl))
+  };
+})(),
+
+/* ---------------- Freies Kunstwerk: bewusst ohne Bewertung ---------------- */
+kunstwerk: (() => {
+  const auftrag = () => { const a = pick(AUFTRAEGE); return {
+    typ:'zeichnen', modus:'frei', auftrag: a,
+    frage:`🎨 ${a}`, antwort:'gezeichnet', keineWertung:true,
+    quelle:'Freie Arbeiten werden nicht benotet. Sie wandern in deine Galerie – dort kannst du sie später wiedersehen.',
+    hilfe:'Es gibt kein Richtig. Zeichne los.'
+  }; };
+  return { erzaehlen: auftrag, bauen: auftrag, entdecken: auftrag };
 })(),
 
 /* ---------------- Klassiker: Knacknüsse ---------------- */

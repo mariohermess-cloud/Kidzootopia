@@ -7,6 +7,9 @@ import { starteSession, empfehlungen, wegRanking, wegeNachWirkung, wegBewertung 
 import { auswerten, stichPaare, engeTalente } from './talenttest.js';
 import { vorlesen, stopp, kannVorlesen } from './sprache.js';
 import { anleitung, umgebung } from './installhilfe.js';
+import { bewerte, BESTANDEN } from './zeichnen.js';
+import * as Kunst from './kunstanalyse.js';
+import * as Avatar from './avatar.js';
 import { pruefe } from './generators.js';
 import { radar } from './chart.js';
 
@@ -29,9 +32,12 @@ export function zeige(neu, daten) {
   const chrome = !!p && !['start','test','session'].includes(neu);
   nav.hidden = !chrome; top.hidden = !p || neu === 'start';
   if (p) kopfzeile(p);
+  if (p && neu !== 'start') { Avatar.aufbauen(p.avatar); Avatar.umschauen(); }
+  else Avatar.verstecken();
   window.scrollTo(0,0);
   ({ start:screenStart, lernen:screenLernen, talente:screenTalente, wege:screenWege,
-     eltern:screenEltern, test:screenTest, session:screenSession, profile:screenProfile }[neu] || screenLernen)(p, daten);
+     eltern:screenEltern, test:screenTest, session:screenSession, profile:screenProfile,
+     galerie:screenGalerie }[neu] || screenLernen)(p, daten);
 }
 
 function kopfzeile(p) {
@@ -158,6 +164,162 @@ function screenProfile() {
       S.loescheProfil(b.dataset.del); zeige(S.aktiv() ? 'profile' : 'start');
     }});
   view().querySelector('#neu').onclick = () => zeige('start');
+}
+
+/* ------------------------------ Zeichenbrett ------------------------------
+   Fürs Tablet gedacht: Finger oder Stift zeichnen auf ein Feld, die Vorlage
+   liegt blass darunter. Gemessen wird, wie genau getroffen wurde – nie, wie
+   schön es aussieht. Freie Arbeiten werden gar nicht bewertet. */
+function zeichenbrett(a, bereich, fertig) {
+  const frei = a.modus === 'frei';
+  bereich.innerHTML = `
+    <div class="brett-huelle">
+      <canvas id="brett" class="brett"></canvas>
+      <div class="brett-hinweis" id="brettHinweis"></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn small quiet" id="brettLeeren">↺ Nochmal</button>
+      <button class="btn small ghost" id="brettZurueck">⬅️ Letzter Strich weg</button>
+      <button class="btn small" id="brettFertig">✓ Fertig</button>
+    </div>`;
+
+  window.__vorlage = a.zielLinien || a.vorlage || null;   // erleichtert automatisches Testen
+  const leinwand = bereich.querySelector('#brett');
+  const hinweis = bereich.querySelector('#brettHinweis');
+  const stift = leinwand.getContext('2d');
+  let striche = [], aktuell = null, vorlageZeigen = a.modus !== 'gedaechtnis';
+
+  const groesse = () => {
+    const breite = Math.min(bereich.clientWidth || 320, 460);
+    const px = Math.round(breite * (window.devicePixelRatio || 1));
+    leinwand.width = px; leinwand.height = px;
+    leinwand.style.width = breite + 'px'; leinwand.style.height = breite + 'px';
+    malen();
+  };
+
+  const linieZeichnen = (linien, farbe, dicke) => {
+    stift.strokeStyle = farbe; stift.lineWidth = dicke;
+    stift.lineJoin = 'round'; stift.lineCap = 'round';
+    for (const l of linien) {
+      if (l.length < 2) {
+        if (l.length === 1) { stift.beginPath();
+          stift.arc(l[0].x * leinwand.width, l[0].y * leinwand.height, dicke/2, 0, 7); stift.fillStyle = farbe; stift.fill(); }
+        continue;
+      }
+      stift.beginPath();
+      stift.moveTo(l[0].x * leinwand.width, l[0].y * leinwand.height);
+      for (const p of l.slice(1)) stift.lineTo(p.x * leinwand.width, p.y * leinwand.height);
+      stift.stroke();
+    }
+  };
+
+  const malen = () => {
+    const stil = getComputedStyle(document.body);
+    stift.clearRect(0, 0, leinwand.width, leinwand.height);
+    if (a.modus === 'symmetrie') {                       // Mittelachse andeuten
+      stift.setLineDash([6, 8]); stift.strokeStyle = stil.getPropertyValue('--line');
+      stift.lineWidth = 2; stift.beginPath();
+      stift.moveTo(leinwand.width/2, 0); stift.lineTo(leinwand.width/2, leinwand.height);
+      stift.stroke(); stift.setLineDash([]);
+    }
+    if (a.vorlage && vorlageZeigen)
+      linieZeichnen(a.vorlage, stil.getPropertyValue('--line'), Math.max(6, leinwand.width * 0.022));
+    linieZeichnen(striche, stil.getPropertyValue('--brand'), Math.max(4, leinwand.width * 0.014));
+  };
+
+  const stelle = e => {
+    const r = leinwand.getBoundingClientRect();
+    /* Zeit und Stiftdruck kommen mit: Daraus lassen sich später Linienruhe,
+       Fluss und Druckführung bestimmen (siehe kunstanalyse.js). */
+    return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height,
+             t: Math.round(performance.now()), d: e.pressure ?? 0.5 };
+  };
+  leinwand.addEventListener('pointerdown', e => {
+    e.preventDefault(); leinwand.setPointerCapture(e.pointerId);
+    aktuell = [stelle(e)]; striche.push(aktuell); malen();
+  });
+  leinwand.addEventListener('pointermove', e => {
+    if (!aktuell) return;
+    e.preventDefault();
+    const jetzt = stelle(e), vorher = aktuell.at(-1);
+    /* Zwischenpunkte einfügen: Wer schnell über das Tablet fährt, löst nur
+       wenige Ereignisse aus. Ohne diese Ergänzung würde flottes, aber sauberes
+       Zeichnen schlechter bewertet als langsames – das wäre unfair. */
+    const strecke = Math.hypot(jetzt.x - vorher.x, jetzt.y - vorher.y);
+    const schritte = Math.min(60, Math.floor(strecke / 0.008));
+    for (let i = 1; i < schritte; i++)
+      aktuell.push({ x: vorher.x + (jetzt.x - vorher.x) * i / schritte,
+                     y: vorher.y + (jetzt.y - vorher.y) * i / schritte,
+                     t: vorher.t + (jetzt.t - vorher.t) * i / schritte, d: jetzt.d });
+    aktuell.push(jetzt);
+    malen();
+  });
+  const loslassen = () => { aktuell = null; };
+  leinwand.addEventListener('pointerup', loslassen);
+  leinwand.addEventListener('pointercancel', loslassen);
+  leinwand.addEventListener('pointerleave', loslassen);
+
+  bereich.querySelector('#brettLeeren').onclick = () => { striche = []; malen(); };
+  bereich.querySelector('#brettZurueck').onclick = () => { striche.pop(); malen(); };
+  bereich.querySelector('#brettFertig').onclick = () => {
+    if (!striche.flat().length) { hinweis.textContent = 'Da ist noch nichts gezeichnet.'; return; }
+    fertig(striche, { einStrich: striche.length === 1 });
+  };
+
+  groesse();
+  window.addEventListener('resize', groesse, { once: true });
+
+  if (a.modus === 'gedaechtnis') {                       // Vorlage kurz zeigen
+    vorlageZeigen = true; malen();
+    let rest = 5;
+    hinweis.textContent = `Einprägen … noch ${rest} Sekunden`;
+    const uhr = setInterval(() => {
+      rest--;
+      if (rest > 0) { hinweis.textContent = `Einprägen … noch ${rest} Sekunden`; return; }
+      clearInterval(uhr); vorlageZeigen = false; malen();
+      hinweis.textContent = 'Jetzt aus dem Gedächtnis zeichnen.';
+    }, 1000);
+  } else if (frei) {
+    hinweis.textContent = 'Freies Blatt – hier gibt es kein Richtig.';
+  }
+  return { striche: () => striche };
+}
+
+/* Menschzeichnung nach Goodenough (1926) / Harris (1963):
+   Gezählt werden vorhandene Merkmale, nicht die Ausführung. Im Original zählt
+   eine geschulte Person; hier hakt das Kind selbst ab, was es gezeichnet hat.
+   Das ist keine standardisierte Durchführung – aber es schult das Hinsehen. */
+function merkmalsBogen(p, a, bereich, striche, auswerten) {
+  bereich.innerHTML = `
+    <div class="card flat" style="background:var(--bg);margin-top:12px">
+      <h3>Schau dein Bild genau an</h3>
+      <p class="muted small">Hake ab, was du gezeichnet hast. Es geht nicht darum, wie schön es
+        ist – nur darum, was da ist. Ehrlich sein zählt.</p>
+      <div class="grid two" id="merkmale">
+        ${Kunst.MENSCH_MERKMALE.map((m,i) =>
+          `<button class="choice" data-m="${i}" style="padding:10px;font-size:.9rem">☐ ${esc(m)}</button>`).join('')}
+      </div>
+      <button class="btn" id="merkmaleFertig" style="margin-top:12px">Fertig</button>
+    </div>`;
+  const gewaehlt = new Set();
+  bereich.querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
+    const i = b.dataset.m;
+    if (gewaehlt.has(i)) { gewaehlt.delete(i); b.classList.remove('gewaehlt');
+      b.textContent = '☐ ' + Kunst.MENSCH_MERKMALE[i]; }
+    else { gewaehlt.add(i); b.classList.add('gewaehlt');
+      b.textContent = '☑ ' + Kunst.MENSCH_MERKMALE[i]; }
+  });
+  bereich.querySelector('#merkmaleFertig').onclick = () => {
+    const ergebnis = Kunst.menschAuswertung(gewaehlt.size, p.etappe || 1);
+    const analyse = Kunst.analysiere(striche, { titel:'Mensch', alterEtappe: p.etappe || 1 });
+    S.merkeMensch(p, ergebnis);
+    S.merkeKunst(p, { modus:'mensch', merkmale: gewaehlt.size,
+      ruhe: analyse.linienruhe.wert, fluss: analyse.fluss.wert,
+      ausarbeitung: analyse.ausarbeitung.wert });
+    S.inGalerie(p, { titel:'Mensch', auftrag:'Zeichne einen Menschen', striche });
+    a.analyse = analyse;
+    auswerten(a, `${ergebnis.anzahl} von ${Kunst.MENSCH_MERKMALE.length} Merkmalen – ${ergebnis.lage}`, true);
+  };
 }
 
 /* Anleitung zum Ablegen auf dem Startbildschirm – passend zur erkannten Lage. */
@@ -440,6 +602,19 @@ function screenLernen(p) {
       </div>
     </div>
     <div class="card">
+      <div class="row spread">
+        <div style="flex:1">
+          <b>🎨 Zeichnen</b>
+          <div class="muted small">Nachfahren, spiegeln, in einem Strich – oder frei drauflos
+            (das wird nie bewertet).</div>
+        </div>
+        <div class="row">
+          <button class="btn small ghost" id="zeichnenStart">Üben</button>
+          <button class="btn small" id="freiStart">Frei</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
       <div class="row spread"><b>Heute geschafft</b><span class="muted small">${heuteAufgaben} / ${tagesziel}</span></div>
       <div class="bar ${heuteAufgaben>=tagesziel?'ok':''}" style="margin-top:8px">
         <i style="width:${Math.min(100, heuteAufgaben/tagesziel*100)}%"></i></div>
@@ -471,6 +646,8 @@ function screenLernen(p) {
   view().querySelector('#zumTest')?.addEventListener('click', () => zeige('test'));
   view().querySelector('#mission').onclick = () => zeige('session', { laenge:8 });
   view().querySelector('#knacknuss').onclick = () => zeige('session', { zielId:'knacknuss', laenge:3 });
+  view().querySelector('#zeichnenStart').onclick = () => zeige('session', { zielId:'zeichnen', laenge:4 });
+  view().querySelector('#freiStart').onclick = () => zeige('session', { zielId:'kunstwerk', laenge:1 });
   view().querySelectorAll('[data-fach]').forEach(b => b.onclick = () => zeige('session', { fach:b.dataset.fach, laenge:8 }));
   view().querySelectorAll('[data-ziel]').forEach(b => b.onclick = () => zeige('session', { zielId:b.dataset.ziel, laenge:8 }));
 }
@@ -550,6 +727,45 @@ function screenSession(p, opts = {}) {
         b.disabled = true;
       });
 
+    } else if (a.typ === 'zeichnen') {
+      if (ergebnis === null) {
+        Avatar.reagiere('zeichnen');
+        zeichenbrett(a, bereich, (striche, extra) => {
+          if (a.modus === 'mensch') {                    // Merkmale zählen (Goodenough/Harris)
+            merkmalsBogen(p, a, bereich, striche, auswerten);
+            return;
+          }
+          if (a.modus === 'frei') {                      // wird nicht bewertet
+            const titel = prompt('Wie heißt dein Bild?', '') || 'Ohne Titel';
+            S.inGalerie(p, { titel, auftrag: a.auftrag, striche });
+            const analyse = Kunst.analysiere(striche, { titel, auftrag: a.auftrag,
+                                                        alterEtappe: p.etappe || 1 });
+            S.merkeKunst(p, { modus:'frei', ruhe: analyse.linienruhe.wert,
+              fluss: analyse.fluss.wert, ausarbeitung: analyse.ausarbeitung.wert,
+              blatt: analyse.blattnutzung.wert, stufe: analyse.entwicklung.stufe,
+              stufeName: analyse.entwicklung.name });
+            a.analyse = analyse;
+            auswerten(a, `„${titel}“ – in der Galerie gespeichert`, true);
+            return;
+          }
+          const messziel = a.zielLinien || a.vorlage;   // 'ziel' ist das Lernziel-Objekt!
+          const wert = bewerte(messziel, striche);
+          const einStrichOk = a.modus !== 'einstrich' || extra.einStrich;
+          const bestanden = wert.punkte >= BESTANDEN && einStrichOk;
+          const analyse = Kunst.analysiere(striche, { vorlage: messziel, alterEtappe: p.etappe || 1 });
+          a.analyse = analyse;
+          S.merkeKunst(p, { modus: a.modus, treffer: wert.punkte,
+            ruhe: analyse.linienruhe.wert, fluss: analyse.fluss.wert,
+            proportion: analyse.proportion?.wert, geschlossen: analyse.geschlossenheit.wert,
+            oekonomie: analyse.oekonomie?.wert, ausarbeitung: analyse.ausarbeitung.wert });
+          auswerten(a, `${wert.punkte} von 100 Punkten` +
+            (a.modus === 'einstrich' ? (extra.einStrich ? ' · in einem Strich ✏️' : ' · leider abgesetzt') : ''),
+            bestanden, wert);
+        });
+      } else {
+        bereich.innerHTML = `<p class="small muted" style="margin-top:12px">${esc(eingabe)}</p>`;
+      }
+
     } else if (a.typ === 'nachdenken') {
       /* Keine richtige Antwort: Jede Wahl bekommt eine eigene Rückmeldung. */
       bereich.innerHTML = `<div class="choices">${a.optionen.map(o =>
@@ -619,7 +835,8 @@ function screenSession(p, opts = {}) {
     tippsZeichnen();
 
     if (ergebnis !== null) {
-      const denkAufgabe = a.typ === 'nachdenken';
+      const zeichenAufgabe = a.typ === 'zeichnen' && !a.keineWertung;
+      const denkAufgabe = a.typ === 'nachdenken' || (a.typ === 'zeichnen' && a.keineWertung);
       view().querySelector('#fb').innerHTML = denkAufgabe ? `
         <div class="feedback denk pop">
           <div style="font-weight:700;margin-bottom:6px">🏛️ Danke fürs Nachdenken.</div>
@@ -632,8 +849,23 @@ function screenSession(p, opts = {}) {
         <button class="btn" id="weiter" style="margin-top:12px">
           ${sess.index >= sess.laenge ? 'Ergebnis ansehen' : 'Weiter →'}</button>` : `
         <div class="feedback ${ergebnis?'ok':'bad'} pop">
-          ${ergebnis ? '✅ Richtig! Super gemacht.'
-            : `❌ Nicht ganz. Richtig wäre: <u>${esc(a.antwort)}</u>`}
+          ${zeichenAufgabe
+            ? (ergebnis ? `✅ Getroffen! ${esc(eingabe)}` : `🖌️ Noch nicht ganz: ${esc(eingabe)}`)
+            : ergebnis ? '✅ Richtig! Super gemacht.'
+                       : `❌ Nicht ganz. Richtig wäre: <u>${esc(a.antwort)}</u>`}
+          ${zeichenAufgabe && a.messwerte ? `
+            <div class="bar ${ergebnis?'ok':''}" style="margin-top:8px"><i style="width:${a.messwerte.punkte}%"></i></div>
+            <div class="small" style="margin-top:6px;font-weight:500">
+              Getroffene Linie: ${Math.round(a.messwerte.abdeckung*100)} % ·
+              davon auf der Vorlage: ${Math.round(a.messwerte.genauigkeit*100)} %
+            </div>` : ''}
+          ${a.analyse ? `<div class="small" style="margin-top:8px;font-weight:500">
+            ${[ a.analyse.linienruhe.wert !== null ? `✏️ Linienruhe ${a.analyse.linienruhe.wert}` : '',
+                a.analyse.fluss.wert !== null ? `🌊 Fluss ${a.analyse.fluss.wert}` : '',
+                a.analyse.proportion?.wert != null ? `📐 Proportion ${a.analyse.proportion.wert}` : '',
+                a.analyse.oekonomie ? `🖊️ ${a.analyse.oekonomie.striche} Ansätze` : ''
+              ].filter(Boolean).join(' · ')}
+            </div>` : ''}
           ${a.hilfe ? `<div class="small" style="margin-top:6px;font-weight:500">💡 ${esc(a.hilfe)}</div>` : ''}
           ${ergebnis && a.knacknuss && tippsGenutzt === 0
             ? '<div class="small" style="margin-top:6px">🧠 Ohne Tipp geknackt – stark.</div>' : ''}
@@ -645,10 +877,13 @@ function screenSession(p, opts = {}) {
     }
   };
 
-  const auswerten = (a, eingabe) => {
+  const auswerten = (a, eingabe, okDirekt = null, messwerte = null) => {
     if (a.typ === 'text' && !String(eingabe).trim()) return;
     const ms = startZeit ? performance.now() - startZeit : 0;
-    const ok = a.keineWertung ? true : pruefe(a, eingabe);
+    const ok = a.keineWertung ? true
+             : okDirekt !== null ? okDirekt
+             : pruefe(a, eingabe);
+    if (messwerte) a.messwerte = messwerte;
     status[sess.index] = a.keineWertung ? 'denk' : (ok ? 'done' : 'miss');
     sess.index++;
     if (a.keineWertung) sess.laenge--;          // zählt nicht in die Quote der Runde
@@ -657,11 +892,13 @@ function screenSession(p, opts = {}) {
     // Zeit fliesst in die Wirksamkeit eines Weges ein – schnell und sicher zaehlt mehr.
     S.verbuche(p, { zielId:a.ziel.id, weg:a.weg, level:a.level, richtig:ok, bruecke:a.bruecke, ms,
                     tippsGenutzt, knacknuss: !!a.knacknuss, keineWertung: !!a.keineWertung });
+    Avatar.reagiere(ok ? 'richtig' : 'falsch', { serie: S.zielStand(p, a.ziel.id).serie });
     if (ok && navigator.vibrate) navigator.vibrate(20);
     render(a, ok, String(eingabe));
   };
 
   const ende = () => {
+    Avatar.reagiere('fertig');
     const quote = proz(sess.richtig, sess.laenge);
     const neueAbzeichen = S.pruefeAbzeichen(p);
     const perWeg = {};
@@ -684,6 +921,7 @@ function screenSession(p, opts = {}) {
     view().querySelector('#heim').onclick = () => zeige('lernen');
   };
 
+  Avatar.reagiere('start');
   naechste();
 }
 
@@ -711,9 +949,46 @@ function screenTalente(p) {
             <div class="badge-emoji">${a.em}</div><div class="small">${a.name}</div></div>`; }).join('')}
       </div>
     </div>
-    <button class="btn ghost" id="retest">Talent-Test ${p.testGemacht?'wiederholen':'starten'}</button>
+    <button class="btn ghost" id="galerie">🎨 Galerie ansehen (${(p.galerie||[]).length})</button>
+    <button class="btn ghost" id="retest" style="margin-top:10px">Talent-Test ${p.testGemacht?'wiederholen':'starten'}</button>
     <p class="muted small center" style="margin-top:8px">Kinder verändern sich – der Test darf alle paar Monate neu gemacht werden.</p>`;
+  view().querySelector('#galerie').onclick = () => zeige('galerie');
   view().querySelector('#retest').onclick = () => zeige('test');
+}
+
+/* ------------------------------ Galerie ------------------------------ */
+function screenGalerie(p) {
+  const bilder = p.galerie || [];
+  view().innerHTML = `
+    <h1>🎨 Galerie</h1>
+    <p class="muted small">Freie Zeichnungen werden nie bewertet. Sie stehen hier,
+      weil sie dir gehören – nicht, weil sie eine Note bekommen.</p>
+    ${bilder.length ? `<div class="tiles">${bilder.map((b, i) => `
+      <div class="tile" style="cursor:default">
+        <canvas class="mini" data-bild="${i}" width="300" height="300"></canvas>
+        <b style="margin-top:8px">${esc(b.titel || 'Ohne Titel')}</b>
+        <span class="muted small">${esc(b.datum)}</span>
+        ${b.auftrag ? `<span class="muted small" style="display:block;margin-top:4px">${esc(b.auftrag)}</span>` : ''}
+      </div>`).join('')}</div>`
+      : `<div class="card center"><div class="badge-emoji">🖼️</div>
+         <p class="small">Noch keine Bilder. Unter <b>Zeichnen → Freies Kunstwerk</b> entsteht das erste.</p>
+         <button class="btn" id="malen">Jetzt zeichnen</button></div>`}
+    ${bilder.length ? '<button class="btn ghost" id="malen" style="margin-top:14px">Neues Bild zeichnen</button>' : ''}`;
+
+  view().querySelectorAll('canvas[data-bild]').forEach(c => {
+    const b = bilder[Number(c.dataset.bild)];
+    const stift = c.getContext('2d');
+    stift.strokeStyle = getComputedStyle(document.body).getPropertyValue('--brand');
+    stift.lineWidth = 4; stift.lineJoin = 'round'; stift.lineCap = 'round';
+    for (const l of b.striche || []) {
+      if (!l.length) continue;
+      stift.beginPath(); stift.moveTo(l[0][0] * 300, l[0][1] * 300);
+      for (const [x, y] of l.slice(1)) stift.lineTo(x * 300, y * 300);
+      stift.stroke();
+    }
+  });
+  view().querySelector('#malen')?.addEventListener('click',
+    () => zeige('session', { zielId:'kunstwerk', laenge:1 }));
 }
 
 /* ------------------------------ Wege ------------------------------ */
@@ -824,6 +1099,64 @@ function screenEltern(p) {
           <span class="val">${x.wert} %</span></div>`).join('');
       })()}
     </div>
+    ${(() => {
+      const m = p.kunst?.messungen || [];
+      if (m.length < 3) return `<div class="card"><h3>🎨 Zeichnerisches Profil</h3>
+        <p class="muted small">Nach etwa drei Zeichnungen erscheint hier eine fachliche
+          Auswertung – Feinmotorik, Formtreue, Entwicklungsstufe und Kreativität nach
+          Kellogg, Lowenfeld, Goodenough und Torrance.</p>
+        <p class="small">Bisher ${m.length} von 3 Zeichnungen.</p></div>`;
+      const zeile = (name, feld, deutung) => {
+        const w = S.kunstMittel(p, feld);
+        return w === null ? '' : `<div class="talent-row">
+          <span class="em">${deutung.em}</span>
+          <div class="tx"><b>${name}: ${w}</b>
+            <span class="bar" style="display:block;margin-top:5px"><i style="width:${w}%"></i></span>
+            <span class="muted small">${deutung.text}</span></div></div>`;
+      };
+      const letzteFrei = m.find(x => x.modus === 'frei');
+      const kreativ = Kunst.kreativProfil(p.galerie || []);
+      const mensch = p.kunst?.mensch;
+      return `<div class="card">
+        <h3>🎨 Zeichnerisches Profil</h3>
+        <p class="muted small">Aus ${m.length} Zeichnungen. Bewertet wird nie die Schönheit,
+          sondern Messbares: Linienführung, Formtreue, Entwicklungsmerkmale.</p>
+
+        <h4 style="margin:14px 0 6px">Feinmotorik</h4>
+        ${zeile('Linienruhe','ruhe',{em:'✏️',text:'Wie ruhig die Hand die Linie führt – gemessen an den Richtungswechseln im Kleinen.'})}
+        ${zeile('Fluss','fluss',{em:'🌊',text:'Gleichmäßige Bewegung statt stockendem Nachziehen.'})}
+        ${zeile('Formtreue','proportion',{em:'📐',text:'Stimmt das Seitenverhältnis mit der Vorlage überein?'})}
+        ${zeile('Geschlossenheit','geschlossen',{em:'⭕',text:'Trifft das Ende einer Form ihren Anfang?'})}
+        ${zeile('Ökonomie','oekonomie',{em:'🖊️',text:'Wie viele Ansätze wurden gebraucht?'})}
+        ${zeile('Ausarbeitung','ausarbeitung',{em:'🎨',text:'Wie viel Aufwand steckt im Bild (Torrance: Elaboration)?'})}
+
+        ${letzteFrei?.stufeName ? `<h4 style="margin:14px 0 6px">Entwicklungsstufe</h4>
+          <p class="small"><b>${esc(letzteFrei.stufeName)}</b> – nach Kellogg (1969) und
+          Lowenfeld (1947), zuletzt am ${esc(letzteFrei.datum)}.</p>
+          <p class="small muted">Kinder springen zwischen den Stufen, fallen zurück und bleiben
+          stehen. Alles davon ist normal; die Stufe ist keine Note.</p>` : ''}
+
+        ${kreativ.fluessigkeit >= 2 ? `<h4 style="margin:14px 0 6px">Kreativität (nach Torrance, 1966)</h4>
+          <ul class="clean small">
+            <li><b>Flüssigkeit:</b> ${kreativ.fluessigkeit} benannte Einfälle</li>
+            <li><b>Flexibilität:</b> ${kreativ.flexibilitaet} verschiedene Bereiche
+              (${esc(kreativ.bereiche.join(', '))})</li>
+          </ul>
+          <p class="small muted">Torrance zählt Ideen und Bereiche – nicht deren Qualität.
+            Wer viele Bilder aus einem einzigen Bereich malt, ist nicht schlechter, sondern
+            vertieft.</p>` : ''}
+
+        ${mensch ? `<h4 style="margin:14px 0 6px">Menschzeichnung</h4>
+          <p class="small">${esc(mensch.erklaerung)}</p>
+          <p class="small muted">${esc(mensch.warnung)}</p>` : ''}
+
+        <p class="small muted" style="margin-top:12px">
+          <b>Was das nicht ist:</b> kein Begabungs- oder Intelligenztest, keine Diagnose,
+          keine Aussage über künstlerischen Wert. Es sind Anhaltspunkte aus wenigen
+          Zeichnungen – aussagekräftig erst über Monate, und auch dann nur im Zusammenspiel
+          mit dem, was Sie selbst sehen.</p>
+      </div>`;
+    })()}
     <div class="card">
       <h3>Grundlage des Talent-Profils</h3>
       <p class="muted small">${p.testGemacht

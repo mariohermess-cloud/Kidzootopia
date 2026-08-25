@@ -7,6 +7,38 @@ const fehler = [];
 p.on('pageerror', e => fehler.push('pageerror: '+e.message));
 p.on('console', m => { if (m.type()==='error') fehler.push('console: '+m.text()); });
 const S = process.argv[2] || '.';
+
+/* Löst die gerade gezeigte Aufgabe – egal welcher Art.
+   Zeichenaufgaben werden mit der Maus nachgefahren wie mit dem Finger. */
+async function loeseAufgabe(p) {
+  if (await p.$('#brett')) {
+    const hinweis = await p.textContent('#brettHinweis').catch(() => '');
+    if (/Einprägen/.test(hinweis || '')) await p.waitForTimeout(5600);
+    const k = await p.$eval('#brett', el => {
+      const r = el.getBoundingClientRect(); return { x:r.x, y:r.y, w:r.width, h:r.height };
+    });
+    const linien = await p.evaluate(() => window.__vorlage);
+    if (linien && linien.length) {
+      for (const l of linien) {
+        await p.mouse.move(k.x + l[0].x*k.w, k.y + l[0].y*k.h);
+        await p.mouse.down();
+        for (const q of l) await p.mouse.move(k.x + q.x*k.w, k.y + q.y*k.h);
+        await p.mouse.up();
+      }
+    } else {                                   // freies Blatt
+      p.once('dialog', d => d.accept('Testbild'));
+      await p.mouse.move(k.x + k.w*.3, k.y + k.h*.3);
+      await p.mouse.down();
+      for (let i=0;i<20;i++) await p.mouse.move(k.x + k.w*(.3+i*.02), k.y + k.h*(.3+Math.sin(i/3)*.1));
+      await p.mouse.up();
+    }
+    await p.click('#brettFertig');
+    return;
+  }
+  if (await p.$('.teil[data-e]')) { let n=0; while (await p.$('.teil[data-e]') && n++<12) await p.click('.teil[data-e]'); return; }
+  if (await p.$('#eingabe')) { await p.fill('#eingabe','42'); await p.click('#pruefen'); return; }
+  await p.click('.choice');
+}
 const BASIS = process.env.BASIS || 'http://localhost:8765';
 
 await p.goto(`${BASIS}/index.html`);
@@ -54,12 +86,7 @@ for (let i=0;i<12;i++){
   if (await p.$('#nochmal')) break;                 // Runde ist zu Ende
   await p.waitForSelector('.task');
   const frage = await p.textContent('.task');
-  if (await p.$('.teil[data-e]')) {                 // Puzzle: alle Teile der Reihe nach antippen
-    let sicherung = 0;
-    while (await p.$('.teil[data-e]') && sicherung++ < 12) await p.click('.teil[data-e]');
-  }
-  else if (await p.$('#eingabe')) { await p.fill('#eingabe','42'); await p.click('#pruefen'); }
-  else { await p.click('.choice'); }
+  await loeseAufgabe(p);
   await p.waitForSelector('#weiter');
   if (i===0) await p.screenshot({path:S+'/5-aufgabe.png', fullPage:true});
   await p.click('#weiter');
@@ -85,13 +112,48 @@ for (const [ziel, name] of [['puzzle','puzzle'],['bildraetsel','bildraetsel'],['
     if (!await p.$('.tipp')) throw new Error('Tipp wird nicht angezeigt');
   }
   await p.screenshot({path:`${S}/x-${name}.png`, fullPage:true});
-  if (await p.$('.teil[data-e]')) { let k=0; while (await p.$('.teil[data-e]') && k++<12) await p.click('.teil[data-e]'); }
-  else if (await p.$('#eingabe')) { await p.fill('#eingabe','1'); await p.click('#pruefen'); }
-  else await p.click('.choice');
+  await loeseAufgabe(p);
   await p.waitForSelector('#weiter');
   if (ziel === 'knacknuss' && !await p.$('.quelle')) throw new Error('Herkunftsangabe fehlt');
   await p.click('#raus');
   await p.waitForSelector('#mission');
+}
+
+// Zeichnen: Vorlage mit dem "Finger" nachfahren und bewerten lassen
+{
+  await p.click('[data-ziel="zeichnen"]');
+  await p.waitForSelector('#brett');
+  const kasten = await p.$eval('#brett', el => {
+    const r = el.getBoundingClientRect(); return { x:r.x, y:r.y, w:r.width, h:r.height };
+  });
+  // die Vorlage direkt aus der Aufgabe holen und exakt nachfahren
+  const linien = await p.evaluate(() => window.__vorlage || null);
+  if (!linien) throw new Error('Vorlage nicht zugänglich (Testhaken fehlt)');
+  for (const linie of linien) {
+    await p.mouse.move(kasten.x + linie[0].x * kasten.w, kasten.y + linie[0].y * kasten.h);
+    await p.mouse.down();
+    for (const punkt of linie) {
+      await p.mouse.move(kasten.x + punkt.x * kasten.w, kasten.y + punkt.y * kasten.h);
+    }
+    await p.mouse.up();
+  }
+  await p.screenshot({path:S+'/m-zeichnen.png', fullPage:true});
+  await p.click('#brettFertig');
+  await p.waitForSelector('.feedback');
+  const rueck = await p.textContent('.feedback');
+  if (!/Getroffen/.test(rueck)) throw new Error('Genaues Nachfahren wurde nicht anerkannt: ' + rueck.slice(0,120));
+  console.log('Nachgefahrene Vorlage anerkannt:', rueck.trim().split('\n')[0].slice(0, 60));
+  await p.screenshot({path:S+'/m-zeichnen-ergebnis.png', fullPage:true});
+  await p.click('#raus');
+  await p.waitForSelector('#mission');
+}
+
+// Begleiter (Avatar) muss sichtbar sein und reagieren
+{
+  if (!await p.$('.begleiter .figur')) throw new Error('Begleiter fehlt');
+  await p.click('.begleiter .figur');
+  await p.waitForSelector('.begleiter .blase:not([hidden])', { timeout: 3000 });
+  console.log('Begleiter reagiert auf Antippen ✅');
 }
 
 // Denk-Impulse: müssen erscheinen und dürfen die Quote nicht verändern
@@ -158,8 +220,7 @@ for (const ziel of ['analysis','denkfehler','logikformal','hauptwerke','zinsen']
   await knopf.click();
   await p.waitForSelector('.task');
   if (ziel === 'analysis') await p.screenshot({path:S+'/z-erwachsen.png', fullPage:true});
-  if (await p.$('#eingabe')) { await p.fill('#eingabe','1'); await p.click('#pruefen'); }
-  else await p.click('.choice');
+  await loeseAufgabe(p);
   await p.waitForSelector('#weiter');
   await p.click('#raus');
   await p.waitForSelector('#mission');

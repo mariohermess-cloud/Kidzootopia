@@ -86,7 +86,62 @@ stellt eine Etappe höher.
    * **Puzzle & Reihenfolge** – Abläufe und Größen durch Antippen in die richtige Ordnung
      bringen (Ei → Raupe → Puppe → Schmetterling).
 
-8. **Klassiker – Fordern statt Beschäftigen** 🏛️
+8. **Zeichnen auf dem Tablet** 🎨 – mit Finger oder Stift
+   * **Nachfahren** – 12 Formen vom Dreieck bis zur Blume. Gemessen wird, wie genau die
+     Linie getroffen wurde.
+   * **Ein Strich ohne Absetzen** – Haus vom Nikolaus, offener Briefumschlag, Gitter.
+     Mathematisch sind das Eulerwege, dieselbe Frage wie bei den Königsberger Brücken.
+   * **Symmetrie** – die linke Hälfte ist vorgegeben, die rechte muss spiegelbildlich dazu.
+   * **Aus dem Gedächtnis** – die Form verschwindet nach fünf Sekunden.
+   * **Freies Kunstwerk** – 12 Aufträge („Zeichne ein Tier, das es nicht gibt“).
+     **Wird ausdrücklich nicht bewertet** und wandert in die Galerie.
+
+   **Wie künstlerische Fähigkeit bewertet wird – und wie nicht.** Schönheit lässt sich nicht
+   messen, und der Versuch würde Kinder vom Zeichnen abbringen. Gemessen wird deshalb nur
+   Handwerkliches: **Abdeckung** (wie viel der Vorlage wurde getroffen) und **Genauigkeit**
+   (wie viel des Gezeichneten liegt auf der Vorlage). Beide werden multipliziert – wer quer
+   über das Blatt kritzelt, trifft zwar viel, malt aber überwiegend daneben und besteht nicht
+   (im Test: 47 von 100). Sorgfältiges, auch zittriges Zeichnen besteht (100 von 100).
+   Zwischenpunkte werden ergänzt, damit schnelles Zeichnen nicht schlechter bewertet wird
+   als langsames. Freies Zeichnen bekommt gar keine Punkte – nur einen Platz in der Galerie.
+
+   **Und die fachliche Feinauswertung.** Damit „Kunst“ nicht auf Nachfahr-Genauigkeit
+   verkürzt wird, wertet `js/kunstanalyse.js` jede Zeichnung zusätzlich nach vier
+   etablierten Verfahren der Kinderzeichnungs-Forschung aus – rein beschreibend, im
+   Eltern-Bereich, nie als Punktzahl für das Kind:
+
+   * **Feinmotorik** aus dem aufgezeichneten Strichverlauf (Ort, Zeit und Stiftdruck jedes
+     Punktes): *Linienruhe* (mittlere Richtungsänderung), *Fluss* (Gleichmäßigkeit des
+     Tempos, Pausen über 0,3 s), *Proportion* (Seitenverhältnis gegen die Vorlage,
+     größenunabhängig), *Geschlossenheit* (Lücke zwischen Anfang und Ende) und
+     *Ökonomie* (Strichlänge gegenüber der nötigen Länge).
+   * **Entwicklungsstufe** nach Rhoda Kellogg (1969), Viktor Lowenfeld (1947) und
+     Georges-Henri Luquet (1927): von *Erste Spuren* über *Kritzelstufe*, *Formstufe* und
+     *Kombinationsstufe* bis zur *vorschematischen* und *schematischen Stufe*. Luquets
+     Kriterium ist dabei nicht die Ähnlichkeit, sondern die **Benennung**: Ein Kind, das
+     seine Zeichnung „Mama“ nennt, hat die Schwelle zur Absicht überschritten.
+   * **Menschzeichnung** nach Florence Goodenough (1926) / Dale Harris (1963): Das Kind
+     hakt selbst ab, welche von 20 Merkmalen sein Männchen hat (Kopf, zwei Augen, Hals,
+     Finger in richtiger Zahl, Kleidung, Profil …). Verglichen wird nur mit einer breiten
+     Erwartungsspanne für die Etappe – ausdrücklich **kein IQ**, obwohl das Verfahren
+     historisch so verwendet wurde. Genau dieser Missbrauch steht als Warnung dabei.
+   * **Kreativität** nach Ellis Paul Torrance (1966): *Ausarbeitung* (Zahl der Ansätze und
+     Details), *Flüssigkeit* (wie viele freie Werke), *Flexibilität* (wie viele
+     verschiedene Motivkategorien) und *Originalität* – naheliegende Lösungen einer
+     Aufgabe („Verwandle einen Kreis“ → Sonne, Gesicht, Ball) zählen weniger als seltene.
+
+   **Was das ausdrücklich nicht ist:** kein Begabungs-, Intelligenz- oder Persönlichkeitstest
+   und keine Diagnose. Kinderzeichnungen schwanken stark mit Tagesform, Lust und Stift.
+   Der Eltern-Bereich zeigt die Auswertung erst ab drei Zeichnungen und sagt das dort auch.
+
+
+9. **Der Begleiter** 🦖 – das gewählte Lieblingstier lebt in der Ecke des Bildschirms.
+   Es hüpft und wirft Funken bei Erfolg, wackelt und tröstet bei Fehlern, winkt zum Start
+   und dreht sich am Ende. Passiert länger nichts, gähnt es, schaut sich um – und schläft
+   nach gut einer Minute mit einem „Zzz“ ein. Antippen weckt es. Für kleine Kinder ist das
+   kein Beiwerk: Es macht aus einer Aufgabenliste ein Gegenüber.
+
+10. **Klassiker – Fordern statt Beschäftigen** 🏛️
    Ein eigenes Fach mit dem Besten aus über hundert Jahren Denksport und Bildung.
    Diese Aufgaben haben überlebt, weil sie sich in einem Satz erklären lassen, zunächst
    unlösbar wirken und mit einem einzigen Gedanken plötzlich einfach werden.
@@ -125,7 +180,7 @@ stellt eine Etappe höher.
      werden **bewusst nicht bewertet** und fließen in keine Quote ein – sonst wären es
      Prüfungen statt Fragen.
 
-9. **Eltern-Bereich** – Fortschritt je Lernziel, Aktivität der letzten 7 Tage,
+11. **Eltern-Bereich** – Fortschritt je Lernziel, Aktivität der letzten 7 Tage,
    Klartext-Empfehlungen („So lernt Ihr Kind am leichtesten – und daran arbeiten wir gerade“),
    Export/Import der Daten.
 
@@ -134,7 +189,7 @@ Motor zieht so lange neu, bis etwas kommt, das dieses Kind noch nicht hatte – 
 Vorrat eines Ziels erschöpft ist, beginnt er von vorn (und vergisst dann die ältesten zuerst).
 
 Aufgaben werden **generiert**, nicht aus einer Liste gezogen – der Vorrat geht nie aus.
-Aktuell: **29 Lernziele × bis zu 5 Wege = 110 Aufgabentypen**, darunter **1.394 verschiedene Knacknüsse** auf je 5 Schwierigkeitsstufen,
+Aktuell: **31 Lernziele × bis zu 5 Wege = 110 Aufgabentypen**, darunter **1.394 verschiedene Knacknüsse** auf je 5 Schwierigkeitsstufen,
 verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
 
 ---
@@ -228,6 +283,7 @@ Zusätzlich gibt es Export und Import als Datei für ein Backup am Rechner.
 npm run test:aufgaben     # alle Generatoren: 33.000 Aufgaben auf Vollständigkeit & Eindeutigkeit
 npm run test:knacknuesse  # Vielfalt (1.394) und Richtigkeit (19.200 unabhängig nachgerechnet)
 npm run test:lernen       # Lernschleife, Wiederholungsfreiheit, Sachaufgaben-Kontrolle
+npm run test:kunst        # Zeichnungsauswertung: jedes Maß gegen seinen Gegenfall geprüft
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
@@ -245,6 +301,10 @@ js/data.js            Talente, Lernwege, Lernziele, Talent-Test (5 Teile), Abzei
 js/talenttest.js      Auswertung des Talent-Tests: Blöcke, Gewichte, Feinschliff
 js/sprache.js         Vorlesen über die Gerätestimme (Web Speech API)
 js/geschichten.js     Hörgeschichten mit Verständnisfragen
+js/zeichnen.js        Zeichenvorlagen, Ein-Strich-Figuren, Bewertung (Abdeckung/Genauigkeit)
+js/avatar.js          Der Begleiter: Reaktionen, Gesten, Leerlauf und Schlaf
+js/kunstanalyse.js    Fachliche Zeichnungsauswertung: Feinmotorik, Entwicklungsstufe,
+                      Menschzeichnung (Goodenough/Harris), Kreativität (Torrance)
 js/klassiker.js       Knacknüsse (handverlesen), Wissenskanon, Redewendungen, Rechentricks
 js/knacknuss_familien.js  Rätsel-Familien mit berechneter Lösung, inkl. eigener Löser
 js/philosophie.js     Stoa für Kinder: Zitate, Alltagslagen, Denk-Impulse

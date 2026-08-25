@@ -40,7 +40,8 @@ export const FAECHER = {
   sach:     { name:'Allgemeinwissen', emoji:'🌍' },
   technik:  { name:'Technik & Code',  emoji:'💡' },
   raetsel:  { name:'Rätsel & Puzzle',  emoji:'🧩' },
-  klassiker:{ name:'Klassiker',        emoji:'🏛️' }
+  klassiker:{ name:'Klassiker',        emoji:'🏛️' },
+  kunst:    { name:'Zeichnen',         emoji:'🎨' }
 };
 
 /* ---------------------------------------------------------------------------
@@ -209,6 +210,12 @@ export const ZIELE = [
   { id:'puzzle',     fach:'raetsel',  titel:'Puzzle & Reihenfolge',
     kompetenz:'Teile und Ereignisse in die richtige Ordnung bringen.',
     klasse:[1,6], etappe:[1,3], wege:['bauen','erzaehlen','knobeln','bewegen'] },
+  { id:'zeichnen',   fach:'kunst',    titel:'Zeichnen & Nachfahren',
+    kompetenz:'Formen genau nachzeichnen, Symmetrie halten, in einem Strich durchkommen.',
+    klasse:[1,13], etappe:[1,5], wege:['bauen','knobeln','entdecken','bewegen'] },
+  { id:'kunstwerk',  fach:'kunst',    titel:'Freies Kunstwerk',
+    kompetenz:'Eigene Einfälle zeichnerisch umsetzen – ohne Bewertung.',
+    klasse:[1,13], etappe:[1,5], wege:['erzaehlen','bauen','entdecken'] },
   { id:'knacknuss',  fach:'klassiker',titel:'Knacknüsse',
     kompetenz:'Berühmte Denkaufgaben aus mehreren Jahrhunderten selbstständig knacken.',
     klasse:[2,6], etappe:[1,5], wege:['knobeln','erzaehlen','bauen','team'], anspruch:'hoch' },
