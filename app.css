@@ -214,3 +214,9 @@ details.card ol{margin:8px 0}
 .brett-hinweis{margin-top:8px;font-size:.85rem;color:var(--muted);text-align:center;min-height:1.2em}
 canvas.mini{width:100%;height:auto;aspect-ratio:1;background:var(--bg);
   border:1px solid var(--line);border-radius:12px}
+
+/* Hinweis auf eine neue Fassung – schwebt über der Navigationsleiste */
+.update-hinweis{position:fixed;left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom));
+  z-index:20;border:0;border-radius:16px;padding:14px 16px;font:inherit;font-weight:700;
+  background:var(--brand);color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.22);cursor:pointer}
+.update-hinweis:active{transform:scale(.98)}

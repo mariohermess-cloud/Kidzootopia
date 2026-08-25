@@ -26,6 +26,7 @@ jobs:
       - run: node tests/lernen.mjs
       - run: node tests/knacknuesse.mjs
       - run: node tests/kunst.mjs
+      - run: node tests/version.mjs
 
   deploy:
     needs: test

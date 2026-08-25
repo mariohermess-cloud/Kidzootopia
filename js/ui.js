@@ -10,6 +10,7 @@ import { anleitung, umgebung } from './installhilfe.js';
 import { bewerte, BESTANDEN } from './zeichnen.js';
 import * as Kunst from './kunstanalyse.js';
 import * as Avatar from './avatar.js';
+import { NUMMER, STAND, VERLAUF } from './version.js';
 import { pruefe } from './generators.js';
 import { radar } from './chart.js';
 
@@ -102,7 +103,9 @@ function screenStart() {
       <button class="btn quiet" id="diagnose" style="margin-top:10px">
         🔍 Was ist auf diesem Gerät gespeichert?</button>
       <div id="holBereich"></div>
-    </details>`;
+    </details>
+    <p class="small muted center" style="margin-top:18px">Kidzootopia · Version ${NUMMER} ·
+      Stand ${esc(STAND)}</p>`;
 
   installVerdrahten(view());
 
@@ -1053,6 +1056,75 @@ function screenWege(p) {
     </ul></div>`;
 }
 
+
+/* ------------------------ Welche Fassung läuft hier? ------------------------ */
+/* Diese Datei liegt im Zwischenspeicher des Service Workers. Was hier steht, ist
+   deshalb wirklich die Fassung, die auf diesem Gerät läuft. */
+
+function versionsKarte() {
+  const aelter = VERLAUF.slice(1);
+  return `
+    <div class="card">
+      <h3>Fassung dieser App</h3>
+      <div class="row spread" style="margin:6px 0 12px">
+        <b style="font-size:1.5rem">Version ${NUMMER}</b>
+        <span class="pill grey">Stand ${esc(STAND)}</span>
+      </div>
+      <p class="small muted">Diese Nummer kommt aus der App selbst, nicht vom Server –
+        sie zeigt also, was auf <b>diesem</b> Gerät tatsächlich läuft. Steht auf dem iPad eine
+        kleinere Nummer als auf dem Rechner, hat das iPad die Aktualisierung noch nicht geholt.</p>
+      <p class="small" style="margin-top:12px"><b>Neu in Version ${NUMMER}:</b></p>
+      <ul class="clean small">${VERLAUF[0].was.map(w => `<li>· ${esc(w)}</li>`).join('')}</ul>
+      <div id="updateStatus" class="small muted" style="margin:12px 0"></div>
+      <button class="btn ghost" id="updatePruefen">🔄 Nach Aktualisierung suchen</button>
+      <details style="margin-top:12px">
+        <summary class="small muted">Frühere Fassungen</summary>
+        ${aelter.map(v => `
+          <p class="small" style="margin:10px 0 2px"><b>Version ${v.nr}</b>
+            <span class="muted">· ${esc(v.stand)}</span></p>
+          <ul class="clean small">${v.was.map(w => `<li>· ${esc(w)}</li>`).join('')}</ul>`).join('')}
+      </details>
+    </div>`;
+}
+
+function versionVerdrahten() {
+  const knopf = view().querySelector('#updatePruefen');
+  const status = view().querySelector('#updateStatus');
+  if (!knopf || !status) return;
+
+  if (!('serviceWorker' in navigator)) {
+    status.textContent = 'Offline-Betrieb wird von diesem Browser nicht unterstützt.';
+    knopf.hidden = true;
+    return;
+  }
+
+  knopf.onclick = async () => {
+    knopf.disabled = true;
+    status.textContent = '⏳ Suche …';
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (!reg) { status.textContent = 'Noch keine Offline-Fassung eingerichtet. Seite neu laden.'; }
+      else {
+        await reg.update();
+        /* Der Service Worker meldet sich über 'updatefound', wenn es etwas Neues gibt.
+           Kommt nach kurzer Zeit nichts, ist die Fassung aktuell. */
+        const neues = await new Promise(fertig => {
+          if (reg.installing || reg.waiting) return fertig(true);
+          const horcher = () => fertig(true);
+          reg.addEventListener('updatefound', horcher, { once: true });
+          setTimeout(() => { reg.removeEventListener('updatefound', horcher); fertig(false); }, 4000);
+        });
+        status.innerHTML = neues
+          ? '⬇️ Eine neue Fassung wird geladen. Nach dem Neustart ist sie da.'
+          : `✅ Version ${NUMMER} ist die neueste – nichts zu tun.`;
+      }
+    } catch {
+      status.textContent = '⚠️ Keine Verbindung. Bitte später noch einmal versuchen.';
+    }
+    knopf.disabled = false;
+  };
+}
+
 /* ------------------------------ Eltern ------------------------------ */
 function screenEltern(p) {
   const s = p.stats;
@@ -1230,6 +1302,7 @@ function screenEltern(p) {
       <input type="file" id="importFile" accept="application/json" hidden>
       <button class="btn danger" id="reset" style="margin-top:14px">Alle Daten löschen</button>
     </div>
+    ${versionsKarte()}
 `;
   view().querySelector('#profile').onclick = () => zeige('profile');
   view().querySelector('#etappeWahl').onchange = e => {
@@ -1253,6 +1326,8 @@ function screenEltern(p) {
   const bereich = () => view().querySelector('#codeBereich');
 
   view().querySelector('#diagnoseEltern').onclick = () => diagnoseAnzeigen(bereich());
+
+  versionVerdrahten();
 
   view().querySelector('#codeZeigen').onclick = () => {
     const code = S.alsCode();
