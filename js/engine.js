@@ -5,7 +5,7 @@
 
 import { ZIEL_MAP, WEGE, ZIELE, TALENTE } from './data.js';
 import { baueAufgabe } from './generators.js';
-import { talentWerte, zielStand, zieleFuerKlasse, zielWegWirksamkeit, wegWirksamkeit } from './store.js';
+import { talentWerte, zielStand, zieleFuerEtappe as zieleFuerKlasse, zielWegWirksamkeit, wegWirksamkeit } from './store.js';
 
 const BRUECKEN_ANTEIL = 0.2;
 
@@ -72,10 +72,12 @@ export function starteSession(profil, { zielId = null, fach = null, laenge = 8 }
       if (this.index >= this.laenge) return null;
       const ziel = zielId ? ZIEL_MAP[zielId] : naechstesZiel(profil, fach);
       const stand = zielStand(profil, ziel.id);
+      // Hauptwerke richten sich nach der Etappe, nicht nach dem Übungsstand
+      const stufe = ziel.id === 'hauptwerke' ? (profil.etappe || 1) : stand.level;
       // jede 5. Aufgabe bewusst ueber einen anderen Weg
       const erzwinge = (this.index + 1) % 5 === 0 ? true : (this.index === 0 ? false : null);
       const { weg, bruecke } = waehleWeg(profil, ziel, erzwinge);
-      const aufgabe = baueAufgabe(ziel.id, weg, stand.level);
+      const aufgabe = baueAufgabe(ziel.id, weg, stufe);
       this.aktuell = { ...aufgabe, ziel, bruecke, wegInfo: WEGE[weg] };
       return this.aktuell;
     }

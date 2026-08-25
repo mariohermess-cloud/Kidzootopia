@@ -4,6 +4,10 @@
    Nur die Verpackung unterscheidet sich – das ist die Idee der App. */
 
 import { GESCHICHTEN } from './geschichten.js';
+import { KNACKNUESSE, KANON, REDEWENDUNGEN, RECHENTRICKS } from './klassiker.js';
+import { ZITATE, KONTROLLE, SITUATIONEN, IMPULSE, DENKER } from './philosophie.js';
+import { HAUPTWERKE } from './hauptwerke.js';
+import { DENKFEHLER, FEHLSCHLUESSE, STILMITTEL, WORTWURZELN, SYLLOGISMEN } from './fortgeschritten.js';
 
 const r = (a,b) => a + Math.floor(Math.random()*(b-a+1));
 const pick = a => a[r(0,a.length-1)];
@@ -447,6 +451,413 @@ puzzle: (() => {
     bewegen(){ const a = pick(ABLAEUFE.slice(2));
       return ordnen(`👟 Mach es in Gedanken mit: ${a.t}\nTippe die Schritte der Reihe nach an.`, a.s,
         'Stell dir vor, du machst es gerade wirklich.'); }
+  };
+})(),
+
+/* ---------------- Klassiker: Knacknüsse ---------------- */
+knacknuss: (() => {
+  const RAHMEN = {
+    knobeln:   'Knacknuss – nimm dir Zeit.',
+    erzaehlen: 'Diese Aufgabe wird seit Generationen weitererzählt.',
+    bauen:     'Zeichne es auf oder leg es mit Gegenständen nach.',
+    team:      'Erkläre die Aufgabe jemandem – beim Erklären fällt die Lösung oft von selbst.'
+  };
+  const bauen = (weg, lvl) => {
+    const passend = KNACKNUESSE.filter(k => k.stufe <= lvl + 1);
+    const k = pick(passend.length ? passend : KNACKNUESSE.filter(x => x.stufe <= 2));
+    const basis = k.optionen
+      ? { typ:'choice', optionen: shuffle([...k.optionen]) }
+      : { typ:'text' };
+    return {
+      ...basis,
+      frage: `🏛️ ${RAHMEN[weg]}\n\n${k.frage}`,
+      antwort: k.antwort,
+      tipps: k.tipps || [],
+      quelle: k.quelle,
+      hilfe: (k.tipps || []).at(-1) || '',
+      knacknuss: true
+    };
+  };
+  return {
+    knobeln:   lvl => bauen('knobeln', lvl),
+    erzaehlen: lvl => bauen('erzaehlen', lvl),
+    bauen:     lvl => bauen('bauen', lvl),
+    team:      lvl => bauen('team', lvl)
+  };
+})(),
+
+/* ---------------- Klassiker: Rechenkunststücke ---------------- */
+kopfrechnen: (() => {
+  const trick = id => RECHENTRICKS.find(t => t.id === id);
+  const mit = (aufgabe, t) => ({ ...aufgabe, hilfe: t.erklaerung, quelle: t.quelle });
+
+  const malElf = lvl => { const n = r(12, lvl >= 3 ? 98 : 49);
+    return mit(zahlText(`✖️ Mal 11 im Kopf: ${n} × 11 = ?`, n*11), trick('elf')); };
+
+  const quadratAufFuenf = lvl => { const z = r(1, lvl >= 3 ? 9 : 4), n = z*10 + 5;
+    return mit(zahlText(`✖️ Quadrat einer Zahl auf 5: ${n} × ${n} = ?`, n*n), trick('fuenf')); };
+
+  const gaussSumme = lvl => { const n = pick(lvl >= 3 ? [20,25,30,40,50,100] : [5,6,10,12,15]);
+    return mit(zahlText(`➕ Zähle alle Zahlen von 1 bis ${n} zusammen.\nNicht einzeln – nutze den Kniff!`,
+      n*(n+1)/2), trick('gauss')); };
+
+  const bauernRechnen = lvl => { const a = r(3, 6+lvl*2), b = r(11, 20+lvl*10);
+    return mit(zahlText(`🧱 Halbieren und verdoppeln: ${a} × ${b} = ?`, a*b), trick('bauern')); };
+
+  const neunerprobe = lvl => {
+    const a = r(12, 40+lvl*10), b = r(3, 9), echt = a*b;
+    const falsch = Math.random() < .5;
+    const gezeigt = falsch ? echt + pick([1,2,-1,-2]) : echt;
+    const quer = n => String(n).split('').reduce((x,y)=>x+Number(y),0);
+    return mit(wahl(`🔍 Neunerprobe: Stimmt diese Rechnung?\n${a} × ${b} = ${gezeigt}\n(Quersumme von ${a} ist ${quer(a)}, von ${b} ist ${quer(b)})`,
+      falsch ? 'Nein, da stimmt etwas nicht' : 'Ja, die Rechnung stimmt',
+      [falsch ? 'Ja, die Rechnung stimmt' : 'Nein, da stimmt etwas nicht']), trick('neuner'));
+  };
+
+  const prozente = lvl => { const n = pick([40,60,80,120,200,250,300]).valueOf(),
+        p = pick(lvl >= 3 ? [5,10,15,20,25] : [10,20,50]);
+    return mit(zahlText(`💯 ${p} % von ${n} = ?`, n*p/100), trick('prozent')); };
+
+  return {
+    knobeln:  lvl => (Math.random() < .5 ? malElf(lvl) : quadratAufFuenf(lvl)),
+    rhythmus: lvl => gaussSumme(lvl),
+    bauen:    lvl => bauernRechnen(lvl),
+    code:     lvl => (Math.random() < .5 ? neunerprobe(lvl) : prozente(lvl))
+  };
+})(),
+
+/* ---------------- Klassiker: Lebenskunst (Stoa) ---------------- */
+lebenskunst: (() => {
+  /* Ein Denk-Impuls hat keine richtige Antwort. Er wird auch nicht bewertet –
+     sonst wäre es keine Frage mehr, sondern eine Prüfung. */
+  const impuls = () => {
+    const i = pick(IMPULSE);
+    return {
+      frage: `🏛️ ${i.frage}`,
+      typ: 'nachdenken',
+      optionen: shuffle(i.optionen.map(o => o.text)),
+      rueckmeldungen: Object.fromEntries(i.optionen.map(o => [o.text, o.antwort])),
+      antwort: i.optionen[0].text,
+      quelle: i.quelle,
+      keineWertung: true
+    };
+  };
+
+  const zitatVerstehen = () => { const z = pick(ZITATE);
+    return { ...wahl(`🏛️ ${z.text}\n\nWas ist damit gemeint?`, z.ok, z.bad,
+      'Lies das Zitat noch einmal langsam – Wort für Wort.'), quelle: z.quelle }; };
+
+  const inMeinerHand = () => {
+    const meins = pick(KONTROLLE.filter(k => k.meins));
+    const fremd = shuffle(KONTROLLE.filter(k => !k.meins)).slice(0,3);
+    return { ...wahl('🧠 Epiktet fragt: Was davon liegt wirklich in deiner Hand?',
+      meins.sache, fremd.map(f => f.sache),
+      'Alles, was andere oder das Wetter entscheiden, liegt nicht bei dir.'),
+      quelle:'Epiktet, Handbüchlein der Moral 1 – die berühmte Unterscheidung zwischen dem, was uns gehört, und dem, was nicht.' };
+  };
+
+  const nichtInMeinerHand = () => {
+    const fremd = pick(KONTROLLE.filter(k => !k.meins));
+    const meine = shuffle(KONTROLLE.filter(k => k.meins)).slice(0,3);
+    return { ...wahl('🧠 Und umgekehrt: Was davon liegt NICHT in deiner Hand?',
+      fremd.sache, meine.map(m => m.sache),
+      'Was du selbst tust oder lässt, liegt bei dir.'),
+      quelle:'Epiktet, Handbüchlein der Moral 1' };
+  };
+
+  const alltag = () => { const s = pick(SITUATIONEN);
+    return { ...wahl(`🤝 ${s.q}\n\nWas ist die klügste Antwort darauf?`, s.ok, s.bad, s.prinzip),
+      quelle: `${s.prinzip} — ${s.quelle}` }; };
+
+  const werSagts = () => {
+    const menge = ZITATE.filter(z => DENKER[z.denker]);
+    const z = pick(menge);
+    const andere = shuffle(Object.keys(DENKER).filter(k => k !== z.denker)).slice(0,3);
+    return { ...wahl(`🔎 Wer sagte das?\n\n${z.text}`, DENKER[z.denker].name,
+      andere.map(k => DENKER[k].name), 'Achte auf den Ton: Kaiser, Sklave oder Lehrer?'),
+      quelle: `${z.quelle}. ${DENKER[z.denker].name} lebte ${DENKER[z.denker].lebte}. ${DENKER[z.denker].wer}` };
+  };
+
+  /* Jede vierte Aufgabe ist ein Impuls ohne richtige Antwort. */
+  const vielleichtImpuls = fn => () => (Math.random() < 0.25 ? impuls() : fn());
+
+  return {
+    erzaehlen: vielleichtImpuls(zitatVerstehen),
+    knobeln:   vielleichtImpuls(() => (Math.random() < .5 ? inMeinerHand() : nichtInMeinerHand())),
+    team:      vielleichtImpuls(alltag),
+    entdecken: vielleichtImpuls(werSagts)
+  };
+})(),
+
+/* ---------------- Klassiker: Wissen, das bleibt ---------------- */
+kanon: (() => {
+  const ausBereichen = (bereiche) => {
+    const menge = KANON.filter(k => bereiche.includes(k.bereich));
+    const k = pick(menge.length ? menge : KANON);
+    return { ...wahl(k.q, k.ok, k.bad, ''), quelle: k.notiz };
+  };
+  return {
+    entdecken: () => ausBereichen(['Entdeckungen','Natur']),
+    erzaehlen: () => ausBereichen(['Kunst','Geschichte']),
+    knobeln:   () => ausBereichen(['Zahlen','Sprache']),
+    team:      () => ausBereichen(['Geschichte','Erde'])
+  };
+})(),
+
+/* ---------------- Redewendungen ---------------- */
+redewendung: (() => {
+  const eine = () => { const w = pick(REDEWENDUNGEN);
+    return { ...wahl(w.q, w.ok, w.bad, 'Stell dir das Bild wörtlich vor.'), quelle: w.herkunft }; };
+  const herkunft = () => { const w = pick(REDEWENDUNGEN);
+    const falsche = shuffle(REDEWENDUNGEN.filter(x => x !== w)).slice(0,2).map(x => x.herkunft);
+    return { ...wahl(`🔎 Woher kommt die Redewendung ${w.q.split('“')[0]}“?`, w.herkunft, falsche,
+      'Denk an das Leben früher.'), quelle: w.ok };
+  };
+  return { erzaehlen: eine, knobeln: eine, entdecken: herkunft };
+})(),
+
+/* ================= Höhere Etappen: Mittelstufe bis Erwachsene ================= */
+
+/* ---------------- Gleichungen ---------------- */
+gleichungen: (() => {
+  const linear = lvl => { const x = r(2, 6+lvl*3), a = r(2, 4+lvl), b = r(1, 10+lvl*5);
+    return zahlText(`🧠 Löse nach x auf:\n${a}x + ${b} = ${a*x+b}`, x, `Erst ${b} abziehen, dann durch ${a} teilen.`); };
+  const mitKlammer = lvl => { const x = r(2, 5+lvl*2), a = r(2,5), b = r(1,8);
+    return zahlText(`🧠 Löse nach x auf:\n${a}(x + ${b}) = ${a*(x+b)}`, x,
+      `Durch ${a} teilen, dann ${b} abziehen – oder zuerst ausmultiplizieren.`); };
+  const beidseitig = lvl => {
+    // a·x + b = c·x + d  mit derselben Lösung x auf beiden Seiten
+    const x = r(2, 8+lvl*2), a = r(3,9), c = r(1, a-1), b = r(1,12);
+    const d = (a - c) * x + b;          // aus a·x + b = c·x + d folgt d = (a−c)·x + b
+    return zahlText(`🧠 Löse nach x auf:\n${a}x + ${b} = ${c}x + ${d}`, x,
+      `Alle x auf eine Seite: ${a-c}x = ${d - b}.`);
+  };
+  const quadratisch = lvl => { const x1 = r(1,7), x2 = r(1,7);
+    const p = -(x1 + x2), q = x1 * x2;
+    return { ...wahl(`🧠 Löse die Gleichung:\nx² ${p >= 0 ? '+ '+p : '- '+Math.abs(p)}x ${q >= 0 ? '+ '+q : '- '+Math.abs(q)} = 0`,
+      x1 === x2 ? `x = ${x1}` : `x = ${Math.min(x1,x2)} und x = ${Math.max(x1,x2)}`,
+      [`x = ${x1+1} und x = ${x2+2}`, `x = ${-x1} und x = ${-x2}`, 'keine Lösung'],
+      'p-q-Formel oder Satz von Vieta: Die Lösungen ergeben addiert −p und multipliziert q.') };
+  };
+  const alsCode = lvl => { const x = r(2, 9+lvl*2), a = r(2,6), b = r(1,12);
+    return zahlText(`🤖 Ein Programm rechnet:\n  eingabe x\n  ergebnis = x * ${a} + ${b}\n  zeige ergebnis   →  ${a*x+b}\nWelche Zahl wurde eingegeben?`,
+      x, 'Rückwärts rechnen: Zahl abziehen, dann teilen.'); };
+  const geschichte = lvl => { const alter = r(8, 40), faktor = r(2,4), n = pick(NAMEN);
+    return zahlText(`📖 ${n} sagt: „In ${faktor} Jahren bin ich doppelt so alt wie vor ${alter - Math.floor(alter/2) - faktor > 0 ? Math.floor(alter/2) - faktor : 1} Jahren.“\nEinfacher: ${n} ist heute x Jahre alt, und x + ${faktor} = ${alter + faktor}. Wie alt ist ${n}?`,
+      alter, 'Stelle die Gleichung auf und löse nach x.'); };
+  return {
+    knobeln:   lvl => (lvl >= 4 ? pick([quadratisch, beidseitig])(lvl) : pick([linear, mitKlammer])(lvl)),
+    bauen:     lvl => mitKlammer(lvl),
+    erzaehlen: lvl => geschichte(lvl),
+    code:      lvl => alsCode(lvl)
+  };
+})(),
+
+/* ---------------- Prozent, Zins und Zinseszins ---------------- */
+zinsen: (() => {
+  const prozentwert = lvl => { const g = pick([80,120,240,350,480,750,1200]), p = pick([5,10,12,15,20,25]);
+    return zahlText(`💯 ${p} % von ${g} € sind wie viel?`, g*p/100, `${g} ÷ 100 × ${p}`); };
+  const rabatt = lvl => { const preis = pick([40,60,80,120,150,200]), p = pick([10,15,20,25,30]);
+    return zahlText(`🛒 Ein Artikel kostet ${preis} € und wird um ${p} % reduziert.\nWas kostet er jetzt?`,
+      preis*(100-p)/100, `Neuer Preis = ${100-p} % des alten Preises.`); };
+  const grundwert = lvl => { const g = pick([200,400,500,800,1500]), p = pick([5,10,20,25]);
+    return zahlText(`🧠 ${g*p/100} € sind ${p} % von welchem Betrag?`, g,
+      'Prozentwert ÷ Prozentsatz × 100.'); };
+  const zinseszins = lvl => { const k = pick([1000,2000,5000]), p = pick([2,3,5]), jahre = pick([2,3]);
+    const end = Math.round(k * Math.pow(1 + p/100, jahre) * 100) / 100;
+    return zahlChoice(`📈 ${k} € liegen ${jahre} Jahre lang zu ${p} % Zinsen – die Zinsen bleiben auf dem Konto.\nWie viel ist am Ende da? (auf Euro gerundet)`,
+      Math.round(end), Math.max(20, Math.round(k*0.02)),
+      `Jedes Jahr wird mit ${1 + p/100} multipliziert: ${k} × ${(1+p/100)}^${jahre}`); };
+  const verdopplung = lvl => { const p = pick([2,3,4,6,8]);
+    const jahre = Math.round(72/p);
+    return zahlChoice(`📈 Faustregel der Kaufleute: Bei ${p} % Zinsen – nach wie vielen Jahren hat sich das Geld ungefähr verdoppelt?`,
+      jahre, 6, 'Die 72er-Regel: 72 geteilt durch den Zinssatz.'); };
+  const aufteilen = lvl => { const gesamt = pick([120,240,360,600]), teile = pick([3,4,5,6]);
+    return zahlText(`🤝 ${gesamt} € werden auf ${teile} Personen gleich verteilt.\nWie viel Prozent bekommt jede Person?`,
+      Math.round(100/teile*100)/100, `100 % ÷ ${teile}`); };
+  return {
+    knobeln:   lvl => (lvl >= 3 ? pick([grundwert, zinseszins, verdopplung])(lvl) : pick([prozentwert, rabatt])(lvl)),
+    erzaehlen: lvl => rabatt(lvl),
+    bauen:     lvl => prozentwert(lvl),
+    team:      lvl => aufteilen(lvl)
+  };
+})(),
+
+/* ---------------- Wahrscheinlichkeit ---------------- */
+stochastik: (() => {
+  const wuerfel = lvl => { const ziel = r(2,6);
+    return wahl(`🎲 Wie groß ist die Wahrscheinlichkeit, mit einem Würfel eine ${ziel} zu würfeln?`,
+      '1/6', ['1/3','1/2','6/6'], 'Ein günstiger Fall von sechs möglichen.'); };
+  const zweiWuerfel = lvl => {
+    const summe = pick([2,7,12]);
+    const anzahl = { 2:1, 7:6, 12:1 }[summe];
+    return wahl(`🎲 Zwei Würfel werden geworfen. Wie wahrscheinlich ist die Augensumme ${summe}?`,
+      `${anzahl}/36`, ['1/12','1/6','1/2'].filter(x => x !== `${anzahl}/36`).slice(0,3),
+      'Es gibt 36 mögliche Kombinationen. Zähle die günstigen.'); };
+  const kombinatorik = lvl => { const n = r(4, 4+lvl);
+    const f = x => x <= 1 ? 1 : x * f(x-1);
+    return zahlChoice(`🧮 Auf wie viele Arten können sich ${n} Personen in einer Reihe aufstellen?`,
+      f(n), Math.max(10, f(n)/3), `${n}! = ${Array.from({length:n},(_,i)=>n-i).join(' × ')}`); };
+  const ziehen = lvl => { const rot = r(3,6), blau = r(2,5);
+    return wahl(`🧱 In einem Beutel liegen ${rot} rote und ${blau} blaue Kugeln.\nWie wahrscheinlich ist es, eine rote zu ziehen?`,
+      `${rot}/${rot+blau}`, [`${blau}/${rot+blau}`, `${rot}/${blau}`, '1/2'],
+      'Günstige Fälle geteilt durch alle Fälle.'); };
+  const geburtstag = () =>
+    wahl('🔎 Wie viele Personen braucht es, damit die Wahrscheinlichkeit über 50 % liegt,\ndass zwei am selben Tag Geburtstag haben?',
+      '23', ['183','100','60'],
+      'Das Geburtstagsparadox: Nicht die Zahl der Personen zählt, sondern die Zahl der Paare – bei 23 Personen sind das schon 253.');
+  const gegenwahrscheinlich = lvl =>
+    wahl('🧠 Eine Münze wird dreimal geworfen. Wie wahrscheinlich ist mindestens einmal Kopf?',
+      '7/8', ['1/2','3/4','1/8'],
+      'Über das Gegenteil rechnen: dreimal Zahl hat die Wahrscheinlichkeit 1/8, also bleibt 7/8.');
+  return {
+    knobeln:   lvl => (lvl >= 3 ? pick([zweiWuerfel, gegenwahrscheinlich, kombinatorik])(lvl) : pick([wuerfel, ziehen])(lvl)),
+    bauen:     lvl => ziehen(lvl),
+    erzaehlen: lvl => wuerfel(lvl),
+    entdecken: () => geburtstag()
+  };
+})(),
+
+/* ---------------- Analysis ---------------- */
+analysis: (() => {
+  const vor = n => (n === 1 ? '' : n === -1 ? '-' : String(n));
+  const term = (a,b,c) => `f(x) = ${vor(a)}x³ ${b>=0?'+ '+vor(b):'- '+vor(Math.abs(b))}x² ${c>=0?'+ '+c:'- '+Math.abs(c)}x`;
+  const ableitung = lvl => { const a = r(1,4), b = r(-5,5), c = r(-6,6);
+    const abl = `${vor(3*a)}x² ${2*b>=0?'+ '+vor(2*b):'- '+vor(Math.abs(2*b))}x ${c>=0?'+ '+c:'- '+Math.abs(c)}`;
+    const falsch = [`${a}x² ${b>=0?'+ '+b:'- '+Math.abs(b)}x + ${c}`,
+                    `${3*a}x² ${b>=0?'+ '+b:'- '+Math.abs(b)}x + ${c}`,
+                    `${3*a}x³ ${2*b>=0?'+ '+2*b:'- '+Math.abs(2*b)}x² + ${c}x`];
+    return wahl(`📐 Bilde die erste Ableitung:\n${term(a,b,c)}`, `f'(x) = ${abl}`,
+      falsch.map(f => `f'(x) = ${f}`),
+      'Potenzregel: Der Exponent kommt nach vorn, dann wird er um eins kleiner.'); };
+  const steigung = lvl => { const a = r(1,3), b = r(-4,4), x0 = r(1,4);
+    const wert = 2*a*x0 + b;   // f(x)=a x^2 + b x -> f'(x)=2ax+b
+    return zahlText(`📐 f(x) = ${a}x² ${b>=0?'+ '+b:'- '+Math.abs(b)}x\nWelche Steigung hat der Graph an der Stelle x = ${x0}?`,
+      wert, `Zuerst ableiten: f'(x) = ${2*a}x ${b>=0?'+ '+b:'- '+Math.abs(b)}, dann x = ${x0} einsetzen.`); };
+  const extremstelle = lvl => { const s = r(1,6), a = r(1,3);
+    // f(x) = a(x-s)^2  -> Minimum bei x = s
+    return zahlText(`📐 Eine nach oben geöffnete Parabel hat die Gleichung f(x) = ${a}(x − ${s})².\nAn welcher Stelle liegt ihr Tiefpunkt?`,
+      s, 'Der Scheitel liegt dort, wo die Klammer null wird.'); };
+  const alsCode = lvl => { const a = r(2,5);
+    return zahlText(`🤖 Ein Programm bildet die Ableitung von f(x) = x^${a} nach der Potenzregel.\nWelchen Vorfaktor gibt es aus?`,
+      a, `Aus x^${a} wird ${a}·x^${a-1}.`); };
+  return {
+    knobeln: lvl => (lvl >= 3 ? pick([ableitung, steigung])(lvl) : steigung(lvl)),
+    bauen:   lvl => extremstelle(lvl),
+    code:    lvl => alsCode(lvl)
+  };
+})(),
+
+/* ---------------- Stilmittel ---------------- */
+stilmittel: (() => {
+  const eins = () => { const st = pick(STILMITTEL);
+    return { ...wahl(`✒️ Welches Stilmittel steckt darin?\n\n${st.q}`, st.ok, st.bad, st.erklaerung),
+      quelle: st.erklaerung }; };
+  const umgekehrt = () => { const st = pick(STILMITTEL);
+    const andere = shuffle(STILMITTEL.filter(x => x.ok !== st.ok)).slice(0,3);
+    return { ...wahl(`🔎 Welches Beispiel ist eine ${st.ok}?`, st.q, andere.map(a => a.q), st.erklaerung),
+      quelle: st.erklaerung }; };
+  return { erzaehlen: eins, knobeln: eins, entdecken: umgekehrt };
+})(),
+
+/* ---------------- Wortwurzeln ---------------- */
+wortwurzel: (() => {
+  const bedeutung = () => { const w = pick(WORTWURZELN);
+    return { ...wahl(`🔎 ${w.frage}`, w.ok, w.bad, `Wie in „${w.beispiel}“.`), quelle:`${w.wurzel} – ${w.herkunft}` }; };
+  const zusammensetzen = () => {
+    const a = pick(WORTWURZELN.filter(w => !w.wurzel.startsWith('-')));
+    const b = pick(WORTWURZELN.filter(w => w.wurzel.startsWith('-')));
+    return { ...wahl(`🧱 Was würde ein Wort aus „${a.wurzel}“ und „${b.wurzel}“ ungefähr bedeuten?`,
+      `${a.ok} + ${b.ok}`, [`${b.ok} + Zahl`, `Gegenteil von ${a.ok}`, `${a.ok} ohne Bedeutung`],
+      'Setze die beiden Bedeutungen einfach hintereinander.'),
+      quelle:`${a.wurzel}: ${a.herkunft} · ${b.wurzel}: ${b.herkunft}` }; };
+  const herkunft = () => { const w = pick(WORTWURZELN);
+    const andere = shuffle(WORTWURZELN.filter(x => x.wurzel !== w.wurzel)).slice(0,3);
+    return { ...wahl(`📖 In welchem Wort steckt „${w.wurzel}“?`, w.beispiel, andere.map(a => a.beispiel),
+      w.herkunft), quelle:`${w.wurzel} – ${w.herkunft}` }; };
+  return { entdecken: bedeutung, knobeln: bedeutung, bauen: zusammensetzen, erzaehlen: herkunft };
+})(),
+
+/* ---------------- Formale Logik ---------------- */
+logikformal: (() => {
+  const pruefen = () => { const sy = pick(SYLLOGISMEN);
+    return { ...wahl(`🧠 Ist dieser Schluss gültig?\n\n${sy.praemissen}\nAlso: ${sy.schluss}`,
+      sy.gueltig ? 'Ja, der Schluss ist gültig' : 'Nein, der Schluss ist ungültig',
+      [sy.gueltig ? 'Nein, der Schluss ist ungültig' : 'Ja, der Schluss ist gültig'],
+      'Gültig heißt: Wenn die Voraussetzungen wahr sind, MUSS der Schluss wahr sein.'),
+      quelle: sy.erklaerung }; };
+  const negation = () => {
+    const paare = [
+      ['Alle Schwäne sind weiß.', 'Mindestens ein Schwan ist nicht weiß.',
+       ['Kein Schwan ist weiß.','Alle Schwäne sind schwarz.','Einige Schwäne sind weiß.']],
+      ['Es regnet und es ist kalt.', 'Es regnet nicht oder es ist nicht kalt.',
+       ['Es regnet nicht und es ist nicht kalt.','Es ist warm und trocken.','Es regnet immer.']],
+      ['Kein Kind mag Spinat.', 'Mindestens ein Kind mag Spinat.',
+       ['Alle Kinder mögen Spinat.','Einige Kinder mögen keinen Spinat.','Spinat mag keiner.']]
+    ];
+    const [satz, ok, bad] = pick(paare);
+    return { ...wahl(`🧠 Wie lautet die logische Verneinung von:\n„${satz}“`, ok, bad,
+      'Die Verneinung von „alle“ ist nicht „keiner“, sondern „mindestens einer nicht“.'),
+      quelle:'De Morgansche Regeln und die Verneinung von Quantoren.' }; };
+  const wenn_dann = () => {
+    const f = [
+      ['Wenn A, dann B. A ist wahr.', 'B ist wahr', 'Modus ponens – gültig.'],
+      ['Wenn A, dann B. B ist falsch.', 'A ist falsch', 'Modus tollens – gültig.'],
+      ['Wenn A, dann B. B ist wahr.', 'Daraus folgt nichts über A', 'Bejahung des Nachsatzes – ungültiger Schluss.'],
+      ['Wenn A, dann B. A ist falsch.', 'Daraus folgt nichts über B', 'Verneinung des Vordersatzes – ungültiger Schluss.']
+    ];
+    const [pr, ok, erkl] = pick(f);
+    const alle = ['B ist wahr','A ist falsch','Daraus folgt nichts über A','Daraus folgt nichts über B'];
+    return { ...wahl(`🧱 ${pr}\nWas folgt daraus zwingend?`, ok,
+      alle.filter(x => x !== ok).slice(0,3), 'Prüfe, ob es einen Gegenfall geben kann.'), quelle: erkl }; };
+  return { knobeln: pruefen, bauen: wenn_dann, erzaehlen: negation };
+})(),
+
+/* ---------------- Denkfehler ---------------- */
+denkfehler: (() => {
+  const eins = () => { const d = pick(DENKFEHLER);
+    return { ...wahl(`🧠 ${d.q}`, d.ok, d.bad, d.erklaerung), quelle: d.erklaerung }; };
+  const benennen = () => { const d = pick(DENKFEHLER);
+    const andere = shuffle(DENKFEHLER.filter(x => x.name !== d.name)).slice(0,3);
+    return { ...wahl(`🔎 Welcher Denkfehler wird hier beschrieben?\n\n${d.erklaerung.split('.')[0]}.`,
+      d.name, andere.map(a => a.name), 'Achte darauf, wo genau das Urteil kippt.'), quelle: d.erklaerung }; };
+  return { knobeln: eins, entdecken: benennen, team: eins, erzaehlen: benennen };
+})(),
+
+/* ---------------- Argumente prüfen ---------------- */
+argumente: (() => {
+  const eins = () => { const f = pick(FEHLSCHLUESSE);
+    return { ...wahl(`⚖️ ${f.q}`, f.ok, f.bad, f.erklaerung), quelle: f.erklaerung }; };
+  return { knobeln: eins, team: eins, erzaehlen: eins };
+})(),
+
+/* ---------------- Hauptwerke ---------------- */
+hauptwerke: (() => {
+  const fuerEtappe = lvl => {
+    // Level 1-5 der Aufgabe entspricht grob der Etappe des Kindes
+    const menge = HAUPTWERKE.filter(w => Math.abs(w.etappe - lvl) <= 1);
+    return menge.length >= 4 ? menge : HAUPTWERKE;
+  };
+  const werSchrieb = lvl => { const menge = fuerEtappe(lvl), w = pick(menge);
+    const andere = shuffle(menge.filter(x => x.autor !== w.autor)).slice(0,3);
+    return { ...wahl(`📚 Wer schuf „${w.werk}“?`, w.autor, andere.map(a => a.autor),
+      w.worum), quelle:`${w.autor}, „${w.werk}“ (${w.jahr < 0 ? Math.abs(w.jahr)+' v. Chr.' : w.jahr}). ${w.worum}` }; };
+  const worumGehtEs = lvl => { const menge = fuerEtappe(lvl), w = pick(menge);
+    const andere = shuffle(menge.filter(x => x.werk !== w.werk)).slice(0,3);
+    return { ...wahl(`📖 Worum geht es in „${w.werk}“?`, w.worum, andere.map(a => a.worum),
+      `Verfasst von ${w.autor}.`), quelle:`${w.autor}, ${w.jahr < 0 ? Math.abs(w.jahr)+' v. Chr.' : w.jahr}` }; };
+  const welchesWerk = lvl => { const menge = fuerEtappe(lvl), w = pick(menge);
+    const andere = shuffle(menge.filter(x => x.autor !== w.autor)).slice(0,3);
+    return { ...wahl(`🔎 Welches Werk stammt von ${w.autor}?`, w.werk, andere.map(a => a.werk),
+      w.worum), quelle:`${w.werk} (${w.jahr < 0 ? Math.abs(w.jahr)+' v. Chr.' : w.jahr}), Gebiet: ${w.gebiet}` }; };
+  const wannEntstanden = lvl => { const menge = fuerEtappe(lvl).filter(w => w.jahr > 1400), w = pick(menge.length ? menge : HAUPTWERKE.filter(x=>x.jahr>1400));
+    const jh = Math.floor(w.jahr/100) + 1;
+    const falsche = [jh-1, jh+1, jh-2].filter(x => x > 0 && x !== jh).slice(0,3);
+    return { ...wahl(`🤝 Aus welchem Jahrhundert stammt „${w.werk}“ von ${w.autor}?`,
+      `${jh}. Jahrhundert`, falsche.map(x => `${x}. Jahrhundert`),
+      'Rechne: Jahreszahl durch 100, dann eins dazu.'), quelle:`Erschienen ${w.jahr}. ${w.worum}` }; };
+  return {
+    erzaehlen: worumGehtEs, entdecken: welchesWerk, knobeln: werSchrieb, team: wannEntstanden
   };
 })(),
 

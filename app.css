@@ -153,3 +153,15 @@ ul.clean li:last-child{border-bottom:0}
 .card.hoer .btn{background:#fff;color:#4a3ce0}
 .card.hoer .btn.quiet{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.4)}
 .card.hoer .small{color:rgba(255,255,255,.95)}
+
+/* Tipps und Herkunftsangabe */
+.tipp{background:var(--brand-soft);color:var(--ink);border-radius:14px;padding:12px;
+  margin-top:10px;font-size:.92rem;line-height:1.5}
+.quelle{margin-top:10px;padding:10px 12px;border-left:3px solid var(--brand);
+  background:var(--bg);border-radius:0 12px 12px 0;font-size:.82rem;color:var(--muted)}
+
+/* Denk-Impulse: keine Wertung, andere Farbe */
+.choice.denk{border-style:dashed}
+.choice.gewaehlt{border-color:var(--brand);background:var(--brand-soft);border-style:solid}
+.feedback.denk{background:var(--brand-soft);color:var(--ink)}
+.progress-dots i.denk{background:var(--brand);opacity:.45}

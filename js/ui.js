@@ -1,6 +1,6 @@
 /* Oberflaeche: alle Bildschirme. Bewusst gross, ruhig und antippbar (Handy zuerst). */
 
-import { TALENTE, WEGE, FAECHER, ZIELE, ZIEL_MAP, SKALA, AVATARE, ABZEICHEN,
+import { TALENTE, WEGE, FAECHER, ZIELE, ZIEL_MAP, SKALA, AVATARE, ABZEICHEN, ETAPPEN,
          TEST_LIKERT, TEST_PAARE, TEST_SZENARIEN, TEST_PROBEN, TEST_TEILE } from './data.js';
 import * as S from './store.js';
 import { starteSession, empfehlungen, wegRanking, wegeNachWirkung, wegBewertung } from './engine.js';
@@ -38,7 +38,8 @@ function kopfzeile(p) {
   document.getElementById('topName').textContent = p.name;
   const t = S.topTalente(p,1)[0];
   document.getElementById('topSub').textContent =
-    p.testGemacht ? `${TALENTE[t].emoji} ${TALENTE[t].name} · Klasse ${p.klasse}` : `Klasse ${p.klasse} · Talent-Test offen`;
+    p.testGemacht ? `${TALENTE[t].emoji} ${TALENTE[t].name} · ${S.etappeVon(p).name}`
+                  : `${S.etappeVon(p).name} · Talent-Test offen`;
   document.getElementById('streakCount').textContent = S.serieAktuell(p);
 }
 
@@ -54,13 +55,25 @@ function screenStart() {
       <div class="grid">${profile.map(p => `
         <button class="choice" data-open="${p.id}">
           <span style="font-size:26px;margin-right:10px">${p.avatar}</span>${esc(p.name)}
-          <span class="muted small"> · Klasse ${p.klasse}</span>
+          <span class="muted small"> · ${S.etappeVon(p).name}</span>
         </button>`).join('')}</div></div>` : ''}
+    <div class="card">
+      <h3>Schon einmal genutzt?</h3>
+      <p class="muted small">Wenn Profile fehlen, sind sie meist nicht gelöscht: Die App vom
+        Startbildschirm und der Browser haben getrennte Speicher. Holen Sie den Fortschritt
+        mit dem Umzugs-Code herüber – zu finden dort, wo die Profile noch da sind,
+        unter <b>Eltern → Fortschritt sichern &amp; umziehen</b>.</p>
+      <button class="btn quiet" id="holen">🔑 Umzugs-Code einfügen</button>
+      <div id="holBereich"></div>
+    </div>
     <div class="card">
       <h2>${profile.length ? 'Neues Kind hinzufügen' : 'Los geht’s'}</h2>
       <label class="field"><span>Name</span><input type="text" id="nName" placeholder="z. B. Mia" maxlength="20"></label>
-      <label class="field"><span>Klasse</span>
-        <select id="nKlasse">${[1,2,3,4,5,6].map(k=>`<option value="${k}" ${k===3?'selected':''}>Klasse ${k}</option>`).join('')}</select></label>
+      <label class="field"><span>Etappe</span>
+        <select id="nEtappe">${ETAPPEN.map(e =>
+          `<option value="${e.id}" ${e.id===1?'selected':''}>${e.emoji} ${e.name} (${e.kurz})</option>`).join('')}</select></label>
+      <p class="muted small" style="margin-top:-6px">Die App wächst mit: Jede Etappe hat eigene Ziele,
+        eigene Hauptwerke und eigene Härte – bis hinauf zu Erwachsenen.</p>
       <label class="field"><span>Lieblingstier</span></label>
       <div class="row wrap" id="avatarWahl" style="margin-bottom:14px">
         ${AVATARE.map((a,i)=>`<button class="avatar-btn ${i===0?'sel':''}" data-av="${a}"
@@ -68,6 +81,26 @@ function screenStart() {
       </div>
       <button class="btn" id="nAnlegen">Profil anlegen</button>
     </div>`;
+
+  view().querySelector('#holen').onclick = () => {
+    const b = view().querySelector('#holBereich');
+    b.innerHTML = `
+      <textarea id="holFeld" rows="4" placeholder="Code hier einfügen …"
+        style="width:100%;margin-top:10px;font-family:ui-monospace,monospace;font-size:.72rem;
+               padding:10px;border-radius:12px;border:2px solid var(--line);
+               background:var(--bg);color:var(--ink)"></textarea>
+      <button class="btn small" id="holUebernehmen">Übernehmen</button>
+      <div id="holErgebnis" class="small" style="margin-top:8px"></div>`;
+    b.querySelector('#holUebernehmen').onclick = () => {
+      try {
+        const r = S.ausCode(b.querySelector('#holFeld').value);
+        b.querySelector('#holErgebnis').textContent = `✅ ${r.gesamt} Profil(e) wiederhergestellt.`;
+        setTimeout(() => zeige('lernen'), 900);
+      } catch (e) {
+        b.querySelector('#holErgebnis').textContent = '❌ Der Code passt nicht: ' + e.message;
+      }
+    };
+  };
 
   let gewaehlt = AVATARE[0];
   view().querySelectorAll('[data-av]').forEach(b => b.onclick = () => {
@@ -81,7 +114,7 @@ function screenStart() {
   view().querySelector('#nAnlegen').onclick = () => {
     const name = view().querySelector('#nName').value;
     if (!name.trim()) { view().querySelector('#nName').focus(); return; }
-    S.neuesProfil({ name, avatar: gewaehlt, klasse: view().querySelector('#nKlasse').value });
+    S.neuesProfil({ name, avatar: gewaehlt, etappe: view().querySelector('#nEtappe').value });
     zeige('test');
   };
 }
@@ -91,7 +124,7 @@ function screenProfile() {
     <div class="card">
       ${S.alleProfile().map(p => `<div class="row spread" style="padding:10px 0;border-bottom:1px solid var(--line)">
         <div class="row"><span style="font-size:26px">${p.avatar}</span>
-          <div><b>${esc(p.name)}</b><div class="muted small">Klasse ${p.klasse} · ${p.stats.aufgabenGesamt} Aufgaben</div></div></div>
+          <div><b>${esc(p.name)}</b><div class="muted small">${S.etappeVon(p).emoji} ${S.etappeVon(p).name} · ${p.stats.aufgabenGesamt} Aufgaben</div></div></div>
         <div class="row">
           <button class="btn small ghost" data-use="${p.id}">wählen</button>
           <button class="btn small danger" data-del="${p.id}">löschen</button>
@@ -291,6 +324,16 @@ function screenLernen(p) {
       <p>8 Aufgaben – auf deinem Weg zusammengestellt.</p>
       <button class="btn" id="mission">Mission starten 🚀</button>
     </div>
+    <div class="card" style="border:2px solid var(--brand)">
+      <div class="row spread">
+        <div style="flex:1">
+          <b>🏛️ Knacknuss</b>
+          <div class="muted small">Ein berühmtes Rätsel – zum Festbeißen.
+            Tipps gibt es nur, wenn du sie holst.</div>
+        </div>
+        <button class="btn small" id="knacknuss">Los</button>
+      </div>
+    </div>
     <div class="card">
       <div class="row spread"><b>Heute geschafft</b><span class="muted small">${heuteAufgaben} / ${tagesziel}</span></div>
       <div class="bar ${heuteAufgaben>=tagesziel?'ok':''}" style="margin-top:8px">
@@ -322,6 +365,7 @@ function screenLernen(p) {
     </div>`;
   view().querySelector('#zumTest')?.addEventListener('click', () => zeige('test'));
   view().querySelector('#mission').onclick = () => zeige('session', { laenge:8 });
+  view().querySelector('#knacknuss').onclick = () => zeige('session', { zielId:'knacknuss', laenge:3 });
   view().querySelectorAll('[data-fach]').forEach(b => b.onclick = () => zeige('session', { fach:b.dataset.fach, laenge:8 }));
   view().querySelectorAll('[data-ziel]').forEach(b => b.onclick = () => zeige('session', { zielId:b.dataset.ziel, laenge:8 }));
 }
@@ -331,8 +375,9 @@ function screenSession(p, opts = {}) {
   const sess = starteSession(p, opts);
   const status = [];
 
-  let startZeit = 0;
+  let startZeit = 0, tippsGenutzt = 0;
   const naechste = () => {
+    tippsGenutzt = 0;
     const a = sess.naechste();
     if (!a) return ende();
     startZeit = performance.now();
@@ -362,6 +407,7 @@ function screenSession(p, opts = {}) {
         </div>
         <p class="task pop">${esc(a.frage)}</p>
         <div id="antwortbereich"></div>
+        <div id="tippBereich"></div>
         <div id="fb"></div>
       </div>
       <p class="muted small center">${esc(a.wegInfo.hinweis)}</p>`;
@@ -398,6 +444,16 @@ function screenSession(p, opts = {}) {
         b.classList.add(ok ? 'correct' : (b.dataset.o === eingabe ? 'wrong' : 'dim'));
         b.disabled = true;
       });
+
+    } else if (a.typ === 'nachdenken') {
+      /* Keine richtige Antwort: Jede Wahl bekommt eine eigene Rückmeldung. */
+      bereich.innerHTML = `<div class="choices">${a.optionen.map(o =>
+        `<button class="choice denk" data-o="${esc(o)}" ${ergebnis!==null?'disabled':''}
+          >${esc(o)}</button>`).join('')}</div>`;
+      if (ergebnis === null) bereich.querySelectorAll('[data-o]').forEach(b =>
+        b.onclick = () => auswerten(a, b.dataset.o));
+      else bereich.querySelectorAll('[data-o]').forEach(b =>
+        b.classList.toggle('gewaehlt', b.dataset.o === eingabe));
 
     } else if (a.typ === 'ordnen') {
       /* Zum Legen: Teile nacheinander antippen, Reihenfolge entsteht oben. */
@@ -438,13 +494,46 @@ function screenSession(p, opts = {}) {
       }
     }
 
+    /* Tippleiter: Wer allein draufkommt, bekommt mehr Anerkennung –
+       wer feststeckt, bekommt einen Anstoß statt der Lösung. */
+    const tippBereich = view().querySelector('#tippBereich');
+    const tippsZeichnen = () => {
+      if (!a.tipps?.length || ergebnis !== null) { tippBereich.innerHTML = ''; return; }
+      tippBereich.innerHTML = `
+        ${a.tipps.slice(0, tippsGenutzt).map((t,i) =>
+          `<div class="tipp">💡 <b>Tipp ${i+1}:</b> ${esc(t)}</div>`).join('')}
+        ${tippsGenutzt < a.tipps.length
+          ? `<button class="btn quiet small" id="tippHolen" style="margin-top:10px">
+               🔎 ${tippsGenutzt ? 'Noch ein Tipp' : 'Ich brauche einen Tipp'}
+               (${a.tipps.length - tippsGenutzt} übrig)</button>`
+          : '<p class="small muted">Mehr Tipps gibt es nicht – jetzt hilft nur Nachdenken.</p>'}`;
+      tippBereich.querySelector('#tippHolen')?.addEventListener('click', () => {
+        tippsGenutzt++; tippsZeichnen();
+      });
+    };
+    tippsZeichnen();
+
     if (ergebnis !== null) {
-      view().querySelector('#fb').innerHTML = `
+      const denkAufgabe = a.typ === 'nachdenken';
+      view().querySelector('#fb').innerHTML = denkAufgabe ? `
+        <div class="feedback denk pop">
+          <div style="font-weight:700;margin-bottom:6px">🏛️ Danke fürs Nachdenken.</div>
+          ${esc(a.rueckmeldungen?.[eingabe] || '')}
+          <div class="small" style="margin-top:8px;font-weight:500">
+            Hier gibt es kein Richtig und kein Falsch – deshalb zählt diese Aufgabe
+            auch in keiner Quote mit.</div>
+        </div>
+        ${a.quelle ? `<div class="quelle">📜 ${esc(a.quelle)}</div>` : ''}
+        <button class="btn" id="weiter" style="margin-top:12px">
+          ${sess.index >= sess.laenge ? 'Ergebnis ansehen' : 'Weiter →'}</button>` : `
         <div class="feedback ${ergebnis?'ok':'bad'} pop">
           ${ergebnis ? '✅ Richtig! Super gemacht.'
             : `❌ Nicht ganz. Richtig wäre: <u>${esc(a.antwort)}</u>`}
           ${a.hilfe ? `<div class="small" style="margin-top:6px;font-weight:500">💡 ${esc(a.hilfe)}</div>` : ''}
+          ${ergebnis && a.knacknuss && tippsGenutzt === 0
+            ? '<div class="small" style="margin-top:6px">🧠 Ohne Tipp geknackt – stark.</div>' : ''}
         </div>
+        ${a.quelle ? `<div class="quelle">📜 ${esc(a.quelle)}</div>` : ''}
         <button class="btn" id="weiter" style="margin-top:12px">
           ${sess.index >= sess.laenge ? 'Ergebnis ansehen' : 'Weiter →'}</button>`;
       view().querySelector('#weiter').onclick = () => { stopp(); naechste(); };
@@ -454,12 +543,15 @@ function screenSession(p, opts = {}) {
   const auswerten = (a, eingabe) => {
     if (a.typ === 'text' && !String(eingabe).trim()) return;
     const ms = startZeit ? performance.now() - startZeit : 0;
-    const ok = pruefe(a, eingabe);
-    status[sess.index] = ok ? 'done' : 'miss';
-    sess.index++; if (ok) sess.richtig++;
-    sess.verlauf.push({ ziel:a.ziel.id, weg:a.weg, ok, bruecke:a.bruecke, ms });
+    const ok = a.keineWertung ? true : pruefe(a, eingabe);
+    status[sess.index] = a.keineWertung ? 'denk' : (ok ? 'done' : 'miss');
+    sess.index++;
+    if (a.keineWertung) sess.laenge--;          // zählt nicht in die Quote der Runde
+    else if (ok) sess.richtig++;
+    if (!a.keineWertung) sess.verlauf.push({ ziel:a.ziel.id, weg:a.weg, ok, bruecke:a.bruecke, ms });
     // Zeit fliesst in die Wirksamkeit eines Weges ein – schnell und sicher zaehlt mehr.
-    S.verbuche(p, { zielId:a.ziel.id, weg:a.weg, level:a.level, richtig:ok, bruecke:a.bruecke, ms });
+    S.verbuche(p, { zielId:a.ziel.id, weg:a.weg, level:a.level, richtig:ok, bruecke:a.bruecke, ms,
+                    tippsGenutzt, knacknuss: !!a.knacknuss, keineWertung: !!a.keineWertung });
     if (ok && navigator.vibrate) navigator.vibrate(20);
     render(a, ok, String(eingabe));
   };
@@ -561,6 +653,16 @@ function screenWege(p) {
       </ul>
       <p class="small muted">Vier Kinder, vier Wege – am Ende können alle 4 × 6.</p>
     </div>
+    <div class="card">
+      <h3>🏛️ Warum alte Rätsel?</h3>
+      <p class="small">Die Aufgaben im Fach <b>Klassiker</b> sind zwischen 100 und über 1000 Jahre alt –
+        von Alkuin (um 800) über Gauß und Dudeney bis zum Ziegenproblem von 1975. Sie haben überlebt,
+        weil sie etwas können: Sie lassen sich in einem Satz erklären, wirken zunächst unlösbar und
+        werden mit einem einzigen Gedanken plötzlich einfach.</p>
+      <p class="small">Deshalb gibt es hier keine sofortige Hilfe. Wer nicht weiterkommt, holt sich
+        einen Tipp – und noch einen. Wer ohne Tipp löst, bekommt das ausdrücklich gesagt.
+        Zu jeder Aufgabe steht am Ende, wer sie sich ausgedacht hat und wann.</p>
+    </div>
     <h2>Alle Lernziele</h2>
     <div class="card flat"><ul class="clean">
       ${ZIELE.map(z => `<li><b>${FAECHER[z.fach].emoji} ${esc(z.titel)}</b>
@@ -584,7 +686,8 @@ function screenEltern(p) {
   view().innerHTML = `
     <h1>Eltern-Bereich</h1>
     <div class="card">
-      <div class="row spread"><div><b>${esc(p.name)}</b><div class="muted small">Klasse ${p.klasse}</div></div>
+      <div class="row spread"><div><b>${esc(p.name)}</b>
+          <div class="muted small">${S.etappeVon(p).emoji} ${S.etappeVon(p).name} · ${S.etappeVon(p).kurz}</div></div>
         <button class="btn small ghost" id="profile">Profile</button></div>
       <div class="grid two" style="margin-top:14px">
         <div><div class="muted small">Aufgaben gesamt</div><b style="font-size:1.4rem">${s.aufgabenGesamt}</b></div>
@@ -644,6 +747,16 @@ function screenEltern(p) {
       <ul class="clean">${tipps.map(t=>`<li>${fett(t)}</li>`).join('')}</ul>
     </div>
     <div class="card">
+      <h3>Etappe</h3>
+      <p class="muted small">Bestimmt, welche Lernziele angeboten werden und wie hart sie sind.
+        Eine Etappe höher zu wählen fordert – zu weit oben frustriert.</p>
+      <label class="field"><span class="sr">Etappe</span>
+        <select id="etappeWahl">${ETAPPEN.map(e =>
+          `<option value="${e.id}" ${e.id === (p.etappe||1) ? 'selected' : ''}>
+            ${e.emoji} ${e.name} (${e.kurz})</option>`).join('')}</select></label>
+      <p class="small muted">Aktuell ${S.zieleFuerEtappe(p).length} Lernziele freigeschaltet.</p>
+    </div>
+    <div class="card">
       <h3>Vorlesen</h3>
       <p class="muted small">Für Leseanfänger und Kinder mit Leseschwäche: Die App liest jede Aufgabe
         automatisch mit der Stimme des Geräts vor. Der Lautsprecher-Knopf 🔊 in der Aufgabe
@@ -664,22 +777,99 @@ function screenEltern(p) {
       </ul>
     </div>
     <div class="card">
-      <h3>Daten</h3>
-      <p class="muted small">Alles bleibt auf diesem Gerät. Für einen Gerätewechsel oder ein Backup:</p>
-      <button class="btn ghost" id="export">📤 Fortschritt exportieren</button>
-      <button class="btn quiet" id="importBtn" style="margin-top:10px">📥 Fortschritt importieren</button>
+      <h3>Fortschritt sichern &amp; umziehen</h3>
+      <p class="muted small">Alles liegt nur auf diesem Gerät – das schützt die Daten Ihres Kindes,
+        macht sie aber auch verletzlich. Zwei Fallen sind bekannt:</p>
+      <ul class="clean small">
+        <li>📱 <b>App und Browser sind getrennt.</b> Auf dem iPhone hat die zum Startbildschirm
+          hinzugefügte App einen eigenen Speicher. Im Safari angelegte Profile fehlen dort –
+          sie sind nicht gelöscht, nur woanders. Der Umzugs-Code unten holt sie herüber.</li>
+        <li>🧹 <b>Safari räumt nach 7 Tagen ohne Nutzung auf.</b> Dagegen hilft: die App zum
+          Startbildschirm hinzufügen und regelmäßig nutzen – und ab und zu sichern.</li>
+      </ul>
+      <div id="speicherStatus" class="small muted" style="margin:10px 0"></div>
+      <button class="btn" id="codeZeigen">🔑 Umzugs-Code anzeigen</button>
+      <button class="btn ghost" id="codeEinfuegen" style="margin-top:10px">📥 Umzugs-Code einfügen</button>
+      <div id="codeBereich"></div>
+      <p class="small muted" style="margin-top:12px">Als Datei (für ein Backup am Rechner):</p>
+      <div class="row">
+        <button class="btn small ghost" id="export">📤 Datei</button>
+        <button class="btn small quiet" id="importBtn">📥 Datei laden</button>
+      </div>
       <input type="file" id="importFile" accept="application/json" hidden>
-      <button class="btn danger" id="reset" style="margin-top:10px">Alle Daten löschen</button>
-    </div>`;
+      <button class="btn danger" id="reset" style="margin-top:14px">Alle Daten löschen</button>
+    </div>
+`;
   view().querySelector('#profile').onclick = () => zeige('profile');
+  view().querySelector('#etappeWahl').onchange = e => {
+    p.etappe = Number(e.target.value); S.speichern(); zeige('eltern');
+  };
   view().querySelector('#vorleseSchalter').onclick = () => {
     p.vorlesen = !p.vorlesen; S.speichern(); zeige('eltern');
   };
-  if (window.installPrompt) {
-    const btn = view().querySelector('#install');
-    btn.hidden = false;
-    btn.onclick = async () => { window.installPrompt.prompt(); window.installPrompt = null; btn.hidden = true; };
-  }
+
+  /* Speicher-Status anzeigen und dauerhaften Speicher anfordern */
+  (async () => {
+    const feld = view().querySelector('#speicherStatus');
+    if (!feld) return;
+    const st = await S.speicherSichern();
+    const app = S.alsAppGestartet();
+    feld.innerHTML = `${app ? '📲 Läuft als App vom Startbildschirm' : '🌐 Läuft im Browser'} ·
+      ${st.dauerhaft ? '🔒 Speicher ist dauerhaft geschützt'
+        : '⚠️ Speicher nicht dauerhaft – bitte gelegentlich sichern'}`;
+  })();
+
+  const bereich = () => view().querySelector('#codeBereich');
+
+  view().querySelector('#codeZeigen').onclick = () => {
+    const code = S.alsCode();
+    bereich().innerHTML = `
+      <div class="card flat" style="margin-top:12px;background:var(--bg)">
+        <p class="small"><b>So ziehen Sie den Fortschritt um:</b> Diesen Code kopieren,
+          die andere Fassung öffnen (App bzw. Browser), dort auf
+          „Umzugs-Code einfügen“ tippen und einsetzen.</p>
+        <textarea id="codeFeld" readonly rows="4"
+          style="width:100%;font-family:ui-monospace,monospace;font-size:.72rem;padding:10px;
+                 border-radius:12px;border:2px solid var(--line);background:var(--card);
+                 color:var(--ink)">${esc(code)}</textarea>
+        <button class="btn small" id="kopieren" style="margin-top:8px">📋 Code kopieren</button>
+        <span class="small muted" id="kopiertHinweis"></span>
+      </div>`;
+    bereich().querySelector('#kopieren').onclick = async () => {
+      const feld = bereich().querySelector('#codeFeld');
+      feld.select(); feld.setSelectionRange(0, 999999);
+      try { await navigator.clipboard.writeText(code); }
+      catch { document.execCommand?.('copy'); }
+      bereich().querySelector('#kopiertHinweis').textContent = ' ✅ kopiert';
+    };
+  };
+
+  view().querySelector('#codeEinfuegen').onclick = () => {
+    bereich().innerHTML = `
+      <div class="card flat" style="margin-top:12px;background:var(--bg)">
+        <p class="small">Code hier einsetzen. Vorhandene Profile bleiben erhalten –
+          bei gleichem Kind gewinnt der weiter fortgeschrittene Stand.</p>
+        <textarea id="einfuegeFeld" rows="4" placeholder="Code hier einfügen …"
+          style="width:100%;font-family:ui-monospace,monospace;font-size:.72rem;padding:10px;
+                 border-radius:12px;border:2px solid var(--line);background:var(--card);
+                 color:var(--ink)"></textarea>
+        <button class="btn small" id="uebernehmen" style="margin-top:8px">Übernehmen</button>
+        <div id="einfuegeErgebnis" class="small" style="margin-top:8px"></div>
+      </div>`;
+    bereich().querySelector('#uebernehmen').onclick = () => {
+      const aus = bereich().querySelector('#einfuegeErgebnis');
+      try {
+        const r = S.ausCode(bereich().querySelector('#einfuegeFeld').value);
+        aus.innerHTML = `✅ Übernommen: ${r.neu} neu, ${r.ersetzt} aktualisiert,
+          ${r.gesamt} Profile insgesamt.`;
+        setTimeout(() => zeige('lernen'), 1200);
+      } catch (e) {
+        aus.innerHTML = `❌ Das hat nicht geklappt: ${esc(e.message)}<br>
+          <span class="muted">Bitte den ganzen Code einfügen, ohne fehlende Zeichen.</span>`;
+      }
+    };
+  };
+
   view().querySelector('#export').onclick = () => {
     const blob = new Blob([S.exportieren()], { type:'application/json' });
     const a = document.createElement('a');
@@ -690,9 +880,10 @@ function screenEltern(p) {
   view().querySelector('#importBtn').onclick = () => view().querySelector('#importFile').click();
   view().querySelector('#importFile').onchange = async e => {
     const f = e.target.files[0]; if (!f) return;
-    try { S.importieren(await f.text()); alert('Import erfolgreich.'); zeige('lernen'); }
-    catch (err) { alert('Import fehlgeschlagen: ' + err.message); }
+    try { S.zusammenfuehren(await f.text()); alert('Fortschritt übernommen.'); zeige('lernen'); }
+    catch (err) { alert('Hat nicht geklappt: ' + err.message); }
   };
+
   view().querySelector('#reset').onclick = () => {
     if (confirm('Wirklich ALLE Profile und Fortschritte löschen?')) { S.allesLoeschen(); zeige('start'); }
   };

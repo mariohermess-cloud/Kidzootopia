@@ -24,6 +24,21 @@ Vier Kinder, vier Wege, ein Ergebnis: Sie können 4 × 6.
 
 ---
 
+## Fünf Etappen – die App wächst mit
+
+| Etappe | | Beispiele für Lernziele | Hauptwerke dieser Stufe |
+|---|---|---|---|
+| 🌱 Grundschule | 1.–4. Kl. | Einmaleins, Silben, Bilderrätsel | Grimms Märchen, Pippi, Alice im Wunderland |
+| 🌿 Unterstufe | 5.–7. Kl. | Brüche, Leseverstehen, Muster | Der kleine Prinz, Momo, Tom Sawyer |
+| 🌳 Mittelstufe | 8.–10. Kl. | Gleichungen, Stilmittel, Wortwurzeln, Argumente prüfen | Odyssee, Romeo und Julia, Die Verwandlung, Darwin |
+| 🎓 Oberstufe | 11.–13. Kl. | Ableitungen, formale Logik, Denkfehler, Zinseszins | Faust, Der Process, 1984, Newtons Principia |
+| 🏛️ Erwachsene | lebenslang | alles davon, dazu Stochastik und der volle Kanon | Kant, Popper, Arendt, Joyce, Duchamp |
+
+Die Etappe wird beim Anlegen des Profils gewählt und ist im Eltern-Bereich jederzeit
+änderbar. Sie bestimmt, **welche** Ziele erscheinen; die fünf Level innerhalb eines Ziels
+bestimmen, **wie schwer** sie werden. Nichts ist gesperrt: Wer sich unterfordert fühlt,
+stellt eine Etappe höher.
+
 ## Was die App macht
 
 1. **Talent-Test in fünf Teilen** – 8 Talentbereiche (Sprache, Logik, Raum, Technik,
@@ -53,9 +68,9 @@ Vier Kinder, vier Wege, ein Ergebnis: Sie können 4 × 6.
    * Widerspricht die Praxis dem Test, sagt der Eltern-Bereich das ausdrücklich:
      *„Im Test lag der Knobel-Weg vorn, in den Aufgaben läuft der Rhythmus-Weg besser.“*
    * Der Test darf jederzeit wiederholt werden – Kinder verändern sich.
-3. **Lernziele statt Aufgabenlisten** – 14 Ziele aus dem Schulstoff
-   (Mathe, Deutsch, Englisch, Allgemeinwissen, Technik & Code, Rätsel & Puzzle). Jedes Ziel
-   beschreibt eine Kompetenz, nicht eine Aufgabenform.
+3. **Lernziele statt Aufgabenlisten** – 29 Ziele aus dem Schulstoff
+   (Mathe, Deutsch, Englisch, Allgemeinwissen, Technik & Code, Rätsel & Puzzle, Klassiker).
+   Jedes Ziel beschreibt eine Kompetenz, nicht eine Aufgabenform.
 4. **Weg-Auswahl** – 4 von 5 Aufgaben laufen über einen Weg, der zur Stärke des Kindes passt.
 5. **Brücken-Aufgaben 🌉** – jede 5. Aufgabe kommt bewusst über einen *anderen* Weg.
    So wächst auch das, was noch schwerfällt – ohne dass der Spaß verloren geht.
@@ -71,12 +86,45 @@ Vier Kinder, vier Wege, ein Ergebnis: Sie können 4 × 6.
    * **Puzzle & Reihenfolge** – Abläufe und Größen durch Antippen in die richtige Ordnung
      bringen (Ei → Raupe → Puppe → Schmetterling).
 
-8. **Eltern-Bereich** – Fortschritt je Lernziel, Aktivität der letzten 7 Tage,
+8. **Klassiker – Fordern statt Beschäftigen** 🏛️
+   Ein eigenes Fach mit dem Besten aus über hundert Jahren Denksport und Bildung.
+   Diese Aufgaben haben überlebt, weil sie sich in einem Satz erklären lassen, zunächst
+   unlösbar wirken und mit einem einzigen Gedanken plötzlich einfach werden.
+   * **Knacknüsse** – 24 berühmte Rätsel: Wolf, Ziege und Kohlkopf (Alkuin, um 800),
+     die Gauß-Summe, Türme von Hanoi (Lucas 1883), Königsberger Brücken (Euler 1736),
+     `SEND + MORE = MONEY` (Dudeney 1924), Nim (Bouton 1901), das Ziegenproblem (1975),
+     Schnecke im Brunnen, Wiegeprobleme, Seil-und-Zeit-Aufgaben.
+   * **Tippleiter statt Lösungsknopf** – Hilfe gibt es nur auf ausdrückliche Anforderung,
+     dann Schritt für Schritt. Wer ohne Tipp löst, bekommt es gesagt; dafür gibt es eigene
+     Abzeichen (🧠 5 ohne Tipp, 🏛️ 20 ohne Tipp).
+   * **Herkunft inklusive** – nach der Lösung steht, wer sich die Aufgabe ausgedacht hat und
+     wann. Auch dort, wo die Überlieferung unsicher ist, wird das gesagt (das „Einstein-Rätsel“
+     stammt nicht von Einstein).
+   * **Rechenkunststücke** – alte Kopfrechen-Kniffe zum Üben: mal 11 im Kopf, Quadrate von
+     Zahlen auf 5, Gauß-Summe, Neunerprobe, russische Bauernmultiplikation, Prozente im Kopf.
+   * **Wissen, das bleibt** – Fleming und das Penicillin, Marie Curies zwei Nobelpreise,
+     Amundsen am Südpol, der Mauerfall, Pythagoras, Fotosynthese, Palindrome.
+   * **Redewendungen** – was sie bedeuten und woher sie kommen (die „lange Bank“ war eine
+     Gerichtstruhe, das „Fettnäpfchen“ stand vor der Haustür).
+   * **Lebenskunst** – Philosophie der Stoa, kindgerecht: Seneca, Epiktet und Marc Aurel
+     schreiben über Ärger, Neid, Ungeduld und die Angst vor Dingen, die nie eintreten.
+     Vier Formen: Zitate deuten, Epiktets Unterscheidung üben („Was liegt in deiner Hand?“),
+     Alltagslagen entscheiden („Du hast geübt und trotzdem eine schlechte Note“) und
+     erkennen, wer es gesagt hat. Alle Zitate mit Fundstelle; unsichere Zuschreibungen
+     sind als solche gekennzeichnet.
+   * **Denk-Impulse ohne richtige Antwort** – jede vierte Aufgabe der Lebenskunst ist eine
+     echte Frage, etwa Senecas abendliche Selbstprüfung „Was hast du heute besser gemacht?“.
+     Jede Antwort erhält eine eigene Rückmeldung, auch „Mir fällt nichts ein“. Diese Aufgaben
+     werden **bewusst nicht bewertet** und fließen in keine Quote ein – sonst wären es
+     Prüfungen statt Fragen.
+
+9. **Eltern-Bereich** – Fortschritt je Lernziel, Aktivität der letzten 7 Tage,
    Klartext-Empfehlungen („So lernt Ihr Kind am leichtesten – und daran arbeiten wir gerade“),
    Export/Import der Daten.
 
 Aufgaben werden **generiert**, nicht aus einer Liste gezogen – der Vorrat geht nie aus.
-Aktuell: 14 Lernziele × bis zu 5 Wege = 55 Aufgabentypen auf je 5 Schwierigkeitsstufen.
+Aktuell: **29 Lernziele × bis zu 5 Wege = 110 Aufgabentypen** auf je 5 Schwierigkeitsstufen,
+verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
 
 ---
 
@@ -117,8 +165,24 @@ npm start            # startet einen Webserver auf http://localhost:8765
 ## Datenschutz
 
 Alles bleibt auf dem Gerät (`localStorage`). Keine Server, keine Konten, keine Werbung,
-keine Tracker, kein Netzwerkverkehr. Ein Backup erzeugen Eltern selbst über
-*Eltern → Fortschritt exportieren*. Mehrere Kinder können eigene Profile haben.
+keine Tracker, kein Netzwerkverkehr. Mehrere Kinder können eigene Profile haben.
+
+## Wenn Profile „verschwunden“ sind
+
+Zwei Eigenheiten der Browser lassen Fortschritt scheinbar verschwinden – in beiden Fällen
+hilft der **Umzugs-Code** unter *Eltern → Fortschritt sichern & umziehen*:
+
+1. **App und Browser haben getrennte Speicher.** Auf iOS besitzt eine zum Startbildschirm
+   hinzugefügte Web-App einen eigenen Datenbereich. In Safari angelegte Profile fehlen dort –
+   sie sind nicht gelöscht, nur an anderer Stelle.
+2. **Safari räumt nach 7 Tagen ohne Nutzung auf** (Tracking-Schutz). Die App fordert deshalb
+   beim Start dauerhaften Speicher an (`navigator.storage.persist()`); das hilft zuverlässig
+   in Chrome und bei installierten Apps, in Safari nur eingeschränkt.
+
+Der Umzugs-Code ist der ganze Fortschritt als kopierbarer Text – kein Konto, keine Datei,
+kein Server. Beim Einfügen wird **zusammengeführt statt überschrieben**: Bei gleichem Kind
+gewinnt der weiter fortgeschrittene Stand, andere Profile bleiben erhalten.
+Zusätzlich gibt es Export und Import als Datei für ein Backup am Rechner.
 
 ---
 
@@ -128,7 +192,7 @@ keine Tracker, kein Netzwerkverkehr. Ein Backup erzeugen Eltern selbst über
 npm run test:aufgaben   # prüft alle Generatoren: 13.200 Aufgaben auf Vollständigkeit & Eindeutigkeit
 npm run test:lernen     # prüft die Lernschleife: erkennt die App den wirksamen Weg?
 npm start &             # Server für den Durchklick-Test
-npm run test:e2e        # Profil anlegen → 5-teiliger Talent-Test → Mission → alle Bereiche → Neustart
+npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
 
 ---
@@ -144,6 +208,10 @@ js/data.js            Talente, Lernwege, Lernziele, Talent-Test (5 Teile), Abzei
 js/talenttest.js      Auswertung des Talent-Tests: Blöcke, Gewichte, Feinschliff
 js/sprache.js         Vorlesen über die Gerätestimme (Web Speech API)
 js/geschichten.js     Hörgeschichten mit Verständnisfragen
+js/klassiker.js       Knacknüsse, Wissenskanon, Redewendungen, alte Rechentricks
+js/philosophie.js     Stoa für Kinder: Zitate, Alltagslagen, Denk-Impulse
+js/hauptwerke.js      Kanon: 61 Hauptwerke aus Literatur, Philosophie, Wissenschaft, Kunst
+js/fortgeschritten.js Denkfehler, Fehlschlüsse, Stilmittel, Wortwurzeln, Syllogismen
 js/generators.js      Aufgaben-Generatoren – ein Ziel, viele Wege
 js/engine.js          Auswahl von Ziel & Weg, Brücken-Regel, Elternhinweise
 js/store.js           Profile, Fortschritt, Talentwerte, gemessene Wirksamkeit (lokal)

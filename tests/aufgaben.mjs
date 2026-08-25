@@ -10,6 +10,13 @@ for (const zielId of Object.keys(GEN)) {
         const a = baueAufgabe(zielId, weg, level); n++;
         const ort = `${zielId}/${weg}/L${level}`;
         if (!a.frage || String(a.antwort).trim() === '') fehler.push(`${ort}: leere Aufgabe`);
+        if (a.typ === 'nachdenken') {
+          if (!a.optionen?.length) fehler.push(`${ort}: Denk-Impuls ohne Auswahl`);
+          if (!a.keineWertung) fehler.push(`${ort}: Denk-Impuls würde bewertet`);
+          const fehlend = a.optionen.filter(o => !a.rueckmeldungen?.[o]);
+          if (fehlend.length) fehler.push(`${ort}: Rückmeldung fehlt für "${fehlend[0]}"`);
+          if (!a.quelle) fehler.push(`${ort}: Denk-Impuls ohne Herkunftsangabe`);
+        }
         if (a.typ === 'ordnen') {
           const teile = a.antwort.split(' → ');
           if (a.elemente.length < 3) fehler.push(`${ort}: zu wenige Teile`);
@@ -21,12 +28,13 @@ for (const zielId of Object.keys(GEN)) {
           if (falsch !== a.antwort && pruefe(a, falsch))
             fehler.push(`${ort}: falsche Reihenfolge wird als richtig gewertet`);
         }
-        if (a.typ === 'choice') {
+        if (a.typ === 'choice' && a.typ !== 'nachdenken') {
           if (!a.optionen.includes(a.antwort)) fehler.push(`${ort}: Antwort fehlt in den Optionen`);
           if (new Set(a.optionen).size < 2) fehler.push(`${ort}: zu wenige Optionen`);
           if (a.optionen.filter(o => pruefe(a, o)).length !== 1) fehler.push(`${ort}: Lösung nicht eindeutig`);
         }
-        if (!pruefe(a, a.antwort)) fehler.push(`${ort}: eigene Lösung wird als falsch gewertet`);
+        if (a.typ !== 'nachdenken' && !pruefe(a, a.antwort))
+          fehler.push(`${ort}: eigene Lösung wird als falsch gewertet`);
       }
     }
   }

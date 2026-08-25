@@ -1,7 +1,7 @@
 /* Speicher: Profile, Fortschritt, Talent-Werte. Alles lokal im Geraet (localStorage).
    Keine Konten, keine Server, keine Daten von Kindern nach draussen. */
 
-import { TALENTE, WEGE, ZIELE, ABZEICHEN } from './data.js';
+import { TALENTE, WEGE, ZIELE, ABZEICHEN, ETAPPEN } from './data.js';
 import { auswerten } from './talenttest.js';
 
 const KEY = 'kidzootopia.v1';
@@ -14,7 +14,7 @@ let db = leer();
 export function laden() {
   try {
     const roh = localStorage.getItem(KEY);
-    if (roh) db = { ...leer(), ...JSON.parse(roh) };
+    db = roh ? { ...leer(), ...JSON.parse(roh) } : leer();
   } catch { db = leer(); }
   db.profile.forEach(p => migriere(p));
   return db;
@@ -36,10 +36,13 @@ function migriere(p) {
   p.zielWeg     ||= {};   // je Lernziel und Weg dasselbe – dort zeigt sich der Unterschied
   p.testTeile   ||= null; // Ergebnis der einzelnen Testteile
   p.vorlesen    ??= false; // Aufgaben automatisch vorlesen (für Leseanfänger)
+  // Etappe: 1 Grundschule … 5 Erwachsene. Ältere Profile kannten nur die Klasse.
+  p.etappe      ??= (p.klasse >= 8 ? 3 : p.klasse >= 5 ? 2 : 1);
   p.stats ||= {};
   p.stats.aufgabenGesamt  ??= 0;
   p.stats.richtigGesamt   ??= 0;
   p.stats.brueckenRichtig ??= 0;
+  p.stats.ohneTipp        ??= 0;   // Knacknüsse ohne Tipp gelöst
   p.stats.streak          ??= 0;
   p.stats.streakBest      ??= 0;
   p.stats.letzterTag      ??= null;
@@ -47,10 +50,13 @@ function migriere(p) {
   return p;
 }
 
-export function neuesProfil({ name, avatar, klasse }) {
+export function neuesProfil({ name, avatar, klasse, etappe }) {
+  const stufe = Number(etappe) || 1;
   const p = migriere({
     id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
-    name: name.trim() || 'Kind', avatar, klasse: Number(klasse) || 3,
+    name: name.trim() || 'Kind', avatar,
+    etappe: stufe,
+    klasse: Number(klasse) || [3, 6, 9, 12, 13][stufe - 1],
     erstellt: heute(), testGemacht: false, testDatum: null
   });
   db.profile.push(p);
@@ -146,12 +152,32 @@ export function zielStand(profil, zielId) {
   return profil.ziele[zielId] ||= { level:1, xp:0, richtig:0, gesamt:0, serie:0, gemeistert:false };
 }
 
-export function zieleFuerKlasse(profil) {
-  return ZIELE.filter(z => profil.klasse >= z.klasse[0] - 1 && profil.klasse <= z.klasse[1] + 1);
+/* Welche Lernziele passen zur Etappe? Eine Etappe darüber und darunter ist
+   erlaubt – Wiederholen schadet nie, und Vorgreifen fordert. */
+export function zieleFuerEtappe(profil) {
+  const e = profil.etappe || 1;
+  return ZIELE.filter(z => e >= z.etappe[0] && e <= z.etappe[1]);
 }
+export const zieleFuerKlasse = zieleFuerEtappe;   // alter Name, weiterhin gültig
+
+export const etappeVon = profil => ETAPPEN.find(x => x.id === (profil.etappe || 1)) || ETAPPEN[0];
 
 /* Ergebnis einer Aufgabe verbuchen */
-export function verbuche(profil, { zielId, weg, level, richtig, bruecke, ms = 0 }) {
+export function verbuche(profil, { zielId, weg, level, richtig, bruecke, ms = 0,
+                                   tippsGenutzt = 0, knacknuss = false, keineWertung = false }) {
+  /* Denk-Impulse haben keine richtige Antwort. Sie zählen als getane Arbeit,
+     fließen aber in keine Erfolgsquote ein – sonst wäre es eine Prüfung. */
+  if (keineWertung) {
+    const s = profil.stats;
+    s.aufgabenGesamt++;
+    s.tage[heute()] = (s.tage[heute()]||0) + 1;
+    profil.wegeGenutzt[weg] = (profil.wegeGenutzt[weg]||0) + 1;
+    tagesSerie(profil);
+    pruefeAbzeichen(profil);
+    speichern();
+    return zielStand(profil, zielId);
+  }
+
   const z = zielStand(profil, zielId);
   z.gesamt++; if (richtig) { z.richtig++; z.xp += 10 + level * 2; }
   z.serie = richtig ? z.serie + 1 : 0;
@@ -179,6 +205,7 @@ export function verbuche(profil, { zielId, weg, level, richtig, bruecke, ms = 0 
   const s = profil.stats;
   s.aufgabenGesamt++; if (richtig) s.richtigGesamt++;
   if (richtig && bruecke) s.brueckenRichtig++;
+  if (richtig && knacknuss && tippsGenutzt === 0) s.ohneTipp++;
   s.tage[heute()] = (s.tage[heute()]||0) + 1;
   tagesSerie(profil);
   pruefeAbzeichen(profil);
@@ -208,7 +235,8 @@ export function statsFuerAbzeichen(profil) {
     streakBest: profil.stats.streakBest,
     zieleGemeistert: Object.values(profil.ziele).filter(z => z.gemeistert).length,
     wegeGenutzt: Object.keys(profil.wegeGenutzt).length,
-    brueckenRichtig: profil.stats.brueckenRichtig
+    brueckenRichtig: profil.stats.brueckenRichtig,
+    ohneTipp: profil.stats.ohneTipp
   };
 }
 
@@ -220,8 +248,20 @@ export function pruefeAbzeichen(profil) {
   return neu;
 }
 
-/* Export / Import fuer Eltern (Backup, Geraetewechsel) */
+/* ---------------------------------------------------------------------------
+   Sicherung und Umzug.
+
+   Zwei Fallen, die Fortschritt scheinbar verschwinden lassen:
+   1. Eine zum Startbildschirm hinzugefuegte App und der Browser haben auf iOS
+      GETRENNTE Speicher. Im Browser angelegte Profile sind in der App nicht da.
+   2. Safari loescht Daten von Webseiten nach 7 Tagen ohne Benutzung (Tracking-
+      Schutz). Auch das trifft eine Lern-App.
+   Dagegen: dauerhaften Speicher anfordern und einen einfachen Umzugsweg
+   anbieten, der ohne Dateien auskommt.
+   --------------------------------------------------------------------------- */
+
 export const exportieren = () => JSON.stringify(db, null, 2);
+
 export function importieren(text) {
   const eingelesen = JSON.parse(text);
   if (!Array.isArray(eingelesen.profile)) throw new Error('Datei passt nicht.');
@@ -229,4 +269,64 @@ export function importieren(text) {
   db.profile.forEach(migriere);
   speichern();
 }
+
+/* Fortschritt zusammenfuehren statt ersetzen: Profile mit gleicher Kennung
+   werden nach Anzahl geloester Aufgaben behalten (der weitere Stand gewinnt). */
+export function zusammenfuehren(text) {
+  const fremd = JSON.parse(text);
+  if (!Array.isArray(fremd.profile)) throw new Error('Diese Daten passen nicht.');
+  let neu = 0, ersetzt = 0;
+  fremd.profile.forEach(f => {
+    migriere(f);
+    const i = db.profile.findIndex(p => p.id === f.id);
+    if (i < 0) { db.profile.push(f); neu++; return; }
+    if ((f.stats?.aufgabenGesamt || 0) > (db.profile[i].stats?.aufgabenGesamt || 0)) {
+      db.profile[i] = f; ersetzt++;
+    }
+  });
+  if (!db.aktiv && db.profile.length) db.aktiv = db.profile[0].id;
+  speichern();
+  return { neu, ersetzt, gesamt: db.profile.length };
+}
+
+/* Umzugs-Code: der ganze Fortschritt als Text, den man kopieren und
+   in der anderen Fassung wieder einfuegen kann. Keine Datei noetig. */
+export function alsCode() {
+  const roh = new TextEncoder().encode(JSON.stringify(db));
+  let binaer = '';
+  roh.forEach(b => { binaer += String.fromCharCode(b); });
+  return btoa(binaer).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+export function ausCode(code) {
+  const sauber = String(code).trim().replace(/\s+/g,'').replace(/-/g,'+').replace(/_/g,'/');
+  const binaer = atob(sauber + '==='.slice((sauber.length + 3) % 4));
+  const bytes = Uint8Array.from(binaer, c => c.charCodeAt(0));
+  return zusammenfuehren(new TextDecoder().decode(bytes));
+}
+
+/* Dauerhaften Speicher anfordern – verhindert das automatische Aufraeumen. */
+export async function speicherSichern() {
+  try {
+    if (!navigator.storage?.persist) return { moeglich:false, dauerhaft:false };
+    const schon = await navigator.storage.persisted?.();
+    const dauerhaft = schon || await navigator.storage.persist();
+    return { moeglich:true, dauerhaft };
+  } catch { return { moeglich:false, dauerhaft:false }; }
+}
+
+export async function speicherStatus() {
+  try {
+    const dauerhaft = await navigator.storage?.persisted?.() ?? false;
+    const platz = await navigator.storage?.estimate?.() ?? null;
+    return { dauerhaft, belegt: platz?.usage ?? null };
+  } catch { return { dauerhaft:false, belegt:null }; }
+}
+
+/* Laeuft die App vom Startbildschirm (eigener Speicher) oder im Browser? */
+export function alsAppGestartet() {
+  return window.matchMedia?.('(display-mode: standalone)')?.matches
+      || window.navigator.standalone === true;
+}
+
 export function allesLoeschen() { db = leer(); speichern(); }
