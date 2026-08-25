@@ -485,11 +485,18 @@ zeichnen: (() => {
       frage:`🧠 Merk dir die Form – sie verschwindet gleich!\nZeichne sie danach aus dem Gedächtnis: ${v.name}`,
       antwort:'aus dem Gedächtnis', hilfe:'Präg dir zuerst die Umrisse ein, dann die Einzelheiten.' };
   };
+  const mensch = () => ({
+    typ:'zeichnen', modus:'mensch', titel:'Mensch',
+    frage:'🧍 Zeichne einen Menschen – so vollständig du kannst.\nDanach schaust du dein Bild genau an und hakst ab, was darauf zu sehen ist.',
+    antwort:'gezeichnet', keineWertung:true,
+    quelle:'Nach Florence Goodenough (1926), erweitert von Dale Harris (1963): Gezählt werden vorhandene Merkmale, nicht die Ausführung. Hier als Selbstauskunft – keine standardisierte Testdurchführung und keine Aussage über Begabung.',
+    hilfe:'Nimm dir Zeit. Denk an Hals, Finger, Kleidung – Dinge, die man leicht vergisst.'
+  });
   return {
-    bauen:     lvl => nachfahren(lvl),
+    bauen:     lvl => (Math.random() < .18 ? mensch() : nachfahren(lvl)),
     knobeln:   () => einStrich(),
     entdecken: () => symmetrie(),
-    bewegen:   lvl => gedaechtnis(lvl)
+    bewegen:   lvl => (Math.random() < .18 ? mensch() : gedaechtnis(lvl))
   };
 })(),
 

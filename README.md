@@ -105,6 +105,36 @@ stellt eine Etappe höher.
    Zwischenpunkte werden ergänzt, damit schnelles Zeichnen nicht schlechter bewertet wird
    als langsames. Freies Zeichnen bekommt gar keine Punkte – nur einen Platz in der Galerie.
 
+   **Und die fachliche Feinauswertung.** Damit „Kunst“ nicht auf Nachfahr-Genauigkeit
+   verkürzt wird, wertet `js/kunstanalyse.js` jede Zeichnung zusätzlich nach vier
+   etablierten Verfahren der Kinderzeichnungs-Forschung aus – rein beschreibend, im
+   Eltern-Bereich, nie als Punktzahl für das Kind:
+
+   * **Feinmotorik** aus dem aufgezeichneten Strichverlauf (Ort, Zeit und Stiftdruck jedes
+     Punktes): *Linienruhe* (mittlere Richtungsänderung), *Fluss* (Gleichmäßigkeit des
+     Tempos, Pausen über 0,3 s), *Proportion* (Seitenverhältnis gegen die Vorlage,
+     größenunabhängig), *Geschlossenheit* (Lücke zwischen Anfang und Ende) und
+     *Ökonomie* (Strichlänge gegenüber der nötigen Länge).
+   * **Entwicklungsstufe** nach Rhoda Kellogg (1969), Viktor Lowenfeld (1947) und
+     Georges-Henri Luquet (1927): von *Erste Spuren* über *Kritzelstufe*, *Formstufe* und
+     *Kombinationsstufe* bis zur *vorschematischen* und *schematischen Stufe*. Luquets
+     Kriterium ist dabei nicht die Ähnlichkeit, sondern die **Benennung**: Ein Kind, das
+     seine Zeichnung „Mama“ nennt, hat die Schwelle zur Absicht überschritten.
+   * **Menschzeichnung** nach Florence Goodenough (1926) / Dale Harris (1963): Das Kind
+     hakt selbst ab, welche von 20 Merkmalen sein Männchen hat (Kopf, zwei Augen, Hals,
+     Finger in richtiger Zahl, Kleidung, Profil …). Verglichen wird nur mit einer breiten
+     Erwartungsspanne für die Etappe – ausdrücklich **kein IQ**, obwohl das Verfahren
+     historisch so verwendet wurde. Genau dieser Missbrauch steht als Warnung dabei.
+   * **Kreativität** nach Ellis Paul Torrance (1966): *Ausarbeitung* (Zahl der Ansätze und
+     Details), *Flüssigkeit* (wie viele freie Werke), *Flexibilität* (wie viele
+     verschiedene Motivkategorien) und *Originalität* – naheliegende Lösungen einer
+     Aufgabe („Verwandle einen Kreis“ → Sonne, Gesicht, Ball) zählen weniger als seltene.
+
+   **Was das ausdrücklich nicht ist:** kein Begabungs-, Intelligenz- oder Persönlichkeitstest
+   und keine Diagnose. Kinderzeichnungen schwanken stark mit Tagesform, Lust und Stift.
+   Der Eltern-Bereich zeigt die Auswertung erst ab drei Zeichnungen und sagt das dort auch.
+
+
 9. **Der Begleiter** 🦖 – das gewählte Lieblingstier lebt in der Ecke des Bildschirms.
    Es hüpft und wirft Funken bei Erfolg, wackelt und tröstet bei Fehlern, winkt zum Start
    und dreht sich am Ende. Passiert länger nichts, gähnt es, schaut sich um – und schläft
@@ -253,6 +283,7 @@ Zusätzlich gibt es Export und Import als Datei für ein Backup am Rechner.
 npm run test:aufgaben     # alle Generatoren: 33.000 Aufgaben auf Vollständigkeit & Eindeutigkeit
 npm run test:knacknuesse  # Vielfalt (1.394) und Richtigkeit (19.200 unabhängig nachgerechnet)
 npm run test:lernen       # Lernschleife, Wiederholungsfreiheit, Sachaufgaben-Kontrolle
+npm run test:kunst        # Zeichnungsauswertung: jedes Maß gegen seinen Gegenfall geprüft
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
@@ -272,6 +303,8 @@ js/sprache.js         Vorlesen über die Gerätestimme (Web Speech API)
 js/geschichten.js     Hörgeschichten mit Verständnisfragen
 js/zeichnen.js        Zeichenvorlagen, Ein-Strich-Figuren, Bewertung (Abdeckung/Genauigkeit)
 js/avatar.js          Der Begleiter: Reaktionen, Gesten, Leerlauf und Schlaf
+js/kunstanalyse.js    Fachliche Zeichnungsauswertung: Feinmotorik, Entwicklungsstufe,
+                      Menschzeichnung (Goodenough/Harris), Kreativität (Torrance)
 js/klassiker.js       Knacknüsse (handverlesen), Wissenskanon, Redewendungen, Rechentricks
 js/knacknuss_familien.js  Rätsel-Familien mit berechneter Lösung, inkl. eigener Löser
 js/philosophie.js     Stoa für Kinder: Zitate, Alltagslagen, Denk-Impulse

@@ -8,6 +8,7 @@ import { auswerten, stichPaare, engeTalente } from './talenttest.js';
 import { vorlesen, stopp, kannVorlesen } from './sprache.js';
 import { anleitung, umgebung } from './installhilfe.js';
 import { bewerte, BESTANDEN } from './zeichnen.js';
+import * as Kunst from './kunstanalyse.js';
 import * as Avatar from './avatar.js';
 import { pruefe } from './generators.js';
 import { radar } from './chart.js';
@@ -228,7 +229,10 @@ function zeichenbrett(a, bereich, fertig) {
 
   const stelle = e => {
     const r = leinwand.getBoundingClientRect();
-    return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
+    /* Zeit und Stiftdruck kommen mit: Daraus lassen sich später Linienruhe,
+       Fluss und Druckführung bestimmen (siehe kunstanalyse.js). */
+    return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height,
+             t: Math.round(performance.now()), d: e.pressure ?? 0.5 };
   };
   leinwand.addEventListener('pointerdown', e => {
     e.preventDefault(); leinwand.setPointerCapture(e.pointerId);
@@ -245,7 +249,8 @@ function zeichenbrett(a, bereich, fertig) {
     const schritte = Math.min(60, Math.floor(strecke / 0.008));
     for (let i = 1; i < schritte; i++)
       aktuell.push({ x: vorher.x + (jetzt.x - vorher.x) * i / schritte,
-                     y: vorher.y + (jetzt.y - vorher.y) * i / schritte });
+                     y: vorher.y + (jetzt.y - vorher.y) * i / schritte,
+                     t: vorher.t + (jetzt.t - vorher.t) * i / schritte, d: jetzt.d });
     aktuell.push(jetzt);
     malen();
   });
@@ -278,6 +283,43 @@ function zeichenbrett(a, bereich, fertig) {
     hinweis.textContent = 'Freies Blatt – hier gibt es kein Richtig.';
   }
   return { striche: () => striche };
+}
+
+/* Menschzeichnung nach Goodenough (1926) / Harris (1963):
+   Gezählt werden vorhandene Merkmale, nicht die Ausführung. Im Original zählt
+   eine geschulte Person; hier hakt das Kind selbst ab, was es gezeichnet hat.
+   Das ist keine standardisierte Durchführung – aber es schult das Hinsehen. */
+function merkmalsBogen(p, a, bereich, striche, auswerten) {
+  bereich.innerHTML = `
+    <div class="card flat" style="background:var(--bg);margin-top:12px">
+      <h3>Schau dein Bild genau an</h3>
+      <p class="muted small">Hake ab, was du gezeichnet hast. Es geht nicht darum, wie schön es
+        ist – nur darum, was da ist. Ehrlich sein zählt.</p>
+      <div class="grid two" id="merkmale">
+        ${Kunst.MENSCH_MERKMALE.map((m,i) =>
+          `<button class="choice" data-m="${i}" style="padding:10px;font-size:.9rem">☐ ${esc(m)}</button>`).join('')}
+      </div>
+      <button class="btn" id="merkmaleFertig" style="margin-top:12px">Fertig</button>
+    </div>`;
+  const gewaehlt = new Set();
+  bereich.querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
+    const i = b.dataset.m;
+    if (gewaehlt.has(i)) { gewaehlt.delete(i); b.classList.remove('gewaehlt');
+      b.textContent = '☐ ' + Kunst.MENSCH_MERKMALE[i]; }
+    else { gewaehlt.add(i); b.classList.add('gewaehlt');
+      b.textContent = '☑ ' + Kunst.MENSCH_MERKMALE[i]; }
+  });
+  bereich.querySelector('#merkmaleFertig').onclick = () => {
+    const ergebnis = Kunst.menschAuswertung(gewaehlt.size, p.etappe || 1);
+    const analyse = Kunst.analysiere(striche, { titel:'Mensch', alterEtappe: p.etappe || 1 });
+    S.merkeMensch(p, ergebnis);
+    S.merkeKunst(p, { modus:'mensch', merkmale: gewaehlt.size,
+      ruhe: analyse.linienruhe.wert, fluss: analyse.fluss.wert,
+      ausarbeitung: analyse.ausarbeitung.wert });
+    S.inGalerie(p, { titel:'Mensch', auftrag:'Zeichne einen Menschen', striche });
+    a.analyse = analyse;
+    auswerten(a, `${ergebnis.anzahl} von ${Kunst.MENSCH_MERKMALE.length} Merkmalen – ${ergebnis.lage}`, true);
+  };
 }
 
 /* Anleitung zum Ablegen auf dem Startbildschirm – passend zur erkannten Lage. */
@@ -689,9 +731,20 @@ function screenSession(p, opts = {}) {
       if (ergebnis === null) {
         Avatar.reagiere('zeichnen');
         zeichenbrett(a, bereich, (striche, extra) => {
+          if (a.modus === 'mensch') {                    // Merkmale zählen (Goodenough/Harris)
+            merkmalsBogen(p, a, bereich, striche, auswerten);
+            return;
+          }
           if (a.modus === 'frei') {                      // wird nicht bewertet
             const titel = prompt('Wie heißt dein Bild?', '') || 'Ohne Titel';
             S.inGalerie(p, { titel, auftrag: a.auftrag, striche });
+            const analyse = Kunst.analysiere(striche, { titel, auftrag: a.auftrag,
+                                                        alterEtappe: p.etappe || 1 });
+            S.merkeKunst(p, { modus:'frei', ruhe: analyse.linienruhe.wert,
+              fluss: analyse.fluss.wert, ausarbeitung: analyse.ausarbeitung.wert,
+              blatt: analyse.blattnutzung.wert, stufe: analyse.entwicklung.stufe,
+              stufeName: analyse.entwicklung.name });
+            a.analyse = analyse;
             auswerten(a, `„${titel}“ – in der Galerie gespeichert`, true);
             return;
           }
@@ -699,6 +752,12 @@ function screenSession(p, opts = {}) {
           const wert = bewerte(messziel, striche);
           const einStrichOk = a.modus !== 'einstrich' || extra.einStrich;
           const bestanden = wert.punkte >= BESTANDEN && einStrichOk;
+          const analyse = Kunst.analysiere(striche, { vorlage: messziel, alterEtappe: p.etappe || 1 });
+          a.analyse = analyse;
+          S.merkeKunst(p, { modus: a.modus, treffer: wert.punkte,
+            ruhe: analyse.linienruhe.wert, fluss: analyse.fluss.wert,
+            proportion: analyse.proportion?.wert, geschlossen: analyse.geschlossenheit.wert,
+            oekonomie: analyse.oekonomie?.wert, ausarbeitung: analyse.ausarbeitung.wert });
           auswerten(a, `${wert.punkte} von 100 Punkten` +
             (a.modus === 'einstrich' ? (extra.einStrich ? ' · in einem Strich ✏️' : ' · leider abgesetzt') : ''),
             bestanden, wert);
@@ -799,6 +858,13 @@ function screenSession(p, opts = {}) {
             <div class="small" style="margin-top:6px;font-weight:500">
               Getroffene Linie: ${Math.round(a.messwerte.abdeckung*100)} % ·
               davon auf der Vorlage: ${Math.round(a.messwerte.genauigkeit*100)} %
+            </div>` : ''}
+          ${a.analyse ? `<div class="small" style="margin-top:8px;font-weight:500">
+            ${[ a.analyse.linienruhe.wert !== null ? `✏️ Linienruhe ${a.analyse.linienruhe.wert}` : '',
+                a.analyse.fluss.wert !== null ? `🌊 Fluss ${a.analyse.fluss.wert}` : '',
+                a.analyse.proportion?.wert != null ? `📐 Proportion ${a.analyse.proportion.wert}` : '',
+                a.analyse.oekonomie ? `🖊️ ${a.analyse.oekonomie.striche} Ansätze` : ''
+              ].filter(Boolean).join(' · ')}
             </div>` : ''}
           ${a.hilfe ? `<div class="small" style="margin-top:6px;font-weight:500">💡 ${esc(a.hilfe)}</div>` : ''}
           ${ergebnis && a.knacknuss && tippsGenutzt === 0
@@ -1033,6 +1099,64 @@ function screenEltern(p) {
           <span class="val">${x.wert} %</span></div>`).join('');
       })()}
     </div>
+    ${(() => {
+      const m = p.kunst?.messungen || [];
+      if (m.length < 3) return `<div class="card"><h3>🎨 Zeichnerisches Profil</h3>
+        <p class="muted small">Nach etwa drei Zeichnungen erscheint hier eine fachliche
+          Auswertung – Feinmotorik, Formtreue, Entwicklungsstufe und Kreativität nach
+          Kellogg, Lowenfeld, Goodenough und Torrance.</p>
+        <p class="small">Bisher ${m.length} von 3 Zeichnungen.</p></div>`;
+      const zeile = (name, feld, deutung) => {
+        const w = S.kunstMittel(p, feld);
+        return w === null ? '' : `<div class="talent-row">
+          <span class="em">${deutung.em}</span>
+          <div class="tx"><b>${name}: ${w}</b>
+            <span class="bar" style="display:block;margin-top:5px"><i style="width:${w}%"></i></span>
+            <span class="muted small">${deutung.text}</span></div></div>`;
+      };
+      const letzteFrei = m.find(x => x.modus === 'frei');
+      const kreativ = Kunst.kreativProfil(p.galerie || []);
+      const mensch = p.kunst?.mensch;
+      return `<div class="card">
+        <h3>🎨 Zeichnerisches Profil</h3>
+        <p class="muted small">Aus ${m.length} Zeichnungen. Bewertet wird nie die Schönheit,
+          sondern Messbares: Linienführung, Formtreue, Entwicklungsmerkmale.</p>
+
+        <h4 style="margin:14px 0 6px">Feinmotorik</h4>
+        ${zeile('Linienruhe','ruhe',{em:'✏️',text:'Wie ruhig die Hand die Linie führt – gemessen an den Richtungswechseln im Kleinen.'})}
+        ${zeile('Fluss','fluss',{em:'🌊',text:'Gleichmäßige Bewegung statt stockendem Nachziehen.'})}
+        ${zeile('Formtreue','proportion',{em:'📐',text:'Stimmt das Seitenverhältnis mit der Vorlage überein?'})}
+        ${zeile('Geschlossenheit','geschlossen',{em:'⭕',text:'Trifft das Ende einer Form ihren Anfang?'})}
+        ${zeile('Ökonomie','oekonomie',{em:'🖊️',text:'Wie viele Ansätze wurden gebraucht?'})}
+        ${zeile('Ausarbeitung','ausarbeitung',{em:'🎨',text:'Wie viel Aufwand steckt im Bild (Torrance: Elaboration)?'})}
+
+        ${letzteFrei?.stufeName ? `<h4 style="margin:14px 0 6px">Entwicklungsstufe</h4>
+          <p class="small"><b>${esc(letzteFrei.stufeName)}</b> – nach Kellogg (1969) und
+          Lowenfeld (1947), zuletzt am ${esc(letzteFrei.datum)}.</p>
+          <p class="small muted">Kinder springen zwischen den Stufen, fallen zurück und bleiben
+          stehen. Alles davon ist normal; die Stufe ist keine Note.</p>` : ''}
+
+        ${kreativ.fluessigkeit >= 2 ? `<h4 style="margin:14px 0 6px">Kreativität (nach Torrance, 1966)</h4>
+          <ul class="clean small">
+            <li><b>Flüssigkeit:</b> ${kreativ.fluessigkeit} benannte Einfälle</li>
+            <li><b>Flexibilität:</b> ${kreativ.flexibilitaet} verschiedene Bereiche
+              (${esc(kreativ.bereiche.join(', '))})</li>
+          </ul>
+          <p class="small muted">Torrance zählt Ideen und Bereiche – nicht deren Qualität.
+            Wer viele Bilder aus einem einzigen Bereich malt, ist nicht schlechter, sondern
+            vertieft.</p>` : ''}
+
+        ${mensch ? `<h4 style="margin:14px 0 6px">Menschzeichnung</h4>
+          <p class="small">${esc(mensch.erklaerung)}</p>
+          <p class="small muted">${esc(mensch.warnung)}</p>` : ''}
+
+        <p class="small muted" style="margin-top:12px">
+          <b>Was das nicht ist:</b> kein Begabungs- oder Intelligenztest, keine Diagnose,
+          keine Aussage über künstlerischen Wert. Es sind Anhaltspunkte aus wenigen
+          Zeichnungen – aussagekräftig erst über Monate, und auch dann nur im Zusammenspiel
+          mit dem, was Sie selbst sehen.</p>
+      </div>`;
+    })()}
     <div class="card">
       <h3>Grundlage des Talent-Profils</h3>
       <p class="muted small">${p.testGemacht

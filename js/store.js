@@ -92,6 +92,7 @@ function migriere(p) {
   p.etappe      ??= (p.klasse >= 8 ? 3 : p.klasse >= 5 ? 2 : 1);
   p.gesehen     ||= {};   // je Ziel die zuletzt gestellten Aufgaben (Kurzkennung)
   p.galerie     ||= [];   // freie Zeichnungen (werden nicht bewertet)
+  p.kunst       ||= { messungen: [], mensch: null };  // fachliches Zeichenprofil
   p.stats ||= {};
   p.stats.aufgabenGesamt  ??= 0;
   p.stats.richtigGesamt   ??= 0;
@@ -199,6 +200,29 @@ export function talentWerte(profil) {
 
 export function topTalente(profil, n = 3) {
   return Object.entries(talentWerte(profil)).sort((a,b) => b[1]-a[1]).slice(0, n).map(e => e[0]);
+}
+
+/* Fachliche Messwerte einer Zeichnung ablegen (siehe kunstanalyse.js).
+   Gespeichert werden nur Zahlen, keine Bilder – das bleibt klein und sparsam. */
+const KUNST_MAX = 30;
+
+export function merkeKunst(profil, eintrag) {
+  profil.kunst.messungen.unshift({ datum: heute(), ...eintrag });
+  if (profil.kunst.messungen.length > KUNST_MAX) profil.kunst.messungen.length = KUNST_MAX;
+  speichern();
+}
+
+export function merkeMensch(profil, ergebnis) {
+  profil.kunst.mensch = { ...ergebnis, datum: heute() };
+  speichern();
+}
+
+/* Mittelwert einer Größe über die letzten Messungen – null, wenn zu wenig da. */
+export function kunstMittel(profil, feld, mindestens = 3) {
+  const werte = (profil.kunst?.messungen || []).map(m => m[feld])
+    .filter(v => typeof v === 'number');
+  if (werte.length < mindestens) return null;
+  return Math.round(werte.reduce((a,b) => a+b, 0) / werte.length);
 }
 
 /* Freie Zeichnungen sammeln. Striche werden grob gerundet gespeichert –
