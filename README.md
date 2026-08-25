@@ -53,20 +53,30 @@ Vier Kinder, vier Wege, ein Ergebnis: Sie können 4 × 6.
    * Widerspricht die Praxis dem Test, sagt der Eltern-Bereich das ausdrücklich:
      *„Im Test lag der Knobel-Weg vorn, in den Aufgaben läuft der Rhythmus-Weg besser.“*
    * Der Test darf jederzeit wiederholt werden – Kinder verändern sich.
-3. **Lernziele statt Aufgabenlisten** – 11 Ziele aus dem Schulstoff
-   (Mathe, Deutsch, Englisch, Allgemeinwissen, Technik & Code). Jedes Ziel beschreibt eine
-   Kompetenz, nicht eine Aufgabenform.
+3. **Lernziele statt Aufgabenlisten** – 14 Ziele aus dem Schulstoff
+   (Mathe, Deutsch, Englisch, Allgemeinwissen, Technik & Code, Rätsel & Puzzle). Jedes Ziel
+   beschreibt eine Kompetenz, nicht eine Aufgabenform.
 4. **Weg-Auswahl** – 4 von 5 Aufgaben laufen über einen Weg, der zur Stärke des Kindes passt.
 5. **Brücken-Aufgaben 🌉** – jede 5. Aufgabe kommt bewusst über einen *anderen* Weg.
    So wächst auch das, was noch schwerfällt – ohne dass der Spaß verloren geht.
 6. **Adaptive Level (1–5)** – vier richtige Antworten in Folge heben das Niveau,
    eine Schwächephase senkt es wieder. Kein Kind rennt gegen eine Wand.
-7. **Eltern-Bereich** – Fortschritt je Lernziel, Aktivität der letzten 7 Tage,
+7. **Vorlesen, Hören, Sehen, Legen** – nicht jedes Kind lernt über Text:
+   * **Vorlesen 🔊** – jede Aufgabe kann vorgelesen werden (Stimme des Geräts, kein fremder
+     Dienst). Für Leseanfänger lässt sich im Eltern-Bereich automatisches Vorlesen einschalten.
+   * **Hörgeschichten** – acht kurze Geschichten werden vorgelesen, der Text bleibt zuerst
+     verborgen; danach Fragen zum Verstehen. Trainiert Zuhören und Merken.
+   * **Bilderrätsel** – Bildpaare zu einem Wort verbinden (🔥 + 🚗), Zusammengehöriges finden,
+     Ausreißer entdecken, Mengen im Bild zählen.
+   * **Puzzle & Reihenfolge** – Abläufe und Größen durch Antippen in die richtige Ordnung
+     bringen (Ei → Raupe → Puppe → Schmetterling).
+
+8. **Eltern-Bereich** – Fortschritt je Lernziel, Aktivität der letzten 7 Tage,
    Klartext-Empfehlungen („So lernt Ihr Kind am leichtesten – und daran arbeiten wir gerade“),
    Export/Import der Daten.
 
 Aufgaben werden **generiert**, nicht aus einer Liste gezogen – der Vorrat geht nie aus.
-Aktuell: 11 Lernziele × bis zu 5 Wege = 44 Aufgabentypen auf je 5 Schwierigkeitsstufen.
+Aktuell: 14 Lernziele × bis zu 5 Wege = 55 Aufgabentypen auf je 5 Schwierigkeitsstufen.
 
 ---
 
@@ -132,6 +142,8 @@ manifest.webmanifest  App-Installation
 sw.js                 Offline-Betrieb
 js/data.js            Talente, Lernwege, Lernziele, Talent-Test (5 Teile), Abzeichen
 js/talenttest.js      Auswertung des Talent-Tests: Blöcke, Gewichte, Feinschliff
+js/sprache.js         Vorlesen über die Gerätestimme (Web Speech API)
+js/geschichten.js     Hörgeschichten mit Verständnisfragen
 js/generators.js      Aufgaben-Generatoren – ein Ziel, viele Wege
 js/engine.js          Auswahl von Ziel & Weg, Brücken-Regel, Elternhinweise
 js/store.js           Profile, Fortschritt, Talentwerte, gemessene Wirksamkeit (lokal)
@@ -142,7 +154,7 @@ tests/                Generator-Test & Durchklick-Test
 
 ## Nächste Ideen
 
-* Vorlesen der Aufgaben (Sprachausgabe) für Leseanfänger und Kinder mit Leseschwäche
-* Foto-/Zeichen-Aufgaben für den Bau-Weg
+* Eigene Geschichten der Eltern einsprechen oder eintippen
+* Zeichen-Aufgaben für den Bau-Weg
 * Eltern-Wochenbericht als PDF
 * Weitere Lernziele: Uhrzeit, Sachrechnen mit Geld, Grammatik, Musiknoten

@@ -137,3 +137,19 @@ ul.clean li:last-child{border-bottom:0}
 .pop{animation:pop .35s ease}
 @keyframes pop{0%{transform:scale(.9);opacity:.4}100%{transform:scale(1);opacity:1}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* Puzzle: Teile zum Legen */
+.ordnen-reihe{display:flex;flex-wrap:wrap;gap:8px;min-height:52px;align-items:center;
+  padding:10px;border:2px dashed var(--line);border-radius:16px;margin:14px 0}
+.ordnen-teile{display:flex;flex-wrap:wrap;gap:10px}
+.teil{background:var(--card);border:2px solid var(--line);border-radius:14px;
+  padding:12px 14px;font-size:1rem;font-weight:600;color:var(--ink);cursor:pointer;min-height:48px}
+.teil:active{transform:scale(.97)}
+.teil.gelegt{background:var(--brand-soft);border-color:var(--brand);color:var(--brand);cursor:default}
+.teil.gelegt b{background:var(--brand);color:#fff;border-radius:50%;display:inline-block;
+  width:20px;height:20px;line-height:20px;text-align:center;font-size:.72rem;margin-right:6px}
+.card.hoer{background:linear-gradient(135deg,#5b4bff,#9b5bff);color:#fff;border:0}
+.card.hoer h3{color:#fff}
+.card.hoer .btn{background:#fff;color:#4a3ce0}
+.card.hoer .btn.quiet{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.4)}
+.card.hoer .small{color:rgba(255,255,255,.95)}

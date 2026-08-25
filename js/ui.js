@@ -5,6 +5,7 @@ import { TALENTE, WEGE, FAECHER, ZIELE, ZIEL_MAP, SKALA, AVATARE, ABZEICHEN,
 import * as S from './store.js';
 import { starteSession, empfehlungen, wegRanking, wegeNachWirkung, wegBewertung } from './engine.js';
 import { auswerten, stichPaare, engeTalente } from './talenttest.js';
+import { vorlesen, stopp, kannVorlesen } from './sprache.js';
 import { pruefe } from './generators.js';
 import { radar } from './chart.js';
 
@@ -341,22 +342,52 @@ function screenSession(p, opts = {}) {
   const render = (a, ergebnis, eingabe = '') => {
     const punkte = Array.from({length: sess.laenge}, (_,i) =>
       `<i class="${status[i] || (i===sess.index?'now':'')}"></i>`).join('');
+    const hatHoertext = !!a.hoertext;
     view().innerHTML = `
       <div class="row spread" style="margin-bottom:10px">
         <button class="btn quiet small" id="raus">✕ Beenden</button>
         <span class="pill grey">${FAECHER[a.ziel.fach].emoji} ${esc(a.ziel.titel)} · Level ${a.level}</span>
       </div>
       <div class="progress-dots">${punkte}</div>
+      ${hatHoertext ? `<div class="card hoer">
+        <h3>${esc(a.titel || 'Hör gut zu')}</h3>
+        <button class="btn" id="playHoer">▶️ Geschichte anhören</button>
+        <button class="btn quiet" id="zeigeText" style="margin-top:10px">📖 Text zeigen</button>
+        <p id="hoertext" class="small" hidden style="margin-top:12px;white-space:pre-wrap">${esc(a.hoertext)}</p>
+      </div>` : ''}
       <div class="card">
-        <span class="wegtag">${a.wegInfo.emoji} ${a.wegInfo.name}${a.bruecke ? ' · Brücke 🌉' : ''}</span>
+        <div class="row spread">
+          <span class="wegtag">${a.wegInfo.emoji} ${a.wegInfo.name}${a.bruecke ? ' · Brücke 🌉' : ''}</span>
+          ${kannVorlesen() ? '<button class="btn small ghost" id="lies" title="Vorlesen">🔊</button>' : ''}
+        </div>
         <p class="task pop">${esc(a.frage)}</p>
         <div id="antwortbereich"></div>
         <div id="fb"></div>
       </div>
       <p class="muted small center">${esc(a.wegInfo.hinweis)}</p>`;
-    view().querySelector('#raus').onclick = () => zeige('lernen');
+    view().querySelector('#raus').onclick = () => { stopp(); zeige('lernen'); };
+
+    /* Vorlesen */
+    const vorleseText = () => [a.hoertext, a.frage,
+      a.typ === 'choice' ? 'Antworten: ' + a.optionen.join(', ') : ''].filter(Boolean).join('. ');
+    view().querySelector('#lies')?.addEventListener('click', () =>
+      vorlesen(hatHoertext ? a.frage : vorleseText()));
+    view().querySelector('#playHoer')?.addEventListener('click', e => {
+      e.target.textContent = '🔊 Wird vorgelesen …';
+      vorlesen(a.hoertext, { tempo: 0.9, beiEnde: () => { e.target.textContent = '🔁 Nochmal anhören'; } });
+    });
+    view().querySelector('#zeigeText')?.addEventListener('click', e => {
+      const t = view().querySelector('#hoertext');
+      t.hidden = !t.hidden;
+      e.target.textContent = t.hidden ? '📖 Text zeigen' : '🙈 Text verbergen';
+    });
+    if (ergebnis === null && p.vorlesen && kannVorlesen()) {
+      // Vorlesen ist eingeschaltet: Aufgabe direkt ansagen
+      vorlesen(hatHoertext ? a.hoertext : vorleseText(), { tempo: 0.9 });
+    }
 
     const bereich = view().querySelector('#antwortbereich');
+
     if (a.typ === 'choice') {
       bereich.innerHTML = `<div class="choices">${a.optionen.map(o =>
         `<button class="choice" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
@@ -367,6 +398,32 @@ function screenSession(p, opts = {}) {
         b.classList.add(ok ? 'correct' : (b.dataset.o === eingabe ? 'wrong' : 'dim'));
         b.disabled = true;
       });
+
+    } else if (a.typ === 'ordnen') {
+      /* Zum Legen: Teile nacheinander antippen, Reihenfolge entsteht oben. */
+      let gelegt = ergebnis !== null ? String(eingabe).split(' ~ ') : [];
+      const zeichnen = () => {
+        const offen = a.elemente.filter(e => !gelegt.includes(e));
+        bereich.innerHTML = `
+          <div class="ordnen-reihe" id="reihe">
+            ${gelegt.length ? gelegt.map((e,i) =>
+              `<span class="teil gelegt"><b>${i+1}</b> ${esc(e)}</span>`).join('')
+              : '<span class="muted small">Tippe unten in der richtigen Reihenfolge …</span>'}
+          </div>
+          <div class="ordnen-teile">${offen.map(e =>
+            `<button class="teil" data-e="${esc(e)}">${esc(e)}</button>`).join('')}</div>
+          ${gelegt.length && ergebnis === null
+            ? '<button class="btn quiet small" id="reset" style="margin-top:10px">↺ Nochmal legen</button>' : ''}`;
+        if (ergebnis !== null) return;
+        bereich.querySelectorAll('[data-e]').forEach(b => b.onclick = () => {
+          gelegt.push(b.dataset.e);
+          if (gelegt.length === a.elemente.length) auswerten(a, gelegt.join(' → '));
+          else zeichnen();
+        });
+        bereich.querySelector('#reset')?.addEventListener('click', () => { gelegt = []; zeichnen(); });
+      };
+      zeichnen();
+
     } else {
       bereich.innerHTML = `
         <label class="field" style="margin-top:14px"><span class="sr">Antwort</span>
@@ -390,7 +447,7 @@ function screenSession(p, opts = {}) {
         </div>
         <button class="btn" id="weiter" style="margin-top:12px">
           ${sess.index >= sess.laenge ? 'Ergebnis ansehen' : 'Weiter →'}</button>`;
-      view().querySelector('#weiter').onclick = naechste;
+      view().querySelector('#weiter').onclick = () => { stopp(); naechste(); };
     }
   };
 
@@ -586,6 +643,16 @@ function screenEltern(p) {
       <h3>Was das für die Förderung heißt</h3>
       <ul class="clean">${tipps.map(t=>`<li>${fett(t)}</li>`).join('')}</ul>
     </div>
+    <div class="card">
+      <h3>Vorlesen</h3>
+      <p class="muted small">Für Leseanfänger und Kinder mit Leseschwäche: Die App liest jede Aufgabe
+        automatisch mit der Stimme des Geräts vor. Der Lautsprecher-Knopf 🔊 in der Aufgabe
+        funktioniert unabhängig davon immer.</p>
+      <button class="btn ${p.vorlesen ? '' : 'ghost'}" id="vorleseSchalter">
+        ${p.vorlesen ? '🔊 Vorlesen ist an' : '🔈 Vorlesen einschalten'}</button>
+      <p class="small muted" style="margin-top:8px">Hörgeschichten werden immer vorgelesen –
+        dort ist der Text zuerst versteckt, damit wirklich zugehört wird.</p>
+    </div>
     <div class="card" id="installKarte">
       <h3>Als App aufs Handy</h3>
       <p class="muted small">Kidzootopia läuft im Browser und lässt sich wie eine App auf den Startbildschirm legen –
@@ -605,6 +672,9 @@ function screenEltern(p) {
       <button class="btn danger" id="reset" style="margin-top:10px">Alle Daten löschen</button>
     </div>`;
   view().querySelector('#profile').onclick = () => zeige('profile');
+  view().querySelector('#vorleseSchalter').onclick = () => {
+    p.vorlesen = !p.vorlesen; S.speichern(); zeige('eltern');
+  };
   if (window.installPrompt) {
     const btn = view().querySelector('#install');
     btn.hidden = false;

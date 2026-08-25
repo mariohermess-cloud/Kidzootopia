@@ -10,6 +10,17 @@ for (const zielId of Object.keys(GEN)) {
         const a = baueAufgabe(zielId, weg, level); n++;
         const ort = `${zielId}/${weg}/L${level}`;
         if (!a.frage || String(a.antwort).trim() === '') fehler.push(`${ort}: leere Aufgabe`);
+        if (a.typ === 'ordnen') {
+          const teile = a.antwort.split(' → ');
+          if (a.elemente.length < 3) fehler.push(`${ort}: zu wenige Teile`);
+          if (new Set(a.elemente).size !== a.elemente.length) fehler.push(`${ort}: doppelte Teile`);
+          if ([...teile].sort().join('|') !== [...a.elemente].sort().join('|'))
+            fehler.push(`${ort}: Lösung enthält andere Teile als angeboten`);
+          if (!pruefe(a, teile.join(' → '))) fehler.push(`${ort}: richtige Reihenfolge wird abgelehnt`);
+          const falsch = [teile[1], teile[0], ...teile.slice(2)].join(' → ');
+          if (falsch !== a.antwort && pruefe(a, falsch))
+            fehler.push(`${ort}: falsche Reihenfolge wird als richtig gewertet`);
+        }
         if (a.typ === 'choice') {
           if (!a.optionen.includes(a.antwort)) fehler.push(`${ort}: Antwort fehlt in den Optionen`);
           if (new Set(a.optionen).size < 2) fehler.push(`${ort}: zu wenige Optionen`);

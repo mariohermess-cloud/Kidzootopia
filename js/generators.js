@@ -3,6 +3,8 @@
    Wichtig: Fuer ein Ziel pruefen ALLE Wege dieselbe Kompetenz.
    Nur die Verpackung unterscheidet sich – das ist die Idee der App. */
 
+import { GESCHICHTEN } from './geschichten.js';
+
 const r = (a,b) => a + Math.floor(Math.random()*(b-a+1));
 const pick = a => a[r(0,a.length-1)];
 const shuffle = a => a.map(v=>[Math.random(),v]).sort((x,y)=>x[0]-y[0]).map(v=>v[1]);
@@ -335,6 +337,118 @@ logik: {
       a, [b, c], 'Jeder Takt beginnt gleich.');
   }
 },
+
+/* ---------------- Zuhören: vorgelesene Geschichten ---------------- */
+zuhoeren: (() => {
+  const bauen = (weg, lvl) => {
+    const passend = GESCHICHTEN.filter(g => lvl <= 2 ? g.stufe[0] <= 3 : true);
+    const g = pick(passend.length ? passend : GESCHICHTEN);
+    // Weg bestimmt, welche Art Frage gestellt wird
+    const index = { erzaehlen:0, knobeln:1, entdecken:2 }[weg] ?? 0;
+    const f = g.fragen[Math.min(index, g.fragen.length-1)];
+    return {
+      ...wahl(f.q, f.ok, f.bad, 'Du darfst die Geschichte noch einmal anhören.'),
+      hoertext: g.text,
+      titel: `${g.emoji} ${g.titel}`,
+      vorlesen: true
+    };
+  };
+  return {
+    erzaehlen: lvl => bauen('erzaehlen', lvl),
+    knobeln:   lvl => bauen('knobeln', lvl),
+    entdecken: lvl => bauen('entdecken', lvl)
+  };
+})(),
+
+/* ---------------- Bilderrätsel ---------------- */
+bildraetsel: (() => {
+  /* Rebus: zwei Bilder ergeben zusammen ein Wort */
+  const REBUS = [
+    { bilder:'🔥 + 🚗', ok:'Feuerwehrauto', bad:['Feuerzeug','Rennauto','Feuerstein'] },
+    { bilder:'☀️ + 🌸', ok:'Sonnenblume',   bad:['Sonnenschirm','Blumentopf','Sonnenbrille'] },
+    { bilder:'🌧️ + 🌈', ok:'Regenbogen',    bad:['Regenschirm','Wolkenbruch','Regenwurm'] },
+    { bilder:'🦷 + 🪥', ok:'Zahnbürste',    bad:['Zahnarzt','Haarbürste','Zahnpasta'] },
+    { bilder:'🍎 + 🧃', ok:'Apfelsaft',     bad:['Apfelbaum','Orangensaft','Apfelkuchen'] },
+    { bilder:'🐴 + 🍎', ok:'Pferdeapfel',   bad:['Apfelpferd','Reitstall','Obstwiese'] },
+    { bilder:'🔑 + 🕳️', ok:'Schlüsselloch', bad:['Schlüsselbund','Mauseloch','Türschloss'] },
+    { bilder:'📚 + 🏬', ok:'Buchladen',     bad:['Bücherregal','Kaufhaus','Bibliothek'] }
+  ];
+  /* Was gehört zusammen? */
+  const PAARE = [
+    { a:'🧦', ok:'👟', bad:['🍕','📚','🎸'], hilfe:'Was zieht man zusammen an?' },
+    { a:'🐝', ok:'🌼', bad:['🚂','🧊','📱'], hilfe:'Wer besucht wen?' },
+    { a:'🔨', ok:'🪵', bad:['🍦','🐠','☂️'], hilfe:'Womit arbeitet man?' },
+    { a:'🖌️', ok:'🎨', bad:['🍞','⚽','🔌'], hilfe:'Was gehört zum Malen?' },
+    { a:'🌧️', ok:'☂️', bad:['🕶️','🎧','🥁'], hilfe:'Was hilft bei Regen?' },
+    { a:'🐓', ok:'🥚', bad:['🚙','🎈','🧱'], hilfe:'Was gehört zum Huhn?' }
+  ];
+  /* Bild-Logik: Was passt nicht in die Reihe? */
+  const REIHEN = [
+    { drin:['🐕','🐈','🐇'], raus:'🌳', warum:'Drei Tiere und ein Baum.' },
+    { drin:['🍏','🍌','🍇'], raus:'🥕', warum:'Drei Obstsorten und ein Gemüse.' },
+    { drin:['🚗','🚌','🚲'], raus:'🏠', warum:'Drei Fahrzeuge und ein Haus.' },
+    { drin:['☀️','🌧️','❄️'], raus:'📖', warum:'Dreimal Wetter und ein Buch.' },
+    { drin:['🎺','🥁','🎻'], raus:'🍽️', warum:'Drei Instrumente und ein Teller.' }
+  ];
+  /* Zählrätsel im Bild */
+  const zaehlen = lvl => {
+    const em = pick(['🐟','⭐','🍒','🐞','🎈']);
+    const zeilen = r(2, 2+lvl), proZeile = r(2, 3+lvl);
+    const bild = Array.from({length:zeilen}, () => em.repeat(proZeile)).join('\n');
+    return zahlChoice(`🔎 Wie viele ${em} siehst du?\n${bild}`, zeilen*proZeile, 4,
+      `${zeilen} Reihen mit je ${proZeile} Stück.`);
+  };
+  return {
+    erzaehlen(){ const x = pick(REBUS);
+      return wahl(`🖼️ Welches Wort ergeben die beiden Bilder zusammen?\n\n${x.bilder}`,
+        x.ok, x.bad, 'Sprich beide Bilder laut hintereinander aus.'); },
+    bauen(){ const x = pick(PAARE);
+      return wahl(`🧱 Was gehört zu ${x.a} ?`, x.ok, x.bad, x.hilfe); },
+    knobeln(){ const x = pick(REIHEN);
+      return wahl(`🧠 Was passt nicht dazu?\n${shuffle([...x.drin, x.raus]).join('   ')}`,
+        x.raus, x.drin, x.warum); },
+    entdecken: zaehlen
+  };
+})(),
+
+/* ---------------- Puzzle & Reihenfolge (zum Legen) ---------------- */
+puzzle: (() => {
+  const ordnen = (frage, richtige, hilfe) =>
+    ({ frage, typ:'ordnen', elemente: shuffle([...richtige]), antwort: richtige.join(' → '), hilfe });
+
+  const ABLAEUFE = [
+    { t:'Wie wächst eine Pflanze?', s:['🌰 Samen','🌱 Keimling','🌿 Pflanze','🌻 Blüte'] },
+    { t:'Wie wird aus einer Raupe ein Schmetterling?', s:['🥚 Ei','🐛 Raupe','🛡️ Puppe','🦋 Schmetterling'] },
+    { t:'Wie backst du einen Kuchen?', s:['🛒 einkaufen','🥣 rühren','🔥 backen','🍰 essen'] },
+    { t:'Wie kommst du morgens in die Schule?', s:['⏰ aufwachen','🥣 frühstücken','🎒 Ranzen packen','🏫 losgehen'] },
+    { t:'Wie wird aus Wasser Eis und wieder Wasser?', s:['💧 Wasser','🧊 Eis','☀️ Sonne scheint','💦 geschmolzen'] },
+    { t:'Wie schickst du einen Brief?', s:['✍️ schreiben','✉️ eintüten','📮 einwerfen','📬 kommt an'] }
+  ];
+  const GROESSE = [
+    { t:'Ordne von klein nach groß', s:['🐜 Ameise','🐭 Maus','🐕 Hund','🐘 Elefant'] },
+    { t:'Ordne von leicht nach schwer', s:['🪶 Feder','🍎 Apfel','🎒 Ranzen','🚗 Auto'] },
+    { t:'Ordne von kurz nach lang', s:['📎 Büroklammer','✏️ Bleistift','🚪 Tür','🚌 Bus'] },
+    { t:'Ordne von kalt nach heiß', s:['🧊 Eis','💧 Wasser','☕ Tee','🔥 Feuer'] }
+  ];
+
+  return {
+    erzaehlen(){ const a = pick(ABLAEUFE);
+      return ordnen(`📖 ${a.t}\nTippe die Bilder in der richtigen Reihenfolge an.`, a.s,
+        'Denk daran, was zuerst passiert.'); },
+    bauen(){ const g = pick(GROESSE);
+      return ordnen(`🧱 ${g.t}.\nTippe sie in der richtigen Reihenfolge an.`, g.s,
+        'Fang beim Kleinsten an.'); },
+    knobeln(lvl){
+      // Zahlenfolge legen
+      const start = r(1,9), schritt = r(2, 3+lvl);
+      const zahlen = Array.from({length:4}, (_,i) => String(start + i*schritt));
+      return ordnen(`🧠 Bringe die Zahlen in die richtige Reihenfolge – von klein nach groß.`,
+        zahlen, 'Die kleinste Zahl kommt zuerst.'); },
+    bewegen(){ const a = pick(ABLAEUFE.slice(2));
+      return ordnen(`👟 Mach es in Gedanken mit: ${a.t}\nTippe die Schritte der Reihe nach an.`, a.s,
+        'Stell dir vor, du machst es gerade wirklich.'); }
+  };
+})(),
 
 /* ---------------- Code ---------------- */
 code: {
