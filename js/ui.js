@@ -58,16 +58,8 @@ function screenStart() {
           <span class="muted small"> · ${S.etappeVon(p).name}</span>
         </button>`).join('')}</div></div>` : ''}
     <div class="card">
-      <h3>Schon einmal genutzt?</h3>
-      <p class="muted small">Wenn Profile fehlen, sind sie meist nicht gelöscht: Die App vom
-        Startbildschirm und der Browser haben getrennte Speicher. Holen Sie den Fortschritt
-        mit dem Umzugs-Code herüber – zu finden dort, wo die Profile noch da sind,
-        unter <b>Eltern → Fortschritt sichern &amp; umziehen</b>.</p>
-      <button class="btn quiet" id="holen">🔑 Umzugs-Code einfügen</button>
-      <div id="holBereich"></div>
-    </div>
-    <div class="card">
       <h2>${profile.length ? 'Neues Kind hinzufügen' : 'Los geht’s'}</h2>
+      <p class="muted small">Kein Konto, kein Passwort, keine Anmeldung – Name eintragen und loslegen.</p>
       <label class="field"><span>Name</span><input type="text" id="nName" placeholder="z. B. Mia" maxlength="20"></label>
       <label class="field"><span>Etappe</span>
         <select id="nEtappe">${ETAPPEN.map(e =>
@@ -80,7 +72,27 @@ function screenStart() {
           style="${i===0?'border-color:var(--brand)':''}">${a}</button>`).join('')}
       </div>
       <button class="btn" id="nAnlegen">Profil anlegen</button>
-    </div>`;
+    </div>
+    <details class="card">
+      <summary style="cursor:pointer;font-weight:700">
+        Alten Fortschritt übernehmen (optional)</summary>
+      <p class="muted small" style="margin-top:10px">
+        <b>Nur nötig, wenn Sie die App schon einmal benutzt haben</b> und die Profile hier fehlen.
+        Zum Starten brauchen Sie das nicht – legen Sie einfach oben ein Profil an.</p>
+      <p class="muted small">Grund für fehlende Profile: Die App vom Startbildschirm und der Browser
+        haben auf dem iPhone getrennte Speicher. Der Fortschritt liegt dann noch in der anderen
+        Fassung. So holen Sie ihn:</p>
+      <ol class="small" style="padding-left:20px;line-height:1.7">
+        <li>Dieselbe Adresse dort öffnen, wo die Profile noch da sind (meist <b>Safari</b>).</li>
+        <li>Dort unten auf <b>Eltern</b> tippen → <b>Fortschritt sichern &amp; umziehen</b>
+            → <b>🔑 Umzugs-Code anzeigen</b> → <b>📋 Code kopieren</b>.</li>
+        <li>Hierher zurückkommen und den Code unten einfügen.</li>
+      </ol>
+      <p class="muted small">Sind die Profile auch dort weg, hilft der Code nicht mehr –
+        dann legen Sie oben einfach ein neues an. Ärgerlich, aber schnell wieder aufgeholt.</p>
+      <button class="btn quiet" id="holen">🔑 Umzugs-Code einfügen</button>
+      <div id="holBereich"></div>
+    </details>`;
 
   view().querySelector('#holen').onclick = () => {
     const b = view().querySelector('#holBereich');

@@ -165,3 +165,10 @@ ul.clean li:last-child{border-bottom:0}
 .choice.gewaehlt{border-color:var(--brand);background:var(--brand-soft);border-style:solid}
 .feedback.denk{background:var(--brand-soft);color:var(--ink)}
 .progress-dots i.denk{background:var(--brand);opacity:.45}
+
+/* Aufklappbare Karte (optionale Schritte) */
+details.card > summary{list-style:none;display:flex;align-items:center;gap:8px}
+details.card > summary::-webkit-details-marker{display:none}
+details.card > summary::before{content:'▸';color:var(--brand);font-size:1.1rem}
+details.card[open] > summary::before{content:'▾'}
+details.card ol{margin:8px 0}
