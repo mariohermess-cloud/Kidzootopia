@@ -9,11 +9,17 @@
    Bei jeder Änderung: NUMMER hier hochzählen UND in sw.js (CACHE) gleichziehen.
    tests/version.mjs prüft, dass beide übereinstimmen. */
 
-export const NUMMER = 19;
+export const NUMMER = 20;
 export const STAND = '25.08.2026';
 
 /* Neueste zuerst. Kurz und in Alltagssprache – das lesen Eltern, nicht Entwickler. */
 export const VERLAUF = [
+  { nr: 20, stand: '25.08.2026', was: [
+    'Beim Vorlesen wandert eine Markierung mit – die App weiß, wo im Text du gerade bist',
+    'Danach ist der Text Silbe für Silbe eingefärbt: grün flüssig, rot langer Halt',
+    'Betonung wird geprüft: liegt der Ton auf der richtigen Silbe?',
+    'Wörter, an denen es regelmäßig hakt, merkt sich die App – und vergisst sie wieder, sobald sie flüssig werden'
+  ]},
   { nr: 19, stand: '25.08.2026', was: [
     'Eigenes Zahlenfeld mit Minus und Komma – Aufgaben mit −1 oder 12,5 waren vorher nicht lösbar',
     'Neues Lernziel „Silben hören & bauen": zählen, finden, zusammensetzen, Lücken füllen',

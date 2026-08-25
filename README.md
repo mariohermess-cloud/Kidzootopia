@@ -157,6 +157,45 @@ stellt eine Etappe höher.
      | **Gleichmaß** | Lange, ähnlich lange Sprechbögen statt vieler kurzer Stücke |
      | **Betonung** | Schwankung der Lautstärke – bleibt die Stimme monoton oder schwingt sie? |
 
+   **Silbe für Silbe mitlesen – und einfärben.** Der entscheidende Punkt: Die App muss
+   Sprache gar nicht *erkennen*. Sie kennt den Text ja. Sie muss nur *zuordnen*, welcher
+   Abschnitt der Aufnahme zu welcher Silbe gehört — in der Sprachforschung heißt das
+   **forced alignment** und ist um Größenordnungen einfacher als Spracherkennung. Einfach
+   genug, dass es ohne Modell, ohne Server und ohne Bibliothek geht:
+
+   1. **Silbenkerne finden.** Jede Silbe hat einen Vokal, Vokale sind laut — in der
+      Lautstärkekurve ist eine Silbe ein Berg. Man sucht die Gipfel und verlangt, dass
+      zwischen zweien ein Tal von mindestens 3,5 dB liegt (Verfahren nach de Jong & Wempe
+      2009, mit dem die Sprechrate automatisch gemessen wird).
+   2. **Zuordnen.** Die gefundenen Gipfel werden auf die bekannten Silben verteilt. Stimmen
+      die Anzahlen nicht überein, wird das **ehrlich vermerkt** statt krummgebogen: Dann
+      erscheint keine Färbung, sondern der Hinweis „diesmal ließ sich nicht sicher zuordnen".
+
+   **Während des Lesens** wandert dadurch eine Markierung mit. **Danach** steht der Text
+   eingefärbt da:
+
+   | Farbe | Bedeutung |
+   |---|---|
+   | 🟢 grün | zügig und ohne Stocken |
+   | 🟡 gelb | etwas gedehnt |
+   | 🟠 orange | davor gestockt oder stark gedehnt |
+   | 🔴 rot | langer Halt davor, oder die Silbe ist im Ton nicht wiederzufinden |
+
+   **Was die Farben NICHT bedeuten:** ob ein Laut richtig ausgesprochen wurde. Ob ein „Sch"
+   sauber klingt, hört nur ein Mensch. Ein rotes Feld heißt **„hier hast du gehalten"**, nie
+   „das war falsch gesprochen" — und genau so steht es auch in der App.
+
+   **Betonung** wird getrennt geprüft: Im Deutschen liegt der Wortakzent auf der Stammsilbe,
+   Vorsilben wie *ver-, be-, ge-* sind unbetont. Welche Silbe das Kind hervorgehoben hat,
+   verrät die Lautstärke — daraus wird *„bei 5 von 7 Wörtern lag der Ton auf der richtigen
+   Silbe"*.
+
+   **Und der einzige Teil, der wirklich aus Erfahrung lernt:** Wörter, an denen es
+   regelmäßig hakt, sammeln sich als **Stolperwörter** an. Bei jeder Lesung schmilzt der
+   alte Wert ab und der neue kommt dazu — damit verschwindet ein einmaliges Verhaspeln von
+   selbst, ein Wort das immer wieder hängt bleibt oben, und der Speicher wächst nicht ins
+   Unendliche. Gespeichert wird **eine Zahl je Wort**, kein Ton.
+
    * **Keine Note fürs Vorlesen.** Das Kind sieht eine von vier Stufen (🌱 Wort für Wort →
      🌟 Fließend) und seine Zahlen, aber keine Punktzahl. Wer beim Vorlesen benotet wird, liest
      vorsichtiger statt flüssiger.
@@ -333,7 +372,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 19 · Stand 25.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 20 · Stand 25.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.
@@ -419,6 +458,7 @@ npm run test:lesen        # Leseauswertung an künstlichen Aufnahmen mit bekannt
 npm run test:skizze       # Schmierblatt: Zählen, Zurücknehmen, Reihenfolge
 npm run test:zahlfeld     # Zahleneingabe: alle 2037 Zahlantworten tippbar und anerkannt
 npm run test:kommentar    # Rückmeldungen: stimmen sie, und loben sie nie die Person?
+npm run test:aussprache   # Silben im Ton finden und zuordnen, an künstlichen Aufnahmen
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
@@ -441,6 +481,7 @@ js/avatar.js          Der Begleiter: Reaktionen, Gesten, Leerlauf und Schlaf
 js/skizze.js          Schmierblatt: Striche, Zählmarken, Rückgängig
 js/zahlfeld.js        Zahleneingabe mit Minus und Komma
 js/kommentar.js       Rückmeldung zur einzelnen Antwort (kein Sprachmodell – siehe Kopf)
+js/aussprache.js      Silben im Ton finden und dem bekannten Text zuordnen, Betonung prüfen
 js/silben.js          Deutsche Silbentrennung – Grundlage der Silbenfärbung
 js/lesen.js           Lesetexte und Auswertung der Leseflüssigkeit (Tempo, Pausen, Betonung)
 js/version.js         Fassung, Datum und Änderungsverlauf – die einzige Stelle dafür

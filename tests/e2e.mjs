@@ -520,6 +520,29 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   if (!(urteil.tempo > 0 && urteil.boegen === 3 && urteil.stufe >= 1 && urteil.stufe <= 4))
     throw new Error('Leseauswertung im Browser falsch: ' + JSON.stringify(urteil));
   console.log(`Leseauswertung im Browser: ${urteil.boegen} Bögen, ${urteil.tempo} Silben/Min, Stufe ${urteil.stufe} ✅`);
+
+  /* Silbe-fuer-Silbe-Zuordnung im echten Code: eine kuenstliche Aufnahme mit
+     vier Silben, bei der die dritte gestockt ist. */
+  const bild = await p.evaluate(async () => {
+    const A = await import('./js/aussprache.js');
+    const Si = await import('./js/silben.js');
+    const liste = Si.silben('Sonnenblume').map((text, i) => ({ text, wort:'Sonnenblume', imWort:i }));
+    const kurve = [];
+    const berg = (n, laut) => { for (let k=0;k<n;k++)
+      kurve.push(0.01 + laut * Math.max(0.12, Math.sin((k+0.5)/n*Math.PI))); };
+    const still = n => { for (let k=0;k<n;k++) kurve.push(0.01); };
+    still(8);
+    liste.forEach((s, i) => { if (i) still(i === 2 ? 36 : 2); berg(9, 0.5); });
+    still(8);
+    const z = A.zuordnen(liste, kurve, { schrittMs: 25 });
+    return { sicher: z.sicher, farben: z.silben.map(s => s.farbe) };
+  });
+  if (!bild.sicher) throw new Error('Zuordnung im Browser unsicher: ' + JSON.stringify(bild));
+  if (bild.farben[2] !== 'rot')
+    throw new Error('gestockte Silbe wird nicht rot: ' + bild.farben.join(', '));
+  if (bild.farben[0] !== 'gruen')
+    throw new Error('flüssige Silbe wird nicht grün: ' + bild.farben.join(', '));
+  console.log(`Silben eingefärbt: ${bild.farben.join(' · ')} ✅`);
   await p.click('#leseOhne');
   await p.waitForSelector('#weiter', { timeout: 5000 });
   await p.click('#weiter');

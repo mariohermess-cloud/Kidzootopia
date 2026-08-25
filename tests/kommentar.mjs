@@ -59,8 +59,14 @@ pruefe(/lange|Zeit|gedauert|drangeblieben/i.test(langeGerungen),
 const mitTipps = kommentar({ richtig: true, tipps: 3 });
 pruefe(/Hilfe|Tipp/i.test(mitTipps), `Tipps werden nicht verschwiegen: "${mitTipps}"`);
 
-const serie = kommentar({ richtig: true, serie: 7 });
-pruefe(/7|sieben|Folge|Läuft/i.test(serie), `lange Serie wird benannt: "${serie}"`);
+/* Alle Formulierungen prüfen, nicht eine zufällig gezogene: Sonst ist der
+   Test von der Zufallsauswahl abhängig und schlägt in etwa jedem vierten Lauf
+   grundlos fehl - genau das ist hier passiert. */
+const serienSaetze = new Set();
+for (let i = 0; i < 60; i++) serienSaetze.add(kommentar({ richtig: true, serie: 7 }));
+pruefe(serienSaetze.size >= 2, `mehrere Formulierungen für die Serie (${serienSaetze.size})`);
+pruefe([...serienSaetze].every(s => /Folge|Läuft|Stück|hintereinander|7\./i.test(s)),
+  `JEDE Serien-Formulierung nimmt Bezug auf die Serie: ${[...serienSaetze].join(' | ')}`);
 
 /* ------------------------------------------------ Kein Lob für die Person */
 

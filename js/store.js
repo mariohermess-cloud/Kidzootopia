@@ -93,6 +93,7 @@ function migriere(p) {
   p.gesehen     ||= {};   // je Ziel die zuletzt gestellten Aufgaben (Kurzkennung)
   p.lesungen    ||= [];   // Leseflüssigkeit je Durchgang (nur Zahlen, nie Ton)
   p.skizzen     ||= {};   // je Ziel: wie oft half eine Skizze beim Denken
+  p.stolper     ||= {};   // Wörter, bei denen es beim Vorlesen regelmäßig hakt
   p.galerie     ||= [];   // freie Zeichnungen (werden nicht bewertet)
   p.kunst       ||= { messungen: [], mensch: null };  // fachliches Zeichenprofil
   p.stats ||= {};
@@ -520,4 +521,51 @@ export function skizzenBild(profil) {
   if (!eintraege.length) return null;
   const gesamt = eintraege.reduce((s, [, n]) => s + n, 0);
   return { gesamt, ziele: eintraege.slice(0, 5) };
+}
+
+/* --------------------------- Stolperwörter ---------------------------
+
+   Der einzige Teil der App, der wirklich "aus Erfahrung lernt": Wörter, bei
+   denen ein Kind beim Vorlesen regelmässig stockt, sammeln sich an - und
+   Woerter, bei denen es laengst fluessig liest, verschwinden von selbst wieder.
+
+   Gespeichert wird ein einziger Zahlenwert je Wort, kein Ton, kein Text der
+   Aufnahme. Bei jeder Lesung wird der alte Wert leicht abgeschmolzen und der
+   neue dazugezaehlt (gleitender Durchschnitt). Damit gilt automatisch:
+     - ein einmaliges Verhaspeln verschwindet nach wenigen Lesungen
+     - ein Wort, das immer wieder haengt, bleibt oben
+     - der Speicher waechst nicht ins Unendliche
+   Das ist dieselbe Idee wie beim Vergessen: Was nicht aufgefrischt wird,
+   verblasst. */
+const VERFALL = 0.75;        // wie stark alte Werte je Lesung abschmelzen
+const STOLPER_MIN = 0.35;    // darunter fliegt ein Wort wieder raus
+const STOLPER_MAX = 40;      // mehr Wörter merkt sich niemand
+
+export function merkeStolper(profil, woerter = []) {
+  profil.stolper ||= {};
+  /* Erst alles abschmelzen: auch die Wörter, die diesmal NICHT gehakt haben. */
+  for (const w of Object.keys(profil.stolper)) {
+    profil.stolper[w] *= VERFALL;
+    if (profil.stolper[w] < STOLPER_MIN) delete profil.stolper[w];
+  }
+  /* Dann die von dieser Lesung dazu. */
+  for (const w of woerter) {
+    if (!w || w.length < 3) continue;
+    profil.stolper[w] = (profil.stolper[w] || 0) + 1;
+  }
+  /* Deckel: nur die hartnäckigsten behalten. */
+  const sortiert = Object.entries(profil.stolper).sort((a, b) => b[1] - a[1]);
+  if (sortiert.length > STOLPER_MAX)
+    profil.stolper = Object.fromEntries(sortiert.slice(0, STOLPER_MAX));
+  speichern();
+}
+
+/* Die hartnaeckigsten zuerst. Ein Wort taucht erst auf, wenn es mehr als
+   einmal gehakt hat - ein einzelnes Verhaspeln ist kein Muster. */
+export function stolperWoerter(profil, wieViele = 8) {
+  return Object.entries(profil.stolper || {})
+    .filter(([, wert]) => wert >= 1.5)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, wieViele)
+    .map(([wort, wert]) => ({ wort, staerke: Math.round(wert * 10) / 10 }));
 }
