@@ -92,6 +92,7 @@ function migriere(p) {
   p.etappe      ??= (p.klasse >= 8 ? 3 : p.klasse >= 5 ? 2 : 1);
   p.gesehen     ||= {};   // je Ziel die zuletzt gestellten Aufgaben (Kurzkennung)
   p.lesungen    ||= [];   // Leseflüssigkeit je Durchgang (nur Zahlen, nie Ton)
+  p.skizzen     ||= {};   // je Ziel: wie oft half eine Skizze beim Denken
   p.galerie     ||= [];   // freie Zeichnungen (werden nicht bewertet)
   p.kunst       ||= { messungen: [], mensch: null };  // fachliches Zeichenprofil
   p.stats ||= {};
@@ -278,7 +279,15 @@ export const etappeVon = profil => ETAPPEN.find(x => x.id === (profil.etappe || 
 
 /* Ergebnis einer Aufgabe verbuchen */
 export function verbuche(profil, { zielId, weg, level, richtig, bruecke, ms = 0,
-                                   tippsGenutzt = 0, knacknuss = false, keineWertung = false }) {
+                                   tippsGenutzt = 0, knacknuss = false, keineWertung = false,
+                                   skizze = false }) {
+  /* Wurde das Schmierblatt benutzt? Das ist keine Bewertung, sondern ein
+     Hinweis darauf, WIE das Kind denkt - und bei welchen Zielen es den
+     Umweg über ein Bild braucht. Zählt auch bei unbewerteten Aufgaben. */
+  if (skizze) {
+    profil.skizzen ||= {};
+    profil.skizzen[zielId] = (profil.skizzen[zielId] || 0) + 1;
+  }
   /* Denk-Impulse haben keine richtige Antwort. Sie zählen als getane Arbeit,
      fließen aber in keine Erfolgsquote ein – sonst wäre es eine Prüfung. */
   if (keineWertung) {
@@ -500,4 +509,15 @@ export function leseVerlauf(profil) {
       return paare.length ? Math.round(paare.reduce((a, b) => a + b, 0) / paare.length) : null;
     })()
   };
+}
+
+/* Wo hilft eine Skizze? Fuer den Eltern-Bereich. Es geht nicht darum, ob viel
+   oder wenig gemalt wird, sondern WO - das zeigt, welcher Zugang traegt. */
+export function skizzenBild(profil) {
+  const eintraege = Object.entries(profil.skizzen || {})
+    .filter(([, n]) => n > 0)
+    .sort((a, b) => b[1] - a[1]);
+  if (!eintraege.length) return null;
+  const gesamt = eintraege.reduce((s, [, n]) => s + n, 0);
+  return { gesamt, ziele: eintraege.slice(0, 5) };
 }

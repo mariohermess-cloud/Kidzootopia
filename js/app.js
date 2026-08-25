@@ -44,10 +44,26 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (schonGemeldet) return;
     schonGemeldet = true;
-    const hinweis = document.createElement('button');
-    hinweis.className = 'update-hinweis';
-    hinweis.textContent = '✨ Neue Fassung bereit – tippen zum Neustart';
-    hinweis.onclick = () => location.reload();
-    document.body.appendChild(hinweis);
+    zeigeSobaldEsPasst();
   });
+
+  /* Nicht mitten in einer Aufgabenrunde melden. Zwei Gründe: Der Streifen liegt
+     über der Bedienleiste und fängt dort Tipper ab, und ein Neustart mitten in
+     der Runde wirft den angefangenen Fortschritt weg. Also warten, bis das Kind
+     wieder auf einem ruhigen Bildschirm ist. */
+  const inEinerRunde = () => !!document.querySelector('#raus');
+
+  function zeigeSobaldEsPasst() {
+    if (inEinerRunde()) { setTimeout(zeigeSobaldEsPasst, 3000); return; }
+    if (document.querySelector('.update-hinweis')) return;
+
+    const streifen = document.createElement('div');
+    streifen.className = 'update-hinweis';
+    streifen.innerHTML = `
+      <button type="button" class="update-text">✨ Neue Fassung bereit – tippen zum Neustart</button>
+      <button type="button" class="update-weg" aria-label="Hinweis ausblenden">✕</button>`;
+    streifen.querySelector('.update-text').onclick = () => location.reload();
+    streifen.querySelector('.update-weg').onclick = () => streifen.remove();
+    document.body.appendChild(streifen);
+  }
 }

@@ -13,7 +13,8 @@
     "test:kunst": "node tests/kunst.mjs",
     "test:version": "node tests/version.mjs",
     "test:silben": "node tests/silben.mjs",
-    "test:lesen": "node tests/lesen.mjs"
+    "test:lesen": "node tests/lesen.mjs",
+    "test:skizze": "node tests/skizze.mjs"
   },
   "devDependencies": {
     "playwright": "^1.49.1"

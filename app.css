@@ -217,9 +217,12 @@ canvas.mini{width:100%;height:auto;aspect-ratio:1;background:var(--bg);
 
 /* Hinweis auf eine neue Fassung – schwebt über der Navigationsleiste */
 .update-hinweis{position:fixed;left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom));
-  z-index:20;border:0;border-radius:16px;padding:14px 16px;font:inherit;font-weight:700;
-  background:var(--brand);color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.22);cursor:pointer}
-.update-hinweis:active{transform:scale(.98)}
+  z-index:20;border-radius:16px;display:flex;align-items:stretch;overflow:hidden;
+  background:var(--brand);color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.22)}
+.update-hinweis button{border:0;background:none;color:inherit;font:inherit;font-weight:700;cursor:pointer}
+.update-text{flex:1;padding:14px 16px;text-align:left}
+.update-weg{padding:0 16px;font-size:1.1rem;opacity:.8}
+.update-hinweis button:active{transform:scale(.98)}
 
 /* Lesepult: Silbenfärbung, Pegel und Lesezahlen */
 .lesetext{font-size:1.45rem;line-height:2.1;font-weight:600;letter-spacing:.01em;
@@ -239,3 +242,13 @@ canvas.mini{width:100%;height:auto;aspect-ratio:1;background:var(--bg);
 .begleiter.beiseite{opacity:.25;transform:scale(.7);pointer-events:none}
 .begleiter.beiseite .blase{display:none}
 @media (prefers-reduced-motion: reduce){ .begleiter.beiseite{transition:none} }
+
+/* Schmierblatt: Nebenrechnung zum Mitmalen, an jeder Aufgabe */
+.schmier{margin-top:12px;border:1px dashed var(--line);border-radius:16px;background:var(--bg)}
+.schmier > summary{cursor:pointer;padding:12px 14px;font-weight:700;list-style:none}
+.schmier > summary::-webkit-details-marker{display:none}
+.schmier > summary::before{content:'▸ ';color:var(--muted)}
+.schmier[open] > summary::before{content:'▾ '}
+.schmier-inhalt{padding:0 14px 14px}
+.schmier-brett{display:block;width:100%;border-radius:12px;background:var(--card);
+  border:1px solid var(--line);touch-action:none;cursor:crosshair}

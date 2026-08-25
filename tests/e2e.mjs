@@ -326,6 +326,68 @@ await p.waitForSelector('#mission');
 const kopf = await p.textContent('#topName');
 const sw = await p.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length);
 console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
+// Schmierblatt: an einer normalen Aufgabe aufklappen, zeichnen, zaehlen, zurueck.
+{
+  await p.click('[data-ziel="einmaleins"]');
+  await p.waitForSelector('.task');
+  const blatt = await p.$('.schmier');
+  if (!blatt) throw new Error('Schmierblatt fehlt an einer Rechenaufgabe');
+  await p.click('.schmier > summary');
+  await p.waitForSelector('#schmierBrett', { state: 'visible' });
+  const k = await p.$eval('#schmierBrett', el => {
+    const r = el.getBoundingClientRect(); return { x:r.x, y:r.y, w:r.width, h:r.height };
+  });
+
+  /* Zeichnen: ein Strich quer ueber das Blatt. */
+  await p.mouse.move(k.x + k.w*.2, k.y + k.h*.3);
+  await p.mouse.down();
+  for (let i = 0; i <= 10; i++) await p.mouse.move(k.x + k.w*(.2 + i*.05), k.y + k.h*(.3 + i*.03));
+  await p.mouse.up();
+
+  /* Zaehlen: vier Punkte setzen. Die Anzeige muss mitzaehlen. */
+  await p.click('[data-wz="zaehlen"]');
+  for (const [dx, dy] of [[.2,.7],[.4,.7],[.6,.7],[.8,.7]])
+    await p.mouse.click(k.x + k.w*dx, k.y + k.h*dy);
+  let stand = await p.textContent('#zaehlStand');
+  if (!/4 Punkte/.test(stand)) throw new Error('Zählwerk zählt falsch: ' + stand);
+
+  /* Nochmal auf denselben Punkt: er verschwindet. */
+  await p.mouse.click(k.x + k.w*.8, k.y + k.h*.7);
+  stand = await p.textContent('#zaehlStand');
+  if (!/3 Punkte/.test(stand)) throw new Error('Punkt lässt sich nicht zurücknehmen: ' + stand);
+
+  /* Zurueck nimmt die zuletzt gesetzte Marke, nicht den alten Strich. */
+  await p.click('#schmierZurueck');
+  stand = await p.textContent('#zaehlStand');
+  if (!/2 Punkte/.test(stand)) throw new Error('Zurück nahm das Falsche: ' + stand);
+  console.log('Schmierblatt: zeichnen, zählen und zurück funktionieren ✅');
+  await p.screenshot({ path: `${S}/11-schmierblatt.png`, fullPage: true });
+
+  /* Nach dem Antworten muss die Skizze stehen bleiben - wer falsch lag, will
+     sie neben der Loesung sehen. */
+  await loeseAufgabe(p);
+  await p.waitForSelector('#weiter');
+  const nachher = await p.textContent('#zaehlStand').catch(() => '');
+  if (!/2 Punkte/.test(nachher)) throw new Error('Skizze ging beim Antworten verloren: ' + nachher);
+  console.log('Skizze bleibt nach der Antwort stehen ✅');
+  await p.click('#weiter');
+
+  /* Die naechste Aufgabe muss ein FRISCHES Blatt haben. */
+  await p.waitForSelector('.task');
+  const frisch = await p.$eval('#zaehlStand', el => el.hidden).catch(() => true);
+  if (frisch === false) throw new Error('Das Schmierblatt der vorigen Aufgabe steht noch da');
+  console.log('Jede Aufgabe bekommt ein frisches Blatt ✅');
+  for (let i = 0; i < 14 && !(await p.$('#nochmal')); i++) {
+    await p.waitForSelector('.task');
+    await loeseAufgabe(p);
+    await p.waitForSelector('#weiter');
+    await p.click('#weiter');
+  }
+  await p.waitForSelector('#nochmal', { timeout: 8000 });
+  await p.click('#heim');
+  await p.waitForSelector('#mission');
+}
+
 // Lautlesen: Silbenfaerbung im Browser und Auswertung im echten Code pruefen.
 {
   const knopf = await p.$('[data-ziel="lautlesen"]');
