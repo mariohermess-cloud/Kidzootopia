@@ -66,6 +66,14 @@ export function naechstesZiel(profil, fach = null) {
 }
 
 export function starteSession(profil, { zielId = null, fach = null, laenge = 8 } = {}) {
+  /* Wortlaut der Fragen dieser Runde. Manche Aufgaben teilen sich die Frage und
+     unterscheiden sich nur in den Antwortmöglichkeiten ("Welches Beispiel ist eine
+     Metonymie?"). Fachlich sind das verschiedene Aufgaben – für ein Kind liest es
+     sich aber wie dieselbe. Innerhalb einer Runde kommt jeder Wortlaut daher nur
+     einmal vor; über Runden hinweg zählt weiter Frage + Antwort, sonst wäre der
+     Vorrat mancher Ziele nach einem Nachmittag aufgebraucht. */
+  const wortlaute = new Set();
+
   const session = {
     laenge, index: 0, richtig: 0, verlauf: [], aktuell: null,
     zielId, fach,
@@ -78,23 +86,42 @@ export function starteSession(profil, { zielId = null, fach = null, laenge = 8 }
       // jede 5. Aufgabe bewusst ueber einen anderen Weg
       const erzwinge = (this.index + 1) % 5 === 0 ? true : (this.index === 0 ? false : null);
       const { weg, bruecke } = waehleWeg(profil, ziel, erzwinge);
-      // Keine Wiederholungen: bis zu 25 Versuche für eine noch ungestellte Aufgabe.
-      // Danach greift die Alterung im Speicher – sonst gäbe es bei festen
-      // Rätselsammlungen irgendwann gar keine Aufgabe mehr.
-      let aufgabe = null, k = null;
-      for (let versuch = 0; versuch < 25; versuch++) {
-        aufgabe = baueAufgabe(ziel.id, weg, stufe);
-        k = kennung(aufgabe);
-        if (!schonGehabt(profil, ziel.id, k)) break;
-        aufgabe = null;
+      /* Keine Wiederholungen. Zwei Dinge waren hier vorher falsch gedacht:
+
+         1. Eine feste Zahl an Versuchen reicht nicht. Sind von 20 Stilmitteln
+            schon 19 dran gewesen, trifft ein Zufallszug das letzte nur mit 1:20 –
+            mit 25 Versuchen ging das in gut jedem vierten Fall schief.
+         2. Wichtiger: Der Vorrat haengt am *Weg*. Ist der Vorrat des gewaehlten
+            Weges aufgebraucht, hilft auch beliebig langes Ziehen nicht mehr.
+            Dann ist der richtige Zug, den Weg zu wechseln – nicht, dem Kind
+            dieselbe Aufgabe noch einmal vorzusetzen. */
+      const ziehe = (w) => {
+        for (let versuch = 0; versuch < 400; versuch++) {
+          const kandidat = baueAufgabe(ziel.id, w, stufe);
+          const kk = kennung(kandidat);
+          if (schonGehabt(profil, ziel.id, kk)) continue;
+          if (wortlaute.has(kandidat.frage)) continue;
+          return { aufgabe: kandidat, k: kk, weg: w };
+        }
+        return null;
+      };
+
+      let zug = ziehe(weg);
+      if (!zug) for (const anderer of (ziel.wege || []).filter(w => w !== weg)) {
+        zug = ziehe(anderer);
+        if (zug) break;
       }
-      if (!aufgabe) {                       // Vorrat erschöpft: ältestes vergessen
+      if (!zug) {                     // wirklich alles durch: aeltestes vergessen
         (profil.gesehen[ziel.id] || []).splice(0, 10);
-        aufgabe = baueAufgabe(ziel.id, weg, stufe);
-        k = kennung(aufgabe);
+        const kandidat = baueAufgabe(ziel.id, weg, stufe);
+        zug = { aufgabe: kandidat, k: kennung(kandidat), weg };
       }
+      const { aufgabe, k } = zug;
+      const genutzterWeg = zug.weg;
+      wortlaute.add(aufgabe.frage);
+
       merkeAufgabe(profil, ziel.id, k);
-      this.aktuell = { ...aufgabe, ziel, bruecke, wegInfo: WEGE[weg] };
+      this.aktuell = { ...aufgabe, ziel, bruecke, weg: genutzterWeg, wegInfo: WEGE[genutzterWeg] };
       return this.aktuell;
     }
   };

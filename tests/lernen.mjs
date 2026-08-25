@@ -81,6 +81,23 @@ for (const [ziel, mindestens] of [['knacknuss',20],['hauptwerke',20],['gleichung
 }
 if (wiederholung.length) fehler.push('Wiederholungen: ' + wiederholung.join(', '));
 
+/* Der Vorrat haengt am Weg, nicht am Ziel. Ist der gewaehlte Weg leergezogen, muss
+   der Motor den Weg wechseln statt zu wiederholen – und derselbe Wortlaut darf in
+   einer Runde nicht zweimal kommen, auch wenn die Antwortmoeglichkeiten andere sind.
+   Beides ging frueher schief; der Fehler trat nur in etwa jedem vierten Lauf auf,
+   deshalb hier 30 Durchgaenge statt einem. */
+let knappGescheitert = 0;
+for (let runde = 0; runde < 30; runde++) {
+  const kind2 = S.neuesProfil({ name:'W'+runde, avatar:'🦊', etappe:5 });
+  const lauf2 = E.starteSession(kind2, { zielId:'stilmittel', laenge: 20 });
+  const worte = new Set();
+  let y;
+  while ((y = lauf2.naechste())) { worte.add(y.frage); lauf2.index++; }
+  if (worte.size < 20) knappGescheitert++;
+}
+console.log(`Knapper Vorrat (Stilmittel, 30 Runden à 20 Aufgaben): ${30 - knappGescheitert}/30 ohne Wiederholung`);
+if (knappGescheitert) fehler.push(`Vorrat am Ende: ${knappGescheitert} von 30 Runden mit Wiederholung`);
+
 /* Sachaufgaben müssen zur eigenen Lösung passen (früher widersprachen sich
    Geschichte und Gleichung). */
 const { baueAufgabe } = await import('../js/generators.js');

@@ -188,6 +188,16 @@ stellt eine Etappe höher.
 Motor zieht so lange neu, bis etwas kommt, das dieses Kind noch nicht hatte – erst wenn der
 Vorrat eines Ziels erschöpft ist, beginnt er von vorn (und vergisst dann die ältesten zuerst).
 
+Zwei Feinheiten, die erst der Dauerlauf zutage gefördert hat:
+
+* **Der Vorrat hängt am Weg, nicht am Ziel.** Sind die Stilmittel auf dem Knobel-Weg
+  durchgeübt, hilft weiteres Ziehen nichts mehr – die App **wechselt dann den Weg**, statt
+  dem Kind dieselbe Aufgabe noch einmal vorzusetzen.
+* **Derselbe Wortlaut zählt als Wiederholung.** Manche Aufgaben teilen sich die Frage und
+  unterscheiden sich nur in den Antwortmöglichkeiten („Welches Beispiel ist eine Metonymie?“).
+  Fachlich sind das verschiedene Aufgaben – für ein Kind liest es sich wie dieselbe. Innerhalb
+  einer Runde kommt jeder Wortlaut deshalb nur einmal vor.
+
 Aufgaben werden **generiert**, nicht aus einer Liste gezogen – der Vorrat geht nie aus.
 Aktuell: **31 Lernziele × bis zu 5 Wege = 110 Aufgabentypen**, darunter **1.394 verschiedene Knacknüsse** auf je 5 Schwierigkeitsstufen,
 verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
@@ -244,7 +254,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 15 · Stand 25.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 16 · Stand 25.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.
