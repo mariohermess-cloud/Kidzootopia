@@ -6,6 +6,7 @@ import * as S from './store.js';
 import { starteSession, empfehlungen, wegRanking, wegeNachWirkung, wegBewertung } from './engine.js';
 import { auswerten, stichPaare, engeTalente } from './talenttest.js';
 import { vorlesen, stopp, kannVorlesen } from './sprache.js';
+import { anleitung, umgebung } from './installhilfe.js';
 import { pruefe } from './generators.js';
 import { radar } from './chart.js';
 
@@ -73,6 +74,7 @@ function screenStart() {
       </div>
       <button class="btn" id="nAnlegen">Profil anlegen</button>
     </div>
+    ${umgebung().standalone ? '' : installHtml()}
     <details class="card">
       <summary style="cursor:pointer;font-weight:700">
         Alten Fortschritt übernehmen (optional)</summary>
@@ -95,6 +97,8 @@ function screenStart() {
         🔍 Was ist auf diesem Gerät gespeichert?</button>
       <div id="holBereich"></div>
     </details>`;
+
+  installVerdrahten(view());
 
   view().querySelector('#diagnose').onclick = () =>
     diagnoseAnzeigen(view().querySelector('#holBereich'));
@@ -154,6 +158,51 @@ function screenProfile() {
       S.loescheProfil(b.dataset.del); zeige(S.aktiv() ? 'profile' : 'start');
     }});
   view().querySelector('#neu').onclick = () => zeige('start');
+}
+
+/* Anleitung zum Ablegen auf dem Startbildschirm – passend zur erkannten Lage. */
+function installHtml() {
+  const a = anleitung();
+  if (!a) return `<div class="card"><h3>📲 Läuft als App ✅</h3>
+    <p class="muted small">Diese Fassung liegt auf dem Startbildschirm und hat einen eigenen,
+      geschützten Speicher. Genau so ist es richtig.</p></div>`;
+  return `
+    <div class="card" ${a.warnung ? 'style="border:2px solid var(--warn)"' : ''}>
+      <h3>${a.titel}</h3>
+      ${a.text ? `<p class="small">${a.text}</p>` : ''}
+      <ol class="small" style="padding-left:20px;line-height:1.8">
+        ${a.schritte.map(x => `<li>${x}</li>`).join('')}
+      </ol>
+      ${a.adresse ? `<p class="small"><b>Adresse zum Eintippen:</b></p>
+        <div class="row">
+          <input type="text" id="adressFeld" readonly value="${esc(location.origin + location.pathname)}"
+            style="font-size:.8rem">
+          <button class="btn small ghost" id="adressKopieren">📋</button>
+        </div>` : ''}
+      ${window.installPrompt ? `<button class="btn" id="installJetzt" style="margin-top:10px">
+        📲 Jetzt installieren</button>` : ''}
+      ${a.hinweise?.length ? `<ul class="clean small" style="margin-top:10px">
+        ${a.hinweise.map(h => `<li>💡 ${esc(h)}</li>`).join('')}</ul>` : ''}
+      <p class="small muted" style="margin-top:10px">Warum das wichtig ist: Nur die abgelegte App
+        hat einen eigenen Speicher. Im Browser räumt das iPhone nach einigen Tagen ohne Nutzung
+        selbsttätig auf – dann sind die Profile weg.</p>
+    </div>`;
+}
+
+function installVerdrahten(wurzel) {
+  wurzel.querySelector('#installJetzt')?.addEventListener('click', async () => {
+    const p = window.installPrompt;
+    if (!p) return;
+    window.installPrompt = null;
+    try { await p.prompt(); } catch {}
+    zeige(aktuelleRoute());
+  });
+  wurzel.querySelector('#adressKopieren')?.addEventListener('click', async () => {
+    const f = wurzel.querySelector('#adressFeld');
+    f.select(); f.setSelectionRange(0, 999999);
+    try { await navigator.clipboard.writeText(f.value); } catch { document.execCommand?.('copy'); }
+    f.style.borderColor = 'var(--ok)';
+  });
 }
 
 /* Zeigt ungeschönt, was im Speicher dieses Geräts liegt. Bei „meine Profile
@@ -822,16 +871,7 @@ function screenEltern(p) {
       <p class="small muted" style="margin-top:8px">Hörgeschichten werden immer vorgelesen –
         dort ist der Text zuerst versteckt, damit wirklich zugehört wird.</p>
     </div>
-    <div class="card" id="installKarte">
-      <h3>Als App aufs Handy</h3>
-      <p class="muted small">Kidzootopia läuft im Browser und lässt sich wie eine App auf den Startbildschirm legen –
-        danach startet sie im Vollbild und funktioniert auch offline.</p>
-      <button class="btn ghost" id="install" hidden>📲 Jetzt installieren</button>
-      <ul class="clean small">
-        <li><b>Android / Chrome:</b> Menü ⋮ → „App installieren“ bzw. „Zum Startbildschirm hinzufügen“.</li>
-        <li><b>iPhone / Safari:</b> Teilen-Symbol → „Zum Home-Bildschirm“.</li>
-      </ul>
-    </div>
+    ${installHtml()}
     <div class="card">
       <h3>Fortschritt sichern &amp; umziehen</h3>
       <p class="muted small">Alles liegt nur auf diesem Gerät – das schützt die Daten Ihres Kindes,

@@ -135,7 +135,18 @@ Startbildschirm legen lässt, im Vollbild startet und **offline** funktioniert.
 Kein App-Store, keine Installation, keine Konten.
 
 * **Android / Chrome:** Seite öffnen → Menü ⋮ → *App installieren*
-* **iPhone / Safari:** Seite öffnen → Teilen-Symbol → *Zum Home-Bildschirm*
+* **iPhone / Safari:** Seite öffnen → Teilen-Symbol → in der Liste **nach unten scrollen** →
+  *Zum Home-Bildschirm* → oben rechts *Hinzufügen*
+
+Die App erkennt selbst, woran es hakt, und zeigt die passende Anleitung an:
+
+* **Link aus einer anderen App geöffnet** (WhatsApp, Mail, Instagram): Deren eingebauter
+  Mini-Browser kann grundsätzlich keine App ablegen – der Punkt fehlt dort. Die App sagt das
+  und bietet die Adresse zum Kopieren an.
+* **Chrome oder Firefox auf dem iPhone**: Hinweis, dass zuverlässig nur Safari ablegen kann.
+* **Eintrag fehlt in der Teilen-Liste**: Ganz nach unten → *Aktionen bearbeiten* → grünes Plus.
+* **Privater Modus**: geht nicht, normalen Tab verwenden.
+* **Android/Chrome**: Wo möglich erscheint stattdessen ein Knopf *Jetzt installieren*.
 
 **Einmalig nötig:** GitHub Pages im Repository einschalten unter
 *Settings → Pages → Build and deployment → Source:* **GitHub Actions**.
