@@ -117,8 +117,24 @@ npm start            # startet einen Webserver auf http://localhost:8765
 ## Datenschutz
 
 Alles bleibt auf dem Gerät (`localStorage`). Keine Server, keine Konten, keine Werbung,
-keine Tracker, kein Netzwerkverkehr. Ein Backup erzeugen Eltern selbst über
-*Eltern → Fortschritt exportieren*. Mehrere Kinder können eigene Profile haben.
+keine Tracker, kein Netzwerkverkehr. Mehrere Kinder können eigene Profile haben.
+
+## Wenn Profile „verschwunden“ sind
+
+Zwei Eigenheiten der Browser lassen Fortschritt scheinbar verschwinden – in beiden Fällen
+hilft der **Umzugs-Code** unter *Eltern → Fortschritt sichern & umziehen*:
+
+1. **App und Browser haben getrennte Speicher.** Auf iOS besitzt eine zum Startbildschirm
+   hinzugefügte Web-App einen eigenen Datenbereich. In Safari angelegte Profile fehlen dort –
+   sie sind nicht gelöscht, nur an anderer Stelle.
+2. **Safari räumt nach 7 Tagen ohne Nutzung auf** (Tracking-Schutz). Die App fordert deshalb
+   beim Start dauerhaften Speicher an (`navigator.storage.persist()`); das hilft zuverlässig
+   in Chrome und bei installierten Apps, in Safari nur eingeschränkt.
+
+Der Umzugs-Code ist der ganze Fortschritt als kopierbarer Text – kein Konto, keine Datei,
+kein Server. Beim Einfügen wird **zusammengeführt statt überschrieben**: Bei gleichem Kind
+gewinnt der weiter fortgeschrittene Stand, andere Profile bleiben erhalten.
+Zusätzlich gibt es Export und Import als Datei für ein Backup am Rechner.
 
 ---
 
@@ -128,7 +144,7 @@ keine Tracker, kein Netzwerkverkehr. Ein Backup erzeugen Eltern selbst über
 npm run test:aufgaben   # prüft alle Generatoren: 13.200 Aufgaben auf Vollständigkeit & Eindeutigkeit
 npm run test:lernen     # prüft die Lernschleife: erkennt die App den wirksamen Weg?
 npm start &             # Server für den Durchklick-Test
-npm run test:e2e        # Profil anlegen → 5-teiliger Talent-Test → Mission → alle Bereiche → Neustart
+npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
 
 ---

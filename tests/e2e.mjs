@@ -99,6 +99,29 @@ for (const [r,f] of [['talente','7-talente'],['wege','8-wege'],['eltern','9-elte
   await p.waitForTimeout(180);
   await p.screenshot({path:`${S}/${f}.png`, fullPage:true});
 }
+// Umzugs-Code: Fortschritt sichern, Speicher leeren, wiederherstellen
+await p.click('.nav-btn[data-route="eltern"]');
+await p.waitForSelector('#codeZeigen');
+await p.click('#codeZeigen');
+await p.waitForSelector('#codeFeld');
+const umzugsCode = await p.$eval('#codeFeld', el => el.value);
+const aufgabenVorher = await p.evaluate(() =>
+  JSON.parse(localStorage.getItem('kidzootopia.v1')).profile[0].stats.aufgabenGesamt);
+await p.screenshot({path:S+'/y-umzug.png', fullPage:true});
+
+await p.evaluate(() => localStorage.removeItem('kidzootopia.v1'));   // "anderer Speicher"
+await p.reload();
+await p.waitForSelector('#holen');                                   // Startbildschirm mit Hilfe
+await p.click('#holen');
+await p.fill('#holFeld', umzugsCode);
+await p.click('#holUebernehmen');
+await p.waitForSelector('#mission', { timeout: 5000 });
+const aufgabenNachher = await p.evaluate(() =>
+  JSON.parse(localStorage.getItem('kidzootopia.v1')).profile[0].stats.aufgabenGesamt);
+if (aufgabenNachher !== aufgabenVorher)
+  throw new Error(`Umzug verlor Fortschritt: ${aufgabenVorher} -> ${aufgabenNachher}`);
+console.log('Umzugs-Code stellt Fortschritt wieder her:', aufgabenNachher, 'Aufgaben');
+
 // Reload -> Fortschritt bleibt?
 await p.reload();
 await p.waitForSelector('#mission');

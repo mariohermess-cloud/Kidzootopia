@@ -14,7 +14,7 @@ let db = leer();
 export function laden() {
   try {
     const roh = localStorage.getItem(KEY);
-    if (roh) db = { ...leer(), ...JSON.parse(roh) };
+    db = roh ? { ...leer(), ...JSON.parse(roh) } : leer();
   } catch { db = leer(); }
   db.profile.forEach(p => migriere(p));
   return db;
@@ -220,8 +220,20 @@ export function pruefeAbzeichen(profil) {
   return neu;
 }
 
-/* Export / Import fuer Eltern (Backup, Geraetewechsel) */
+/* ---------------------------------------------------------------------------
+   Sicherung und Umzug.
+
+   Zwei Fallen, die Fortschritt scheinbar verschwinden lassen:
+   1. Eine zum Startbildschirm hinzugefuegte App und der Browser haben auf iOS
+      GETRENNTE Speicher. Im Browser angelegte Profile sind in der App nicht da.
+   2. Safari loescht Daten von Webseiten nach 7 Tagen ohne Benutzung (Tracking-
+      Schutz). Auch das trifft eine Lern-App.
+   Dagegen: dauerhaften Speicher anfordern und einen einfachen Umzugsweg
+   anbieten, der ohne Dateien auskommt.
+   --------------------------------------------------------------------------- */
+
 export const exportieren = () => JSON.stringify(db, null, 2);
+
 export function importieren(text) {
   const eingelesen = JSON.parse(text);
   if (!Array.isArray(eingelesen.profile)) throw new Error('Datei passt nicht.');
@@ -229,4 +241,64 @@ export function importieren(text) {
   db.profile.forEach(migriere);
   speichern();
 }
+
+/* Fortschritt zusammenfuehren statt ersetzen: Profile mit gleicher Kennung
+   werden nach Anzahl geloester Aufgaben behalten (der weitere Stand gewinnt). */
+export function zusammenfuehren(text) {
+  const fremd = JSON.parse(text);
+  if (!Array.isArray(fremd.profile)) throw new Error('Diese Daten passen nicht.');
+  let neu = 0, ersetzt = 0;
+  fremd.profile.forEach(f => {
+    migriere(f);
+    const i = db.profile.findIndex(p => p.id === f.id);
+    if (i < 0) { db.profile.push(f); neu++; return; }
+    if ((f.stats?.aufgabenGesamt || 0) > (db.profile[i].stats?.aufgabenGesamt || 0)) {
+      db.profile[i] = f; ersetzt++;
+    }
+  });
+  if (!db.aktiv && db.profile.length) db.aktiv = db.profile[0].id;
+  speichern();
+  return { neu, ersetzt, gesamt: db.profile.length };
+}
+
+/* Umzugs-Code: der ganze Fortschritt als Text, den man kopieren und
+   in der anderen Fassung wieder einfuegen kann. Keine Datei noetig. */
+export function alsCode() {
+  const roh = new TextEncoder().encode(JSON.stringify(db));
+  let binaer = '';
+  roh.forEach(b => { binaer += String.fromCharCode(b); });
+  return btoa(binaer).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+export function ausCode(code) {
+  const sauber = String(code).trim().replace(/\s+/g,'').replace(/-/g,'+').replace(/_/g,'/');
+  const binaer = atob(sauber + '==='.slice((sauber.length + 3) % 4));
+  const bytes = Uint8Array.from(binaer, c => c.charCodeAt(0));
+  return zusammenfuehren(new TextDecoder().decode(bytes));
+}
+
+/* Dauerhaften Speicher anfordern – verhindert das automatische Aufraeumen. */
+export async function speicherSichern() {
+  try {
+    if (!navigator.storage?.persist) return { moeglich:false, dauerhaft:false };
+    const schon = await navigator.storage.persisted?.();
+    const dauerhaft = schon || await navigator.storage.persist();
+    return { moeglich:true, dauerhaft };
+  } catch { return { moeglich:false, dauerhaft:false }; }
+}
+
+export async function speicherStatus() {
+  try {
+    const dauerhaft = await navigator.storage?.persisted?.() ?? false;
+    const platz = await navigator.storage?.estimate?.() ?? null;
+    return { dauerhaft, belegt: platz?.usage ?? null };
+  } catch { return { dauerhaft:false, belegt:null }; }
+}
+
+/* Laeuft die App vom Startbildschirm (eigener Speicher) oder im Browser? */
+export function alsAppGestartet() {
+  return window.matchMedia?.('(display-mode: standalone)')?.matches
+      || window.navigator.standalone === true;
+}
+
 export function allesLoeschen() { db = leer(); speichern(); }

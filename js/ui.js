@@ -57,6 +57,15 @@ function screenStart() {
           <span class="muted small"> · Klasse ${p.klasse}</span>
         </button>`).join('')}</div></div>` : ''}
     <div class="card">
+      <h3>Schon einmal genutzt?</h3>
+      <p class="muted small">Wenn Profile fehlen, sind sie meist nicht gelöscht: Die App vom
+        Startbildschirm und der Browser haben getrennte Speicher. Holen Sie den Fortschritt
+        mit dem Umzugs-Code herüber – zu finden dort, wo die Profile noch da sind,
+        unter <b>Eltern → Fortschritt sichern &amp; umziehen</b>.</p>
+      <button class="btn quiet" id="holen">🔑 Umzugs-Code einfügen</button>
+      <div id="holBereich"></div>
+    </div>
+    <div class="card">
       <h2>${profile.length ? 'Neues Kind hinzufügen' : 'Los geht’s'}</h2>
       <label class="field"><span>Name</span><input type="text" id="nName" placeholder="z. B. Mia" maxlength="20"></label>
       <label class="field"><span>Klasse</span>
@@ -68,6 +77,26 @@ function screenStart() {
       </div>
       <button class="btn" id="nAnlegen">Profil anlegen</button>
     </div>`;
+
+  view().querySelector('#holen').onclick = () => {
+    const b = view().querySelector('#holBereich');
+    b.innerHTML = `
+      <textarea id="holFeld" rows="4" placeholder="Code hier einfügen …"
+        style="width:100%;margin-top:10px;font-family:ui-monospace,monospace;font-size:.72rem;
+               padding:10px;border-radius:12px;border:2px solid var(--line);
+               background:var(--bg);color:var(--ink)"></textarea>
+      <button class="btn small" id="holUebernehmen">Übernehmen</button>
+      <div id="holErgebnis" class="small" style="margin-top:8px"></div>`;
+    b.querySelector('#holUebernehmen').onclick = () => {
+      try {
+        const r = S.ausCode(b.querySelector('#holFeld').value);
+        b.querySelector('#holErgebnis').textContent = `✅ ${r.gesamt} Profil(e) wiederhergestellt.`;
+        setTimeout(() => zeige('lernen'), 900);
+      } catch (e) {
+        b.querySelector('#holErgebnis').textContent = '❌ Der Code passt nicht: ' + e.message;
+      }
+    };
+  };
 
   let gewaehlt = AVATARE[0];
   view().querySelectorAll('[data-av]').forEach(b => b.onclick = () => {
@@ -664,22 +693,96 @@ function screenEltern(p) {
       </ul>
     </div>
     <div class="card">
-      <h3>Daten</h3>
-      <p class="muted small">Alles bleibt auf diesem Gerät. Für einen Gerätewechsel oder ein Backup:</p>
-      <button class="btn ghost" id="export">📤 Fortschritt exportieren</button>
-      <button class="btn quiet" id="importBtn" style="margin-top:10px">📥 Fortschritt importieren</button>
+      <h3>Fortschritt sichern &amp; umziehen</h3>
+      <p class="muted small">Alles liegt nur auf diesem Gerät – das schützt die Daten Ihres Kindes,
+        macht sie aber auch verletzlich. Zwei Fallen sind bekannt:</p>
+      <ul class="clean small">
+        <li>📱 <b>App und Browser sind getrennt.</b> Auf dem iPhone hat die zum Startbildschirm
+          hinzugefügte App einen eigenen Speicher. Im Safari angelegte Profile fehlen dort –
+          sie sind nicht gelöscht, nur woanders. Der Umzugs-Code unten holt sie herüber.</li>
+        <li>🧹 <b>Safari räumt nach 7 Tagen ohne Nutzung auf.</b> Dagegen hilft: die App zum
+          Startbildschirm hinzufügen und regelmäßig nutzen – und ab und zu sichern.</li>
+      </ul>
+      <div id="speicherStatus" class="small muted" style="margin:10px 0"></div>
+      <button class="btn" id="codeZeigen">🔑 Umzugs-Code anzeigen</button>
+      <button class="btn ghost" id="codeEinfuegen" style="margin-top:10px">📥 Umzugs-Code einfügen</button>
+      <div id="codeBereich"></div>
+      <p class="small muted" style="margin-top:12px">Als Datei (für ein Backup am Rechner):</p>
+      <div class="row">
+        <button class="btn small ghost" id="export">📤 Datei</button>
+        <button class="btn small quiet" id="importBtn">📥 Datei laden</button>
+      </div>
       <input type="file" id="importFile" accept="application/json" hidden>
-      <button class="btn danger" id="reset" style="margin-top:10px">Alle Daten löschen</button>
-    </div>`;
+      <button class="btn danger" id="reset" style="margin-top:14px">Alle Daten löschen</button>
+    </div>
+`;
   view().querySelector('#profile').onclick = () => zeige('profile');
   view().querySelector('#vorleseSchalter').onclick = () => {
     p.vorlesen = !p.vorlesen; S.speichern(); zeige('eltern');
   };
-  if (window.installPrompt) {
-    const btn = view().querySelector('#install');
-    btn.hidden = false;
-    btn.onclick = async () => { window.installPrompt.prompt(); window.installPrompt = null; btn.hidden = true; };
-  }
+
+  /* Speicher-Status anzeigen und dauerhaften Speicher anfordern */
+  (async () => {
+    const feld = view().querySelector('#speicherStatus');
+    if (!feld) return;
+    const st = await S.speicherSichern();
+    const app = S.alsAppGestartet();
+    feld.innerHTML = `${app ? '📲 Läuft als App vom Startbildschirm' : '🌐 Läuft im Browser'} ·
+      ${st.dauerhaft ? '🔒 Speicher ist dauerhaft geschützt'
+        : '⚠️ Speicher nicht dauerhaft – bitte gelegentlich sichern'}`;
+  })();
+
+  const bereich = () => view().querySelector('#codeBereich');
+
+  view().querySelector('#codeZeigen').onclick = () => {
+    const code = S.alsCode();
+    bereich().innerHTML = `
+      <div class="card flat" style="margin-top:12px;background:var(--bg)">
+        <p class="small"><b>So ziehen Sie den Fortschritt um:</b> Diesen Code kopieren,
+          die andere Fassung öffnen (App bzw. Browser), dort auf
+          „Umzugs-Code einfügen“ tippen und einsetzen.</p>
+        <textarea id="codeFeld" readonly rows="4"
+          style="width:100%;font-family:ui-monospace,monospace;font-size:.72rem;padding:10px;
+                 border-radius:12px;border:2px solid var(--line);background:var(--card);
+                 color:var(--ink)">${esc(code)}</textarea>
+        <button class="btn small" id="kopieren" style="margin-top:8px">📋 Code kopieren</button>
+        <span class="small muted" id="kopiertHinweis"></span>
+      </div>`;
+    bereich().querySelector('#kopieren').onclick = async () => {
+      const feld = bereich().querySelector('#codeFeld');
+      feld.select(); feld.setSelectionRange(0, 999999);
+      try { await navigator.clipboard.writeText(code); }
+      catch { document.execCommand?.('copy'); }
+      bereich().querySelector('#kopiertHinweis').textContent = ' ✅ kopiert';
+    };
+  };
+
+  view().querySelector('#codeEinfuegen').onclick = () => {
+    bereich().innerHTML = `
+      <div class="card flat" style="margin-top:12px;background:var(--bg)">
+        <p class="small">Code hier einsetzen. Vorhandene Profile bleiben erhalten –
+          bei gleichem Kind gewinnt der weiter fortgeschrittene Stand.</p>
+        <textarea id="einfuegeFeld" rows="4" placeholder="Code hier einfügen …"
+          style="width:100%;font-family:ui-monospace,monospace;font-size:.72rem;padding:10px;
+                 border-radius:12px;border:2px solid var(--line);background:var(--card);
+                 color:var(--ink)"></textarea>
+        <button class="btn small" id="uebernehmen" style="margin-top:8px">Übernehmen</button>
+        <div id="einfuegeErgebnis" class="small" style="margin-top:8px"></div>
+      </div>`;
+    bereich().querySelector('#uebernehmen').onclick = () => {
+      const aus = bereich().querySelector('#einfuegeErgebnis');
+      try {
+        const r = S.ausCode(bereich().querySelector('#einfuegeFeld').value);
+        aus.innerHTML = `✅ Übernommen: ${r.neu} neu, ${r.ersetzt} aktualisiert,
+          ${r.gesamt} Profile insgesamt.`;
+        setTimeout(() => zeige('lernen'), 1200);
+      } catch (e) {
+        aus.innerHTML = `❌ Das hat nicht geklappt: ${esc(e.message)}<br>
+          <span class="muted">Bitte den ganzen Code einfügen, ohne fehlende Zeichen.</span>`;
+      }
+    };
+  };
+
   view().querySelector('#export').onclick = () => {
     const blob = new Blob([S.exportieren()], { type:'application/json' });
     const a = document.createElement('a');
@@ -690,9 +793,10 @@ function screenEltern(p) {
   view().querySelector('#importBtn').onclick = () => view().querySelector('#importFile').click();
   view().querySelector('#importFile').onchange = async e => {
     const f = e.target.files[0]; if (!f) return;
-    try { S.importieren(await f.text()); alert('Import erfolgreich.'); zeige('lernen'); }
-    catch (err) { alert('Import fehlgeschlagen: ' + err.message); }
+    try { S.zusammenfuehren(await f.text()); alert('Fortschritt übernommen.'); zeige('lernen'); }
+    catch (err) { alert('Hat nicht geklappt: ' + err.message); }
   };
+
   view().querySelector('#reset').onclick = () => {
     if (confirm('Wirklich ALLE Profile und Fortschritte löschen?')) { S.allesLoeschen(); zeige('start'); }
   };

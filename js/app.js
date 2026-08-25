@@ -4,6 +4,10 @@ import { zeige } from './ui.js';
 
 S.laden();
 
+/* Dauerhaften Speicher anfordern: verhindert, dass der Browser den Fortschritt
+   nach einigen Tagen ohne Nutzung selbsttätig aufräumt. */
+S.speicherSichern();
+
 document.querySelectorAll('.nav-btn').forEach(b =>
   b.addEventListener('click', () => zeige(b.dataset.route)));
 document.getElementById('avatarBtn').addEventListener('click', () => zeige('profile'));
