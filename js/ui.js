@@ -14,6 +14,7 @@ import { NUMMER, STAND, VERLAUF } from './version.js';
 import { textInSilben } from './silben.js';
 import * as Lesen from './lesen.js';
 import * as Aussprache from './aussprache.js';
+import * as Punkte from './punkte.js';
 import * as Skizze from './skizze.js';
 import * as Zahl from './zahlfeld.js';
 import { kommentar, vorlesbar } from './kommentar.js';
@@ -55,6 +56,13 @@ function kopfzeile(p) {
     p.testGemacht ? `${TALENTE[t].emoji} ${TALENTE[t].name} · ${S.etappeVon(p).name}`
                   : `${S.etappeVon(p).name} · Talent-Test offen`;
   document.getElementById('streakCount').textContent = S.serieAktuell(p);
+  const stand = p.stats?.punkte || 0;
+  const feld = document.getElementById('punkteZahl');
+  if (feld) {
+    feld.textContent = stand >= 1000 ? (stand/1000).toFixed(1).replace('.', ',') + 'k' : stand;
+    document.getElementById('punkteBox').title =
+      `${stand} Punkte · ${Punkte.rang(stand).emoji} ${Punkte.rang(stand).name}`;
+  }
 }
 
 /* ------------------------------ Start / Profil ------------------------------ */
@@ -301,6 +309,59 @@ function skizzenKarte(p) {
         Zeichen. Es zeigt, wo der Weg über ein Bild führt statt über den Kopf – und genau
         dort lohnt es sich, zu Hause auch mit Stift und Papier zu arbeiten.
         „Zeichne eine Skizze" ist bei Polya ein eigener Schritt beim Problemlösen.</p>
+    </div>`;
+}
+
+
+/* Punktekarte am Ende einer Runde: Zuwachs, Rang und der Vergleich mit der
+   eigenen besten Runde. Bewusst kein "leider" und kein "nur" – unter der
+   Bestleistung zu bleiben ist der Normalfall, nicht ein Versagen. */
+function punkteKarte(p, punkteDerRunde, besteVorher) {
+  const stand = p.stats?.punkte || 0;
+  const r = Punkte.rang(stand);
+  const blick = Punkte.rundenBlick(punkteDerRunde, besteVorher);
+  return `
+    <div class="card">
+      <div class="row spread" style="align-items:flex-end">
+        <div><div class="small muted">Diese Runde</div>
+          <div style="font-size:2rem;font-weight:800;line-height:1.1">+${punkteDerRunde}</div></div>
+        <div style="text-align:right"><div class="small muted">Insgesamt</div>
+          <div style="font-size:1.3rem;font-weight:800">${stand}</div></div>
+      </div>
+      <div class="small ${blick.rekord ? '' : 'muted'}" style="margin-top:8px;font-weight:${blick.rekord?'800':'600'}">
+        ${blick.rekord ? '🏆 ' : ''}${esc(blick.text)}
+      </div>
+      <div class="row spread small" style="margin-top:14px">
+        <span><b>${r.emoji} ${esc(r.name)}</b></span>
+        ${r.naechster ? `<span class="muted">noch ${r.bisZumNaechsten} bis ${r.naechster.emoji} ${esc(r.naechster.name)}</span>`
+                      : '<span class="muted">höchster Rang</span>'}
+      </div>
+      <div class="bar" style="margin-top:6px"><i style="width:${Math.round(r.anteil*100)}%"></i></div>
+    </div>`;
+}
+
+/* Vergleich auf dem Gerät – Geschwister nebeneinander. Nur, wenn es überhaupt
+   mehr als ein Profil gibt, und mit dem Hinweis, dass ein Erstklässler und
+   eine Achtklässlerin nicht dasselbe Spiel spielen. */
+function vergleichKarte(p) {
+  const liste = Punkte.rangliste(S.alleProfile());
+  if (liste.length < 2) return '';
+  const ETAPPENNAME = { 1:'Grundschule', 2:'Mittelstufe', 3:'Oberstufe', 4:'Studium', 5:'Erwachsene' };
+  return `
+    <div class="card">
+      <h3>🏅 Vergleich auf diesem Gerät</h3>
+      ${liste.map((x, i) => `
+        <div class="talent-row${x.id === p.id ? ' ich' : ''}">
+          <span class="em">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '·'}</span>
+          <div class="tx"><b>${esc(x.avatar || '')} ${esc(x.name)}${x.id === p.id ? ' (du)' : ''}</b>
+            <div class="small muted">${x.rang.emoji} ${esc(x.rang.name)} ·
+              ${esc(ETAPPENNAME[x.etappe] || '')} · ${x.aufgaben} Aufgaben</div></div>
+          <span class="val">${x.punkte}</span>
+        </div>`).join('')}
+      <p class="small muted" style="margin-top:10px">Die Punkte hängen davon ab, wie viel
+        geübt wurde – nicht davon, wer klüger ist. Wer in einer höheren Etappe rechnet,
+        bekommt für dieselbe Aufgabe auch mehr Punkte. Ein Vergleich zwischen verschiedenen
+        Etappen sagt deshalb wenig; ein Vergleich mit der eigenen letzten Woche sagt viel.</p>
     </div>`;
 }
 
@@ -961,6 +1022,30 @@ function screenTest(p) {
       <div class="bar" style="margin:12px 0 18px"><i style="width:${i/n*100}%"></i></div>`;
   };
 
+  /* Ein Zurück-Knopf an JEDER Frage, nicht nur im ersten Teil.
+     Vorher hatte nur Teil 1 einen – wer sich in Teil 2 bis 5 vertippt hatte,
+     kam nicht mehr zurück und musste den ganzen Test von vorn machen oder mit
+     der falschen Antwort leben. Der Knopf springt auch über Teilgrenzen: von
+     der ersten Frage eines Teils zur letzten Frage des vorigen. */
+  const laengen = () => [likert.length, paare.length, szenarien.length, proben.length, stich.length];
+
+  const zurueckKnopf = (teilNr, i) => {
+    if (teilNr === 0 && i === 0) return '';     // ganz am Anfang gibt es kein Zurück
+    return `<button class="btn quiet small" id="zurueck" style="margin-top:14px">← zurück</button>`;
+  };
+
+  const zurueckVerdrahten = (teilNr, i) => {
+    const knopf = view().querySelector('#zurueck');
+    if (!knopf) return;
+    knopf.onclick = () => {
+      if (i > 0) return starts[teilNr](i - 1);
+      /* Erste Frage eines Teils: zurück in den vorigen Teil, an dessen Ende. */
+      const vorher = teilNr - 1;
+      const wieViele = laengen()[vorher];
+      starts[vorher](Math.max(0, wieViele - 1));
+    };
+  };
+
   /* Zwischenstand: weitermachen oder Ergebnis ansehen */
   const pause = (naechsterTeil) => {
     const teil = TEST_TEILE[naechsterTeil];
@@ -989,13 +1074,13 @@ function screenTest(p) {
         <p class="task pop">${esc(f.q)}</p>
         <div class="scale">${SKALA.map(sk =>
           `<button data-v="${sk.v}"><b>${sk.em}</b><small>${sk.label}</small></button>`).join('')}</div>
-        ${i>0?'<button class="btn quiet small" id="zurueck" style="margin-top:14px">← zurück</button>':''}
+        ${zurueckKnopf(0, i)}
       </div>
       <p class="muted small center">Es gibt kein Richtig oder Falsch. Antworte einfach ehrlich.</p>`;
     view().querySelectorAll('[data-v]').forEach(b => b.onclick = () => {
       antworten.likert[i] = { t: f.t, v: Number(b.dataset.v) }; teil1(i+1);
     });
-    view().querySelector('#zurueck')?.addEventListener('click', () => teil1(i-1));
+    zurueckVerdrahten(0, i);
   };
 
   /* Teil 2: Entweder-oder */
@@ -1011,11 +1096,13 @@ function screenTest(p) {
           <button class="choice" data-w="${ea}" data-l="${eb}">${esc(ta)}</button>
           <button class="choice" data-w="${eb}" data-l="${ea}">${esc(tb)}</button>
         </div>
+        ${zurueckKnopf(1, i)}
       </div>
       <p class="muted small center">Auch wenn du beides magst: Wähl das, was dir zuerst Spaß macht.</p>`;
     view().querySelectorAll('[data-w]').forEach(b => b.onclick = () => {
       antworten.paare[i] = { gewinner: b.dataset.w, verlierer: b.dataset.l }; teil2(i+1);
     });
+    zurueckVerdrahten(1, i);
   };
 
   /* Teil 3: Szenarien */
@@ -1027,10 +1114,12 @@ function screenTest(p) {
         <p class="task pop">${esc(f.q)}</p>
         <div class="choices">${opts.map(o =>
           `<button class="choice" data-t="${o.t}">${esc(o.text)}</button>`).join('')}</div>
+        ${zurueckKnopf(2, i)}
       </div>`;
     view().querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
       antworten.szenarien[i] = { gewaehlt: b.dataset.t, angeboten: f.opt.map(o => o.t) }; teil3(i+1);
     });
+    zurueckVerdrahten(2, i);
   };
 
   /* Teil 4: Kleine Proben – mit Zeitmessung */
@@ -1042,12 +1131,14 @@ function screenTest(p) {
         <p class="task pop">${esc(f.q)}</p>
         <div class="choices">${mischen([...f.optionen]).map(o =>
           `<button class="choice" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+        ${zurueckKnopf(3, i)}
       </div>
       <p class="muted small center">Denk nach – aber trödle nicht. Beides zählt.</p>`;
     view().querySelectorAll('[data-o]').forEach(b => b.onclick = () => {
       antworten.proben[i] = { t: f.t, richtig: b.dataset.o === f.a, ms: performance.now() - start };
       teil4(i+1);
     });
+    zurueckVerdrahten(3, i);
   };
 
   /* Teil 5: Feinschliff – nur dort, wo Talente dicht beieinander liegen */
@@ -1064,10 +1155,12 @@ function screenTest(p) {
           <button class="choice" data-w="${f.a}" data-l="${f.b}">${esc(f.fa)}</button>
           <button class="choice" data-w="${f.b}" data-l="${f.a}">${esc(f.fb)}</button>
         </div>
+        ${zurueckKnopf(4, i)}
       </div>`;
     view().querySelectorAll('[data-w]').forEach(b => b.onclick = () => {
       antworten.stich[i] = { gewinner: b.dataset.w, verlierer: b.dataset.l }; teil5(i+1);
     });
+    zurueckVerdrahten(4, i);
   };
 
   const starts = [teil1, teil2, teil3, teil4, teil5];
@@ -1451,6 +1544,7 @@ function screenSession(p, opts = {}) {
         <button class="btn" id="weiter" style="margin-top:12px">
           ${sess.index >= sess.laenge ? 'Ergebnis ansehen' : 'Weiter →'}</button>` : `
         <div class="feedback ${ergebnis?'ok':'bad'} pop">
+          ${a.punkte > 0 ? `<div class="punktezuwachs">+${a.punkte} Punkte</div>` : ''}
           ${a.kommentar ? `<div class="kommentar">${esc(a.kommentar)}</div>` : ''}
           ${a.leseWerte ? leseRueckmeldung(a) : zeichenAufgabe
             ? (ergebnis ? `✅ Getroffen! ${esc(eingabe)}` : `🖌️ Noch nicht ganz: ${esc(eingabe)}`)
@@ -1508,6 +1602,12 @@ function screenSession(p, opts = {}) {
         wegName: a.wegInfo?.name || '', knacknuss: !!a.knacknuss });
       if (p.vorlesen && vorlesbar(a.kommentar)) vorlesen(a.kommentar);
     }
+    /* Wie viele Punkte diese Antwort gebracht hat – dieselbe Rechnung wie im
+       Speicher, damit die Anzeige nicht von der Buchung abweichen kann. */
+    a.punkte = Punkte.punkteFuer({ richtig: ok, level: a.level || 1, serie: standNachher.serie,
+      tipps: tippsGenutzt, knacknuss: !!a.knacknuss, keineWertung: !!a.keineWertung });
+    sess.punkte = (sess.punkte || 0) + a.punkte;
+    kopfzeile(p);
     Avatar.reagiere(ok ? 'richtig' : 'falsch', { serie: standNachher.serie });
     if (ok && navigator.vibrate) navigator.vibrate(20);
     render(a, ok, String(eingabe));
@@ -1517,11 +1617,15 @@ function screenSession(p, opts = {}) {
     Avatar.reagiere('fertig');
     const quote = proz(sess.richtig, sess.laenge);
     const neueAbzeichen = S.pruefeAbzeichen(p);
+    /* Erst die alte Bestleistung holen, DANN die neue merken – sonst wäre
+       jede Runde ihr eigener Rekord. */
+    const besteVorher = S.merkeRunde(p, sess.punkte || 0);
     const perWeg = {};
     sess.verlauf.forEach(v => { (perWeg[v.weg] ||= {ok:0,n:0}); perWeg[v.weg].n++; if (v.ok) perWeg[v.weg].ok++; });
     view().innerHTML = `
       <div class="hero"><h1>${quote>=80?'Stark! 🌟':quote>=50?'Gut gemacht! 👏':'Weiter so! 💪'}</h1>
         <p>${sess.richtig} von ${sess.laenge} richtig · ${quote} %</p></div>
+      ${punkteKarte(p, sess.punkte || 0, besteVorher)}
       <div class="card">
         <h3>Deine Wege in dieser Runde</h3>
         ${Object.entries(perWeg).map(([w,v]) => `<div class="talent-row">
@@ -1941,6 +2045,7 @@ function screenEltern(p) {
       <input type="file" id="importFile" accept="application/json" hidden>
       <button class="btn danger" id="reset" style="margin-top:14px">Alle Daten löschen</button>
     </div>
+    ${vergleichKarte(p)}
     ${skizzenKarte(p)}
     ${leseProfilKarte(p)}
     ${versionsKarte()}

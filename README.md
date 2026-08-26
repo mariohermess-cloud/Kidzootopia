@@ -320,6 +320,28 @@ Aufgaben werden **generiert**, nicht aus einer Liste gezogen – der Vorrat geht
 Aktuell: **31 Lernziele × bis zu 5 Wege = 110 Aufgabentypen**, darunter **1.394 verschiedene Knacknüsse** auf je 5 Schwierigkeitsstufen,
 verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
 
+
+17. **Punkte, Ränge und Vergleich** ⭐ – *ohne dass es zur Note wird*
+   Punkte sind erwünscht, aber sie dürfen nicht dasselbe tun wie Noten. Vier Entscheidungen
+   halten sie auseinander:
+   * **Punkte gehen nie verloren.** Eine falsche Antwort gibt **null, niemals Abzug**. Wer
+     Angst vor Punktverlust hat, wählt die leichte Aufgabe – und lernt weniger. Der Stand
+     kann nur steigen. Der Durchklicktest prüft das über eine ganze Runde nach.
+   * **Schwerer gibt mehr.** Die Stufe zählt kräftig mit (Stufe 5 bringt gut das Doppelte von
+     Stufe 1). Damit lohnt sich das Schwierige statt des Leichten.
+   * **Auch das Unbewertete zählt.** Ein Denk-Impuls, ein freies Bild, ein vorgelesener Text
+     geben Punkte fürs Machen – weniger als eine gelöste Aufgabe, aber nicht nichts. Sonst
+     wären ausgerechnet die offenen Aufgaben im Punktesystem tote Gleise.
+   * **Tipps kosten etwas, aber nie alles.** Es bleibt ein Boden: Hilfe holen ist besser als
+     aufgeben.
+
+   Acht Ränge von 🌱 *Neugierig* bis 🌟 *Gelehrte:r*, mit Balken zum nächsten. Nach jeder
+   Runde der Vergleich **mit der eigenen besten Runde** – und im Eltern-Bereich, sobald mehr
+   als ein Profil auf dem Gerät ist, die **Geschwister nebeneinander**. Eine Bestenliste im
+   Netz gibt es nicht: Es gibt keinen Server. Daneben steht, was der Vergleich wert ist –
+   wer in einer höheren Etappe rechnet, bekommt für dieselbe Aufgabe mehr Punkte.
+
+
 ---
 
 ## Auf dem Handy nutzen
@@ -372,7 +394,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 20 · Stand 25.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 21 · Stand 25.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.
@@ -459,6 +481,7 @@ npm run test:skizze       # Schmierblatt: Zählen, Zurücknehmen, Reihenfolge
 npm run test:zahlfeld     # Zahleneingabe: alle 2037 Zahlantworten tippbar und anerkannt
 npm run test:kommentar    # Rückmeldungen: stimmen sie, und loben sie nie die Person?
 npm run test:aussprache   # Silben im Ton finden und zuordnen, an künstlichen Aufnahmen
+npm run test:punkte       # Punkte: nie Abzug, Schweres lohnt mehr, Unbewertetes zählt mit
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
@@ -482,6 +505,7 @@ js/skizze.js          Schmierblatt: Striche, Zählmarken, Rückgängig
 js/zahlfeld.js        Zahleneingabe mit Minus und Komma
 js/kommentar.js       Rückmeldung zur einzelnen Antwort (kein Sprachmodell – siehe Kopf)
 js/aussprache.js      Silben im Ton finden und dem bekannten Text zuordnen, Betonung prüfen
+js/punkte.js          Punkte, Ränge und der Vergleich auf dem Gerät
 js/silben.js          Deutsche Silbentrennung – Grundlage der Silbenfärbung
 js/lesen.js           Lesetexte und Auswertung der Leseflüssigkeit (Tempo, Pausen, Betonung)
 js/version.js         Fassung, Datum und Änderungsverlauf – die einzige Stelle dafür

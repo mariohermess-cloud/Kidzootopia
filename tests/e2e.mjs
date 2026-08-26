@@ -83,10 +83,18 @@ await p.waitForSelector('#testStart');
 await p.screenshot({path:S+'/1-test-start.png', fullPage:true});
 await p.click('#testStart');
 
-const teilDurchspielen = async () => {
+/* Gemeldeter Fehler: Der Zurueck-Knopf gab es nur im ersten Testteil. Also
+   wird ab jetzt bei JEDER Frage geprueft, ob er da ist - ausser bei der
+   allerersten, wo es nichts gibt, wohin man zurueck koennte. */
+const zurueckFehlt = [];
+let frageNr = 0;
+
+const teilDurchspielen = async (teilNr) => {
   for (let n = 0; n < 60; n++) {
     if (await p.$('#weiterTeil')) return 'pause';
     if (await p.$('#losgehts')) return 'fertig';
+    frageNr++;
+    if (frageNr > 1 && !(await p.$('#zurueck'))) zurueckFehlt.push('Teil ' + teilNr);
     if (await p.$('.scale [data-v]')) { await p.click(`.scale [data-v="${[4,3,2,1][n%4]}"]`); continue; }
     if (await p.$('.choice')) { await p.click('.choice'); continue; }
     return 'unbekannt';
@@ -94,16 +102,19 @@ const teilDurchspielen = async () => {
   return 'zu-lang';
 };
 
-let zustand = await teilDurchspielen();
+let zustand = await teilDurchspielen(1);
 let teile = 1;
 while (zustand === 'pause') {
   if (teile === 1) await p.screenshot({path:S+'/2-teil-pause.png', fullPage:true});
   await p.click('#weiterTeil');
-  zustand = await teilDurchspielen();
   teile++;
+  zustand = await teilDurchspielen(teile);
 }
 if (zustand !== 'fertig') throw new Error('Talent-Test endete unerwartet: ' + zustand);
 console.log('Testteile durchgespielt:', teile);
+if (zurueckFehlt.length)
+  throw new Error('Zurück-Knopf fehlt in Testteil(en): ' + [...new Set(zurueckFehlt)].join(', '));
+console.log('Zurück-Knopf in jedem Testteil vorhanden ✅');
 await p.waitForSelector('#losgehts');
 await p.screenshot({path:S+'/3-radar.png', fullPage:true});
 await p.click('#losgehts');
@@ -341,6 +352,40 @@ await p.waitForSelector('#mission');
 const kopf = await p.textContent('#topName');
 const sw = await p.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length);
 console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
+// Punkte: Kopfzeile zaehlt mit, Zuwachs erscheint, Rundenbilanz steht am Ende.
+{
+  await bannerWeg(p);
+  const vorher = Number((await p.textContent('#punkteZahl')).replace(',', '.').replace('k', '000'));
+  await p.click('#mission');
+  await p.waitForSelector('.task');
+  await loeseAufgabe(p);
+  await p.waitForSelector('#weiter');
+  const stand = async () =>
+    Number((await p.textContent('#punkteZahl')).replace(',', '.').replace('k', '000'));
+  let letzter = await stand();
+  if (letzter < vorher) throw new Error(`Punktestand sinkt: ${vorher} → ${letzter}`);
+  await p.click('#weiter');
+  /* Über die ganze Runde: Der Stand darf NIE fallen (falsch gibt null, nie
+     Abzug) und muss am Ende gestiegen sein. */
+  for (let i = 0; i < 14 && !(await p.$('#nochmal')); i++) {
+    await p.waitForSelector('.task'); await loeseAufgabe(p);
+    await p.waitForSelector('#weiter');
+    const jetzt = await stand();
+    if (jetzt < letzter) throw new Error(`Punkte wurden abgezogen: ${letzter} → ${jetzt}`);
+    letzter = jetzt;
+    await p.click('#weiter');
+  }
+  if (!(letzter > vorher))
+    throw new Error(`Nach einer ganzen Runde keine Punkte dazu: ${vorher} → ${letzter}`);
+  console.log(`Punktestand über die Runde: ${vorher} → ${letzter}, nie gefallen ✅`);
+  await p.waitForSelector('#nochmal', { timeout: 8000 });
+  const bilanz = await p.textContent('.card');
+  if (!/Diese Runde/.test(bilanz)) throw new Error('Keine Punktebilanz am Rundenende');
+  console.log('Punktebilanz am Rundenende ✅');
+  await p.screenshot({ path: `${S}/13-punkte.png`, fullPage: true });
+  await p.click('#heim'); await p.waitForSelector('#mission');
+}
+
 // Silbenaufgaben und der gesprochene Kommentar: beides im echten Browser.
 {
   await bannerWeg(p);

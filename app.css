@@ -278,3 +278,9 @@ canvas.mini{width:100%;height:auto;aspect-ratio:1;background:var(--bg);
 .silblegende .pkt{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px}
 .pkt.gruen{background:rgba(34,170,110,.75)} .pkt.gelb{background:rgba(235,190,40,.85)}
 .pkt.orange{background:rgba(240,150,50,.9)} .pkt.rot{background:rgba(230,80,80,.9)}
+
+/* Punkte: Kopfzeile, Zuwachs, Vergleich */
+.punktestand{background:var(--brand-soft);color:var(--brand);font-weight:700;
+  border-radius:999px;padding:4px 10px;font-size:.85rem;white-space:nowrap}
+.punktezuwachs{font-weight:800;font-size:1.05rem;margin-bottom:6px}
+.talent-row.ich{background:var(--brand-soft);border-radius:12px;padding:6px 8px;margin:0 -8px 12px}

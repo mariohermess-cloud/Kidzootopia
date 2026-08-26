@@ -1,6 +1,7 @@
 /* Speicher: Profile, Fortschritt, Talent-Werte. Alles lokal im Geraet (localStorage).
    Keine Konten, keine Server, keine Daten von Kindern nach draussen. */
 
+import { punkteFuer } from './punkte.js';
 import { TALENTE, WEGE, ZIELE, ABZEICHEN, ETAPPEN } from './data.js';
 import { auswerten } from './talenttest.js';
 
@@ -99,6 +100,8 @@ function migriere(p) {
   p.stats ||= {};
   p.stats.aufgabenGesamt  ??= 0;
   p.stats.richtigGesamt   ??= 0;
+  p.stats.punkte          ??= 0;   // Gesamtpunkte – können nur steigen, nie fallen
+  p.stats.besteRunde      ??= 0;   // beste Runde bisher: der Vergleich mit sich selbst
   p.stats.brueckenRichtig ??= 0;
   p.stats.ohneTipp        ??= 0;   // Knacknüsse ohne Tipp gelöst
   p.stats.streak          ??= 0;
@@ -294,6 +297,10 @@ export function verbuche(profil, { zielId, weg, level, richtig, bruecke, ms = 0,
   if (keineWertung) {
     const s = profil.stats;
     s.aufgabenGesamt++;
+    /* Auch das Unbewertete gibt Punkte – sonst wären Denk-Impulse, freie Bilder
+       und das Vorlesen im Punktesystem tote Aufgaben, und genau die würde dann
+       niemand mehr anfassen. */
+    s.punkte = (s.punkte || 0) + punkteFuer({ keineWertung: true });
     s.tage[heute()] = (s.tage[heute()]||0) + 1;
     profil.wegeGenutzt[weg] = (profil.wegeGenutzt[weg]||0) + 1;
     tagesSerie(profil);
@@ -328,6 +335,10 @@ export function verbuche(profil, { zielId, weg, level, richtig, bruecke, ms = 0,
 
   const s = profil.stats;
   s.aufgabenGesamt++; if (richtig) s.richtigGesamt++;
+  /* Punkte können nur steigen: falsch gibt null, nie Abzug. Wer Angst vor
+     Punktverlust hat, wählt die leichte Aufgabe – und lernt weniger. */
+  s.punkte = (s.punkte || 0) + punkteFuer({ richtig, level, serie: z.serie,
+                                            tipps: tippsGenutzt, knacknuss });
   if (richtig && bruecke) s.brueckenRichtig++;
   if (richtig && knacknuss && tippsGenutzt === 0) s.ohneTipp++;
   s.tage[heute()] = (s.tage[heute()]||0) + 1;
@@ -568,4 +579,12 @@ export function stolperWoerter(profil, wieViele = 8) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, wieViele)
     .map(([wort, wert]) => ({ wort, staerke: Math.round(wert * 10) / 10 }));
+}
+
+/* Beste Runde merken – der Vergleich mit sich selbst. */
+export function merkeRunde(profil, punkteDerRunde) {
+  const s = profil.stats;
+  const vorher = s.besteRunde || 0;
+  if (punkteDerRunde > vorher) { s.besteRunde = punkteDerRunde; speichern(); }
+  return vorher;
 }
