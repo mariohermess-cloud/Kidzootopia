@@ -284,3 +284,11 @@ canvas.mini{width:100%;height:auto;aspect-ratio:1;background:var(--bg);
   border-radius:999px;padding:4px 10px;font-size:.85rem;white-space:nowrap}
 .punktezuwachs{font-weight:800;font-size:1.05rem;margin-bottom:6px}
 .talent-row.ich{background:var(--brand-soft);border-radius:12px;padding:6px 8px;margin:0 -8px 12px}
+
+/* Sicherheitsfrage: der Knopf verwandelt sich in die Rückfrage */
+.nachfrage{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  gap:10px;margin-top:10px;background:var(--bad-soft);border-radius:14px;padding:12px;
+  font-weight:600;width:100%;flex-basis:100%}
+.nachfrage .btn{white-space:nowrap}
+/* Solange gefragt wird, tritt der Rest der Knopfleiste zurück */
+.row.fragt > *:not(.nachfrage){display:none}

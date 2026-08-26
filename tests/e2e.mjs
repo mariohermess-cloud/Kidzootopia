@@ -503,6 +503,31 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   console.log('Schmierblatt: zeichnen, zählen und zurück funktionieren ✅');
   await p.screenshot({ path: `${S}/11-schmierblatt.png`, fullPage: true });
 
+  /* Sicherheitsfrage: "Leeren" darf die Arbeit nicht ohne Rueckfrage wegwerfen -
+     aber bei einem LEEREN Blatt darf es auch nicht nerven. */
+  await p.click('#schmierLeeren');
+  if (!(await p.$('.nachfrage'))) throw new Error('Leeren fragt nicht nach, obwohl etwas gemalt ist');
+  await p.click('[data-nein]');
+  if (await p.$('.nachfrage')) throw new Error('Abbrechen schließt die Rückfrage nicht');
+  let nochDa = await p.textContent('#zaehlStand');
+  if (!/2 Punkte/.test(nochDa)) throw new Error('Abbrechen hat trotzdem gelöscht: ' + nochDa);
+  console.log('Rückfrage vor dem Leeren, Abbrechen behält die Skizze ✅');
+
+  await p.click('#schmierLeeren');
+  await p.click('[data-ja]');
+  const leer = await p.$eval('#zaehlStand', el => el.hidden).catch(() => true);
+  if (leer === false) throw new Error('Nach dem Bestätigen ist das Blatt nicht leer');
+  /* Jetzt ist es leer - eine zweite Rueckfrage waere nur noch laestig. */
+  await p.click('#schmierLeeren');
+  if (await p.$('.nachfrage'))
+    throw new Error('Ein leeres Blatt zu leeren fragt nach – das nervt und macht die Rückfrage wertlos');
+  console.log('Leeres Blatt fragt NICHT nach ✅');
+
+  /* Fuer die naechste Pruefung wieder etwas malen. */
+  await p.click('[data-wz="zaehlen"]');
+  const k2 = await lage();
+  for (const [dx, dy] of [[.3,.5],[.6,.5]]) await p.mouse.click(k2.x + k2.width*dx, k2.y + k2.height*dy);
+
   /* Nach dem Antworten muss die Skizze stehen bleiben - wer falsch lag, will
      sie neben der Loesung sehen. */
   await loeseAufgabe(p);

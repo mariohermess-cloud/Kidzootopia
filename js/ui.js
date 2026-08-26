@@ -365,6 +365,55 @@ function vergleichKarte(p) {
     </div>`;
 }
 
+
+/* ------------------------ Sicherheitsfrage ------------------------
+   Vor allem, was Arbeit wegwirft: erst nachfragen. Absichtlich KEIN
+   confirm() des Browsers – das sieht in einer App vom Startbildschirm fremd
+   aus, lässt sich nicht gestalten und in manchen Fassungen gar nicht öffnen.
+   Stattdessen verwandelt sich der Knopf selbst in die Frage.
+
+   Wichtig ist die zweite Bedingung: Gefragt wird nur, wenn es überhaupt etwas
+   zu verlieren gibt. Ein leeres Blatt zu leeren muss niemand bestätigen –
+   sonst wird die Rückfrage zur Gewohnheit und damit wirkungslos. */
+function mitNachfrage(knopf, { frage, jaText = 'Ja, neu', wennEtwasDaIst = () => true, dann }) {
+  if (!knopf) return;
+  const urspruenglich = knopf.outerHTML;
+  knopf.onclick = () => {
+    if (!wennEtwasDaIst()) return dann();      // nichts zu verlieren: sofort tun
+
+    const zeile = document.createElement('div');
+    zeile.className = 'nachfrage';
+    zeile.innerHTML = `
+      <span class="small">${esc(frage)}</span>
+      <span class="row" style="gap:8px">
+        <button type="button" class="btn small danger" data-ja>${esc(jaText)}</button>
+        <button type="button" class="btn small quiet" data-nein>Abbrechen</button>
+      </span>`;
+    /* Steht der Knopf in einer Knopfleiste, bekommt die Frage die Zeile für
+       sich – sonst quetscht sie die Nachbarknöpfe zusammen und niemand liest
+       sie. Nur bei einer echten Leiste, nicht irgendwo im Bildschirm: sonst
+       würde die Frage den halben Inhalt ausblenden. */
+    const leiste = knopf.parentElement?.classList.contains('row') ? knopf.parentElement : null;
+    leiste?.classList.add('fragt');
+    knopf.replaceWith(zeile);
+
+    /* Nach BEIDEN Wegen muss der ursprüngliche Knopf zurückkommen – auch nach
+       "Ja". Beim ersten Entwurf blieb er nach dem Bestätigen verschwunden,
+       und man konnte kein zweites Mal leeren. Der Durchklicktest hat das
+       gefunden, weil er zweimal hintereinander geleert hat. */
+    const knopfZurueck = () => {
+      leiste?.classList.remove('fragt');
+      const huelle = document.createElement('div');
+      huelle.innerHTML = urspruenglich;
+      const neu = huelle.firstElementChild;
+      zeile.replaceWith(neu);
+      mitNachfrage(neu, { frage, jaText, wennEtwasDaIst, dann });
+    };
+    zeile.querySelector('[data-ja]').onclick = () => { knopfZurueck(); dann(); };
+    zeile.querySelector('[data-nein]').onclick = knopfZurueck;
+  };
+}
+
 /* ------------------------------ Schmierblatt ------------------------------
    Nebenrechnung zum Mitmalen, an jeder Aufgabe. Standardmäßig zugeklappt,
    damit es die Aufgabe nicht verdeckt – aber immer einen Tipp entfernt.
@@ -494,7 +543,12 @@ function schmierblatt(a, host) {
     werkzeug = b.dataset.wz; werkzeugZeigen();
   });
   huelle.querySelector('#schmierZurueck').onclick = () => { Skizze.zurueck(blatt); malen(); };
-  huelle.querySelector('#schmierLeeren').onclick = () => { Skizze.leeren(blatt); malen(); };
+  mitNachfrage(huelle.querySelector('#schmierLeeren'), {
+    frage: 'Das ganze Schmierblatt leeren?',
+    jaText: 'Ja, leeren',
+    wennEtwasDaIst: () => !Skizze.istLeer(blatt),
+    dann: () => { Skizze.leeren(blatt); malen(); }
+  });
   huelle.addEventListener('toggle', () => {
     a.blattOffen = huelle.open;
     if (huelle.open) groesse();
@@ -856,7 +910,12 @@ function zeichenbrett(a, bereich, fertig) {
   leinwand.addEventListener('pointercancel', loslassen);
   leinwand.addEventListener('pointerleave', loslassen);
 
-  bereich.querySelector('#brettLeeren').onclick = () => { striche = []; malen(); };
+  mitNachfrage(bereich.querySelector('#brettLeeren'), {
+    frage: 'Alles wegwischen und neu anfangen?',
+    jaText: 'Ja, neu',
+    wennEtwasDaIst: () => striche.some(s => s.length),
+    dann: () => { striche = []; malen(); }
+  });
   bereich.querySelector('#brettZurueck').onclick = () => { striche.pop(); malen(); };
   bereich.querySelector('#brettFertig').onclick = () => {
     if (!striche.flat().length) { hinweis.textContent = 'Da ist noch nichts gezeichnet.'; return; }
@@ -1463,7 +1522,12 @@ function screenSession(p, opts = {}) {
           if (gelegt.length === a.elemente.length) auswerten(a, gelegt.join(' → '));
           else zeichnen();
         });
-        bereich.querySelector('#reset')?.addEventListener('click', () => { gelegt = []; zeichnen(); });
+        mitNachfrage(bereich.querySelector('#reset'), {
+          frage: 'Alles wieder wegnehmen und neu legen?',
+          jaText: 'Ja, neu legen',
+          wennEtwasDaIst: () => gelegt.length > 0,
+          dann: () => { gelegt = []; zeichnen(); }
+        });
       };
       zeichnen();
 
@@ -1673,7 +1737,14 @@ function screenTalente(p) {
     <button class="btn ghost" id="retest" style="margin-top:10px">Talent-Test ${p.testGemacht?'wiederholen':'starten'}</button>
     <p class="muted small center" style="margin-top:8px">Kinder verändern sich – der Test darf alle paar Monate neu gemacht werden.</p>`;
   view().querySelector('#galerie').onclick = () => zeige('galerie');
-  view().querySelector('#retest').onclick = () => zeige('test');
+  /* Der Talent-Test überschreibt das bisherige Talentbild. Beim ERSTEN Mal
+     gibt es nichts zu verlieren – dann wird auch nicht gefragt. */
+  mitNachfrage(view().querySelector('#retest'), {
+    frage: 'Der Test beginnt von vorn und ersetzt dein bisheriges Talent-Radar. Wirklich?',
+    jaText: 'Ja, von vorn',
+    wennEtwasDaIst: () => !!p.testGemacht,
+    dann: () => zeige('test')
+  });
 }
 
 /* ------------------------------ Galerie ------------------------------ */

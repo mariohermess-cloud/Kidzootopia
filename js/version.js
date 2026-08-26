@@ -9,11 +9,15 @@
    Bei jeder Änderung: NUMMER hier hochzählen UND in sw.js (CACHE) gleichziehen.
    tests/version.mjs prüft, dass beide übereinstimmen. */
 
-export const NUMMER = 21;
+export const NUMMER = 22;
 export const STAND = '25.08.2026';
 
 /* Neueste zuerst. Kurz und in Alltagssprache – das lesen Eltern, nicht Entwickler. */
 export const VERLAUF = [
+  { nr: 22, stand: '25.08.2026', was: [
+    'Sicherheitsfrage, bevor Arbeit weggeworfen wird: Zeichnung leeren, Schmierblatt leeren, neu legen, Talent-Test wiederholen',
+    'Gefragt wird nur, wenn es etwas zu verlieren gibt – ein leeres Blatt zu leeren fragt nicht nach'
+  ]},
   { nr: 21, stand: '25.08.2026', was: [
     'Zurück-Knopf im Talent-Test an JEDER Frage – vorher gab es ihn nur im ersten Teil',
     'Punkte für jede Aufgabe, mit Rang und bester Runde',

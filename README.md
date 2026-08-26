@@ -342,6 +342,19 @@ verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
    wer in einer höheren Etappe rechnet, bekommt für dieselbe Aufgabe mehr Punkte.
 
 
+18. **Sicherheitsfrage vor dem Wegwerfen** ⚠️
+   Vier Knöpfe warfen Arbeit weg, ohne zu fragen: *↺ Nochmal* auf dem Zeichenbrett,
+   *↺ Leeren* am Schmierblatt, *↺ Nochmal legen* beim Ordnen und *Talent-Test wiederholen*
+   (der das ganze Talent-Radar ersetzt). Jetzt verwandelt sich der Knopf in die Frage —
+   bewusst **kein `confirm()` des Browsers**: Das sieht in einer App vom Startbildschirm
+   fremd aus, lässt sich nicht gestalten und öffnet in manchen Fassungen gar nicht.
+   * **Gefragt wird nur, wenn es etwas zu verlieren gibt.** Ein leeres Blatt zu leeren fragt
+     nicht nach — sonst wird die Rückfrage zur Gewohnheit und damit wirkungslos.
+   * Beim **ersten** Talent-Test wird nicht gefragt, beim Wiederholen schon.
+   * Solange gefragt wird, tritt der Rest der Knopfleiste zurück, damit die Frage nicht
+     zwischen die Nachbarknöpfe gequetscht wird.
+
+
 ---
 
 ## Auf dem Handy nutzen
@@ -394,7 +407,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 21 · Stand 25.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 22 · Stand 25.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.
