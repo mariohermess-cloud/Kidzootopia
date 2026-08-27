@@ -292,3 +292,10 @@ canvas.mini{width:100%;height:auto;aspect-ratio:1;background:var(--bg);
 .nachfrage .btn{white-space:nowrap}
 /* Solange gefragt wird, tritt der Rest der Knopfleiste zurück */
 .row.fragt > *:not(.nachfrage){display:none}
+
+/* Rückblick am Rundenende: jede Antwort mit Erklärung */
+.rueckblick > summary{cursor:pointer;list-style:none}
+.rueckblick > summary::-webkit-details-marker{display:none}
+.rueckblick-item{padding:10px 0;border-top:1px solid var(--line)}
+.rueckblick-item:first-child{border-top:none}
+.rueckblick-frage{font-weight:700}

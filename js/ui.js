@@ -414,6 +414,37 @@ function mitNachfrage(knopf, { frage, jaText = 'Ja, neu', wennEtwasDaIst = () =>
   };
 }
 
+
+/* Rückblick am Rundenende: jede Frage mit gegebener und richtiger Antwort,
+   und - wo vorhanden - einer Erklärung dazu. Nichts wird dabei erfunden: Hat
+   eine Aufgabe keine hinterlegte Erklärung, steht dort nur Frage und Antwort.
+   Zeichnen und Vorlesen haben keine "richtige Antwort" im selben Sinn und
+   ihre eigene Rückmeldung bereits während des Spiels bekommen - sie bleiben
+   hier aussen vor, damit die Liste nicht in die Irre führt. */
+function rueckblickKarte(sess) {
+  const eintraege = sess.verlauf.filter(v => v.typ !== 'zeichnen' && v.typ !== 'lesen' && v.frage);
+  if (!eintraege.length) return '';
+  /* Nur die erste Zeile der Frage - viele Aufgaben haengen einen Tipp oder
+     eine zweite Zeile an, die hier nur ablenken wuerde. */
+  const kurz = f => String(f).split('\n')[0];
+  return `
+    <details class="card rueckblick">
+      <summary><h3 style="display:inline">📖 Deine Antworten in dieser Runde ansehen</h3></summary>
+      <div style="margin-top:10px">
+        ${eintraege.map(v => `
+          <div class="rueckblick-item ${v.ok ? 'ok' : 'bad'}">
+            <div class="rueckblick-frage">${v.ok ? '✅' : '❌'} ${esc(kurz(v.frage))}</div>
+            ${v.ok
+              ? `<div class="small muted">Antwort: <b>${esc(String(v.antwort))}</b></div>`
+              : `<div class="small muted">Deine Antwort: <b>${esc(String(v.eingabe))}</b> ·
+                   richtig wäre: <b>${esc(String(v.antwort))}</b></div>`}
+            ${v.erklaerung ? `<div class="small" style="margin-top:4px;font-weight:500">
+              💡 ${esc(v.erklaerung)}</div>` : ''}
+          </div>`).join('')}
+      </div>
+    </details>`;
+}
+
 /* ------------------------------ Schmierblatt ------------------------------
    Nebenrechnung zum Mitmalen, an jeder Aufgabe. Standardmäßig zugeklappt,
    damit es die Aufgabe nicht verdeckt – aber immer einen Tipp entfernt.
@@ -1649,7 +1680,14 @@ function screenSession(p, opts = {}) {
     sess.index++;
     if (a.keineWertung) sess.laenge--;          // zählt nicht in die Quote der Runde
     else if (ok) sess.richtig++;
-    if (!a.keineWertung) sess.verlauf.push({ ziel:a.ziel.id, weg:a.weg, ok, bruecke:a.bruecke, ms });
+    if (!a.keineWertung) sess.verlauf.push({
+      ziel:a.ziel.id, weg:a.weg, ok, bruecke:a.bruecke, ms,
+      /* Für den Rückblick am Rundenende: Frage, gegebene und richtige Antwort,
+         und die Erklärung, falls diese Aufgabe eine mitbringt (quelle oder
+         hilfe – nichts wird dafür erfunden, wo keine da ist). */
+      typ: a.typ, frage: a.frage, eingabe, antwort: a.antwort,
+      erklaerung: a.quelle || a.hilfe || null
+    });
     // Zeit fliesst in die Wirksamkeit eines Weges ein – schnell und sicher zaehlt mehr.
     S.verbuche(p, { zielId:a.ziel.id, weg:a.weg, level:a.level, richtig:ok, bruecke:a.bruecke, ms,
                     tippsGenutzt, knacknuss: !!a.knacknuss, keineWertung: !!a.keineWertung,
@@ -1690,6 +1728,7 @@ function screenSession(p, opts = {}) {
       <div class="hero"><h1>${quote>=80?'Stark! 🌟':quote>=50?'Gut gemacht! 👏':'Weiter so! 💪'}</h1>
         <p>${sess.richtig} von ${sess.laenge} richtig · ${quote} %</p></div>
       ${punkteKarte(p, sess.punkte || 0, besteVorher)}
+      ${rueckblickKarte(sess)}
       <div class="card">
         <h3>Deine Wege in dieser Runde</h3>
         ${Object.entries(perWeg).map(([w,v]) => `<div class="talent-row">

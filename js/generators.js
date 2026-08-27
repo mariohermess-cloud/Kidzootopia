@@ -281,36 +281,65 @@ vokabeln: (() => {
 
 /* ---------------- Allgemeinwissen ---------------- */
 allgemein: (() => {
+  /* Jeder Eintrag traegt jetzt eine Erklaerung als viertes Feld - sie wird
+     nach der Antwort gezeigt, egal ob richtig oder falsch beantwortet. Ohne
+     sie stand da nur "richtig waere X", ohne zu sagen, WARUM. */
   const FAKT = [
-    ['Welcher Planet ist der Erde am nächsten zur Sonne hin?','Venus',['Mars','Jupiter','Saturn']],
-    ['Wie viele Beine hat eine Spinne?','8',['6','10','4']],
-    ['Welches Organ pumpt das Blut durch den Körper?','das Herz',['die Lunge','der Magen','die Leber']],
-    ['Wie viele Kontinente gibt es?','7',['5','6','9']],
-    ['Was ist die Hauptstadt von Deutschland?','Berlin',['Hamburg','München','Köln']],
-    ['Welches ist das größte Tier der Erde?','Blauwal',['Elefant','Giraffe','Hai']],
-    ['Wie viele Minuten hat eine Stunde?','60',['100','30','24']],
-    ['Wie viele Knochen hat ein erwachsener Mensch ungefähr?','206',['150','320','80']]
+    ['Welcher Planet ist der Erde am nächsten zur Sonne hin?','Venus',['Mars','Jupiter','Saturn'],
+      'Von der Sonne aus: Merkur, Venus, Erde, Mars. Die Venus ist unsere Nachbarin nach innen.'],
+    ['Wie viele Beine hat eine Spinne?','8',['6','10','4'],
+      'Acht Beine unterscheiden Spinnen von Insekten – Insekten haben genau sechs.'],
+    ['Welches Organ pumpt das Blut durch den Körper?','das Herz',['die Lunge','der Magen','die Leber'],
+      'Das Herz ist ein Muskel, der sich etwa 70-mal pro Minute zusammenzieht und das Blut durch die Adern presst.'],
+    ['Wie viele Kontinente gibt es?','7',['5','6','9'],
+      'Afrika, Amerika (Nord und Süd getrennt gezählt), Antarktika, Asien, Australien, Europa.'],
+    ['Was ist die Hauptstadt von Deutschland?','Berlin',['Hamburg','München','Köln'],
+      'Berlin ist seit der Wiedervereinigung 1990 wieder Hauptstadt und Sitz von Bundestag und Regierung.'],
+    ['Welches ist das größte Tier der Erde?','Blauwal',['Elefant','Giraffe','Hai'],
+      'Ein ausgewachsener Blauwal kann über 30 Meter lang und schwerer als 20 Elefanten sein.'],
+    ['Wie viele Minuten hat eine Stunde?','60',['100','30','24'],
+      'Die Einteilung in 60 stammt aus dem alten Babylon – daher zählen wir bis heute in Sechzigern.'],
+    ['Wie viele Knochen hat ein erwachsener Mensch ungefähr?','206',['150','320','80'],
+      'Babys haben über 300 Knochen; viele wachsen im Laufe des Lebens zusammen.']
   ];
   const STORY = [
-    ['📖 Ein Bäcker steht um 3 Uhr nachts auf. Warum?','Damit die Brötchen morgens frisch sind',['Weil er nicht schlafen kann','Weil nachts Ferien sind','Weil der Laden nachts offen ist']],
-    ['📖 Im Herbst verlieren viele Bäume ihre Blätter. Warum?','Um im Winter Wasser zu sparen',['Weil die Blätter schwer sind','Weil Vögel sie fressen','Weil es dunkel wird']],
-    ['📖 Auf einer Landkarte ist Wasser meist blau. Was ist dann grün?','flaches Land',['Städte','Berge über 3000 m','Straßen']]
+    ['📖 Ein Bäcker steht um 3 Uhr nachts auf. Warum?','Damit die Brötchen morgens frisch sind',
+      ['Weil er nicht schlafen kann','Weil nachts Ferien sind','Weil der Laden nachts offen ist'],
+      'Teig muss backen und Brötchen müssen fertig sein, bevor die Kundschaft morgens kommt.'],
+    ['📖 Im Herbst verlieren viele Bäume ihre Blätter. Warum?','Um im Winter Wasser zu sparen',
+      ['Weil die Blätter schwer sind','Weil Vögel sie fressen','Weil es dunkel wird'],
+      'Über die Blätter verdunstet Wasser. Im Winter ist der Boden gefroren und der Baum kann kaum Wasser nachholen.'],
+    ['📖 Auf einer Landkarte ist Wasser meist blau. Was ist dann grün?','flaches Land',
+      ['Städte','Berge über 3000 m','Straßen'],
+      'Kartenfarben zeigen meist die Höhe: Grün steht für niedrig gelegenes Land, Braun und Weiß für Berge.']
   ];
   const SCHAETZ = [
-    ['🧠 Was ist schwerer: 1 kg Federn oder 1 kg Steine?','Beides gleich schwer',['1 kg Steine','1 kg Federn']],
-    ['🧠 Was dauert länger: ein Jahr auf der Erde oder ein Tag?','ein Jahr',['ein Tag','gleich lang']],
-    ['🧠 Welche Strecke ist länger: 1000 m oder 1 km?','Beide gleich lang',['1000 m','1 km']],
-    ['🧠 Was ist heißer: kochendes Wasser oder ein Eiswürfel?','kochendes Wasser',['der Eiswürfel','gleich']]
+    ['🧠 Was ist schwerer: 1 kg Federn oder 1 kg Steine?','Beides gleich schwer',['1 kg Steine','1 kg Federn'],
+      'Ein Kilogramm ist ein Kilogramm – nur der Rauminhalt ist verschieden, Federn brauchen viel mehr Platz.'],
+    ['🧠 Was dauert länger: ein Jahr auf der Erde oder ein Tag?','ein Jahr',['ein Tag','gleich lang'],
+      'Ein Tag ist eine Erdumdrehung um sich selbst, ein Jahr eine ganze Runde um die Sonne – das dauert viel länger.'],
+    ['🧠 Welche Strecke ist länger: 1000 m oder 1 km?','Beide gleich lang',['1000 m','1 km'],
+      '„Kilo" bedeutet tausend – ein Kilometer ist per Definition genau 1000 Meter.'],
+    ['🧠 Was ist heißer: kochendes Wasser oder ein Eiswürfel?','kochendes Wasser',['der Eiswürfel','gleich'],
+      'Wasser kocht bei 100 °C, Eis liegt bei 0 °C oder darunter – ein großer Unterschied.']
   ];
   const ALLTAG = [
-    ['🤝 Welche Nummer wählst du im Notfall (Feuerwehr/Rettung) in Europa?','112',['110 für Feuer','911','119']],
-    ['🤝 Die Ampel für Fußgänger zeigt Rot. Was tust du?','Warten, bis sie grün ist',['Schnell laufen','Winken und gehen','Auf die Straße treten']],
-    ['🤝 Ein Kind auf dem Schulhof ist gestürzt und weint. Was hilft zuerst?','Fragen, ob es Hilfe braucht, und Hilfe holen',['Weglaufen','Lachen','Nichts sagen']],
-    ['🤝 Jemand im Netz fragt dich nach deiner Adresse. Was tust du?','Nichts verraten und Erwachsene fragen',['Adresse schicken','Foto schicken','Telefonnummer geben']]
+    ['🤝 Welche Nummer wählst du im Notfall (Feuerwehr/Rettung) in Europa?','112',
+      ['110 für Feuer','911','119'],
+      '112 gilt in ganz Europa für Feuerwehr und Rettungsdienst, auch ohne Guthaben auf dem Handy. 110 ist in Deutschland die Polizei.'],
+    ['🤝 Die Ampel für Fußgänger zeigt Rot. Was tust du?','Warten, bis sie grün ist',
+      ['Schnell laufen','Winken und gehen','Auf die Straße treten'],
+      'Autos rechnen bei Rot nicht mit Fußgängern – warten schützt vor Unfällen, auch wenn die Straße leer aussieht.'],
+    ['🤝 Ein Kind auf dem Schulhof ist gestürzt und weint. Was hilft zuerst?',
+      'Fragen, ob es Hilfe braucht, und Hilfe holen', ['Weglaufen','Lachen','Nichts sagen'],
+      'Erst nachfragen und dann eine erwachsene Person holen ist immer richtig – auch wenn nichts Schlimmes passiert ist.'],
+    ['🤝 Jemand im Netz fragt dich nach deiner Adresse. Was tust du?',
+      'Nichts verraten und Erwachsene fragen', ['Adresse schicken','Foto schicken','Telefonnummer geben'],
+      'Im Internet weiß man nie sicher, wer wirklich fragt. Persönliche Angaben gehören nicht in fremde Hände.']
   ];
-  const q = arr => { const [f,ok,bad] = pick(arr); return wahl(f, ok, bad, ''); };
+  const q = arr => { const [f,ok,bad,erklaerung] = pick(arr); return { ...wahl(f, ok, bad, erklaerung), quelle: erklaerung }; };
   return {
-    entdecken(){ return q(FAKT.map(([f,o,b])=>['🔎 '+f,o,b])); },
+    entdecken(){ return q(FAKT.map(([f,o,b,e])=>['🔎 '+f,o,b,e])); },
     erzaehlen(){ return q(STORY); },
     knobeln(){ return q(SCHAETZ); },
     team(){ return q(ALLTAG); }

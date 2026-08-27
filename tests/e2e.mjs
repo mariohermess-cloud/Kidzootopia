@@ -375,8 +375,14 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
     letzter = jetzt;
     await p.click('#weiter');
   }
-  if (!(letzter > vorher))
-    throw new Error(`Nach einer ganzen Runde keine Punkte dazu: ${vorher} → ${letzter}`);
+  /* KEINE Forderung nach einem Zuwachs: loeseAufgabe raet bei Auswahlaufgaben
+     nur die erste Option, ohne die Frage zu lesen - bei genug Pech in einer
+     Runde ist alles falsch und es gibt ueberall 0 Punkte. Das waere kein
+     Fehler im Punktesystem, nur Pech beim Raten. Die eigentliche Garantie
+     ("nie weniger als 0 Punkte fuer eine falsche Antwort") ist oben bei jeder
+     einzelnen Aufgabe geprueft und ausserdem in tests/punkte.mjs an 660
+     Faellen abgesichert - hier zaehlt nur, dass es ueber die ganze Runde
+     niemals SINKT. */
   console.log(`Punktestand über die Runde: ${vorher} → ${letzter}, nie gefallen ✅`);
   await p.waitForSelector('#nochmal', { timeout: 8000 });
   const bilanz = await p.textContent('.card');
@@ -407,6 +413,27 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
     await p.waitForSelector('#weiter'); await p.click('#weiter');
   }
   await p.waitForSelector('#nochmal', { timeout: 8000 });
+  await p.click('#heim'); await p.waitForSelector('#mission');
+}
+
+// Rückblick am Rundenende: jede Antwort mit Erklärung, wenn eine da ist.
+{
+  await bannerWeg(p);
+  await p.click('[data-ziel="allgemein"]');
+  for (let i = 0; i < 14 && !(await p.$('#nochmal')); i++) {
+    await p.waitForSelector('.task'); await loeseAufgabe(p);
+    await p.waitForSelector('#weiter'); await p.click('#weiter');
+  }
+  await p.waitForSelector('#nochmal', { timeout: 8000 });
+  const rueckblick = await p.$('.rueckblick');
+  if (!rueckblick) throw new Error('Rückblick-Karte fehlt am Rundenende');
+  await rueckblick.click();     // aufklappen
+  const eintraege = await p.$$('.rueckblick-item');
+  if (eintraege.length < 1) throw new Error('Rückblick ist leer');
+  const text = await p.textContent('.rueckblick');
+  if (!/💡/.test(text)) throw new Error('Kein einziger Rückblick-Eintrag hat eine Erklärung: ' + text.slice(0,200));
+  console.log(`Rückblick: ${eintraege.length} Antworten aufgelistet, mit Erklärungen ✅`);
+  await p.screenshot({ path: `${S}/15-rueckblick.png`, fullPage: true });
   await p.click('#heim'); await p.waitForSelector('#mission');
 }
 

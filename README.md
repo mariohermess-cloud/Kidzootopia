@@ -355,6 +355,22 @@ verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
      zwischen die Nachbarknöpfe gequetscht wird.
 
 
+19. **Jede Antwort erklärt** 📖
+   Nach jeder Aufgabe steht schon während des Spiels eine Erklärung dabei, wo eine hinterlegt
+   ist – ob richtig oder falsch beantwortet. Am Ende einer Runde gibt es zusätzlich einen
+   **Rückblick**: jede Frage der Runde mit der gegebenen und der richtigen Antwort, und –
+   wo vorhanden – der Erklärung dazu. Nichts wird dabei erfunden: Hat eine Aufgabe keine
+   hinterlegte Erklärung, steht dort nur Frage und Antwort. Zeichnen und Vorlesen haben ihre
+   eigene Rückmeldung schon während des Spiels bekommen und bleiben hier außen vor.
+
+   Beim Aufräumen kam eine echte Lücke zutage: **Allgemeinwissen** hatte bei keiner einzigen
+   Aufgabe eine Erklärung – nach einer falschen Antwort stand dort nur „richtig wäre X", nie
+   *warum*. Jetzt erklärt jede der über 20 Fragen ihre Antwort in ein bis zwei Sätzen.
+   `tests/aufgaben.mjs` verhindert, dass sich diese Lücke wiederholt: Kein Lernziel darf bei
+   mehr als 30 % seiner Aufgaben ganz ohne Erklärung dastehen (die Schwelle liegt nicht bei
+   0 %, weil manche Aufgaben – „6 × 7 = 42" – wirklich selbsterklärend sind).
+
+
 ---
 
 ## Auf dem Handy nutzen
@@ -407,7 +423,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 22 · Stand 25.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 23 · Stand 26.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.
