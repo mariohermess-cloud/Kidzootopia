@@ -665,10 +665,10 @@ kunstwerk: (() => {
 /* ---------------- Klassiker: Knacknüsse ---------------- */
 knacknuss: (() => {
   const RAHMEN = {
-    knobeln:   'Knacknuss – nimm dir Zeit.',
-    erzaehlen: 'Diese Aufgabe wird seit Generationen weitererzählt.',
+    knobeln:   'Knacknuss – nimm dir Zeit. Unten kannst du dir die Aufgabe aufmalen.',
+    erzaehlen: 'Diese Aufgabe wird seit Generationen weitererzählt. Male sie dir ruhig unten auf.',
     bauen:     'Zeichne es auf oder leg es mit Gegenständen nach.',
-    team:      'Erkläre die Aufgabe jemandem – beim Erklären fällt die Lösung oft von selbst.'
+    team:      'Erkläre die Aufgabe jemandem – beim Erklären fällt die Lösung oft von selbst. Aufmalen hilft dabei.'
   };
   const bauen = (weg, lvl) => {
     // Fenster um die eigene Stufe herum – groß genug, damit sich nichts
@@ -690,7 +690,12 @@ knacknuss: (() => {
         tipps: a.tipps,
         quelle: f.quelle,
         hilfe: a.tipps.at(-1) || '',
-        knacknuss: true
+        knacknuss: true,
+        /* Knacknuesse sind genau die Aufgaben, bei denen eine Skizze am
+           meisten hilft (ein Gitter zeichnen, Personen als Punkte setzen,
+           eine Wegstrecke aufmalen). Das Schmierblatt steht bei ihnen deshalb
+           von Anfang an offen da, statt erst entdeckt werden zu muessen. */
+        blattOffen: true
       };
     }
 
@@ -705,7 +710,8 @@ knacknuss: (() => {
       tipps: k.tipps || [],
       quelle: k.quelle,
       hilfe: (k.tipps || []).at(-1) || '',
-      knacknuss: true
+      knacknuss: true,
+      blattOffen: true
     };
   };
   return {

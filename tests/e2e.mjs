@@ -6,6 +6,12 @@ const p = await b.newPage({ viewport:{width:390,height:844}, deviceScaleFactor:2
 const fehler = [];
 p.on('pageerror', e => fehler.push('pageerror: '+e.message));
 p.on('console', m => { if (m.type()==='error') fehler.push('console: '+m.text()); });
+/* EIN dauerhafter Dialog-Handler statt vieler p.once(): Zwei once()-Handler
+   koennen sich ueberschneiden, wenn ein fruehes Freies-Blatt-Bild seinen
+   Namens-Dialog aus irgendeinem Grund erst spaeter feuert - dann greifen
+   zwei Handler nach demselben Dialog und Playwright wirft "already handled".
+   Ein einzelner dauerhafter Handler kann das nicht. */
+p.on('dialog', d => d.accept(d.type() === 'prompt' ? 'Testbild' : undefined).catch(() => {}));
 const S = process.argv[2] || '.';
 
 /* Löst die gerade gezeigte Aufgabe – egal welcher Art.
@@ -25,8 +31,7 @@ async function loeseAufgabe(p) {
         for (const q of l) await p.mouse.move(k.x + q.x*k.w, k.y + q.y*k.h);
         await p.mouse.up();
       }
-    } else {                                   // freies Blatt
-      p.once('dialog', d => d.accept('Testbild'));
+    } else {                                   // freies Blatt - der Dialog-Handler oben fängt den Namen ab
       await p.mouse.move(k.x + k.w*.3, k.y + k.h*.3);
       await p.mouse.down();
       for (let i=0;i<20;i++) await p.mouse.move(k.x + k.w*(.3+i*.02), k.y + k.h*(.3+Math.sin(i/3)*.1));
@@ -244,9 +249,13 @@ await p.click('#raus');
 await p.waitForSelector('#mission');
 
 // Fach-Runde + Ziel-Runde
+// Das Fach "Deutsch" kann inzwischen auch auf "Vorlesen" oder "Silben" fallen -
+// beide hat die einfache #eingabe/.choice-Unterscheidung von frueher nicht
+// gekannt. loeseAufgabe() kennt alle Aufgabentypen, also die gemeinsame
+// Loesung benutzen statt sie hier ein zweites Mal unvollstaendig nachzubauen.
 await p.click('[data-fach="deutsch"]');
 await p.waitForSelector('.task');
-if (await p.$('#eingabe')) { await p.fill('#eingabe','1'); await p.click('#pruefen'); } else await p.click('.choice');
+await loeseAufgabe(p);
 await p.waitForSelector('#weiter'); await p.click('#raus');
 await p.waitForSelector('#mission');
 await p.click('[data-ziel="einmaleins"]');
@@ -321,8 +330,7 @@ if (!/Profile hier:\s*keine/.test(bericht.replace(/\s+/g,' ')))
 if (!/Zweitkopie:\s*vorhanden/.test(bericht.replace(/\s+/g,' ')))
   throw new Error('Diagnose findet die Zweitkopie nicht');
 await p.screenshot({path:S+'/w-diagnose.png', fullPage:true});
-// Wiederherstellung aus der Zweitkopie prüfen
-p.once('dialog', d => d.accept());
+// Wiederherstellung aus der Zweitkopie prüfen - der dauerhafte Handler oben bestätigt
 await p.click('#sicherungHolen');
 await p.waitForSelector('#mission', { timeout: 5000 });
 const nachSicherung = await p.evaluate(() =>
@@ -434,6 +442,23 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   if (!/💡/.test(text)) throw new Error('Kein einziger Rückblick-Eintrag hat eine Erklärung: ' + text.slice(0,200));
   console.log(`Rückblick: ${eintraege.length} Antworten aufgelistet, mit Erklärungen ✅`);
   await p.screenshot({ path: `${S}/15-rueckblick.png`, fullPage: true });
+  await p.click('#heim'); await p.waitForSelector('#mission');
+}
+
+// Knacknuesse: das Schmierblatt muss von Anfang an offen sein, nicht erst
+// entdeckt werden - genau hier hilft eine Skizze am meisten.
+{
+  await bannerWeg(p);
+  await p.click('[data-ziel="knacknuss"]');
+  await p.waitForSelector('.task');
+  const offen = await p.$eval('.schmier', el => el.open).catch(() => false);
+  if (!offen) throw new Error('Schmierblatt bei einer Knacknuss ist nicht von vornherein offen');
+  console.log('Schmierblatt bei Knacknüssen von Anfang an offen ✅');
+  for (let i = 0; i < 14 && !(await p.$('#nochmal')); i++) {
+    await p.waitForSelector('.task'); await loeseAufgabe(p);
+    await p.waitForSelector('#weiter'); await p.click('#weiter');
+  }
+  await p.waitForSelector('#nochmal', { timeout: 8000 });
   await p.click('#heim'); await p.waitForSelector('#mission');
 }
 

@@ -47,6 +47,13 @@ for (const zielId of Object.keys(GEN)) {
           st.n++;
           if (!a.quelle && !a.hilfe) st.ohne++;
         }
+
+        /* Knacknuesse sind genau die Aufgaben, bei denen eine Skizze am
+           meisten hilft (Gitter zeichnen, Personen als Punkte setzen, eine
+           Wegstrecke aufmalen) - das Schmierblatt muss deshalb von Anfang an
+           offen dastehen, statt erst entdeckt werden zu muessen. */
+        if (a.knacknuss && !a.blattOffen)
+          fehler.push(`${ort}: Knacknuss ohne von vornherein geöffnetes Schmierblatt`);
       }
     }
   }

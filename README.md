@@ -371,6 +371,17 @@ verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
    0 %, weil manche Aufgaben – „6 × 7 = 42" – wirklich selbsterklärend sind).
 
 
+20. **Bei Knacknüssen steht das Schmierblatt schon offen da** 📝
+   Genau bei Knacknüssen hilft eine Skizze am meisten – ein Gitter zeichnen, Personen als
+   Punkte setzen, eine Wegstrecke aufmalen (die Schnecke im 55-Meter-Brunnen zum Beispiel).
+   Das Schmierblatt gab es dort technisch schon lange, aber **zugeklappt** wie bei jeder
+   anderen Aufgabe auch – leicht zu übersehen, gerade wenn man mitten im Knobeln steckt.
+   Jetzt öffnet es sich bei Knacknüssen von selbst, mit dem Zeichnen-Werkzeug schon aktiv,
+   und der Aufgabentext erinnert unabhängig vom Lernweg daran, dass man sich die Aufgabe
+   aufmalen kann. `tests/aufgaben.mjs` verhindert, dass eine Knacknuss künftig wieder ohne
+   dieses offene Blatt ausgeliefert wird.
+
+
 ---
 
 ## Auf dem Handy nutzen
@@ -423,7 +434,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 23 · Stand 26.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 24 · Stand 26.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.
