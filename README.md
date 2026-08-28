@@ -402,6 +402,21 @@ verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
    nachvollziehen kann, nicht um Verzicht.
 
 
+23. **Überraschungsrätsel des Tages** 🎁
+   Eine leuchtende Karte auf der Startseite lädt zu einem besonderen Rätsel ein – welche Art
+   es diesmal ist, bleibt bis zum Öffnen geheim. Mal eine **Zahlenpyramide** (jeder Stein ist
+   die Summe der zwei Steine darunter, ein Stein fehlt), mal ein **Waage-Rätsel** (aus zwei
+   Bild-Gleichungen den Wert eines Symbols erschließen). Nach dem Vorbild von Wordle ist das
+   Rätsel für **alle Kinder an diesem Kalendertag dasselbe** – rein aus dem Datum berechnet,
+   kein Server nötig – und morgen gibt es ein neues. Genau darin liegt der Reiz: ein kleiner,
+   ehrlicher Grund, öfter vorbeizuschauen, ohne Drohung bei einem verpassten Tag ("morgen gibt
+   es ein neues" statt "heute verpasst"). Lösen bringt einen deutlichen Bonus, ein zweiter
+   Versuch am selben Tag gibt keinen zweiten – sonst ließe sich der "Punkte steigen nur"-
+   Grundsatz mit einem einzigen Rätsel beliebig oft ausnutzen. `tests/ueberraschung.mjs`
+   prüft unter anderem, dass wirklich für alle Geräte am selben Tag dasselbe Rätsel
+   herauskommt und jedes erzeugte Rätsel rein rechnerisch (ohne Rätselraten) lösbar ist.
+
+
 ---
 
 ## Auf dem Handy nutzen
@@ -454,7 +469,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 25 · Stand 28.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 26 · Stand 28.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.
@@ -543,6 +558,7 @@ npm run test:kommentar    # Rückmeldungen: stimmen sie, und loben sie nie die P
 npm run test:aussprache   # Silben im Ton finden und zuordnen, an künstlichen Aufnahmen
 npm run test:punkte       # Punkte: nie Abzug, Schweres lohnt mehr, Unbewertetes zählt mit
 npm run test:rennen       # Renn-Modus: die Strecke geht nie rückwärts, kein falsches "verloren"
+npm run test:ueberraschung # Rätsel des Tages: für alle gleich, immer rein rechnerisch lösbar
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
@@ -568,6 +584,7 @@ js/kommentar.js       Rückmeldung zur einzelnen Antwort (kein Sprachmodell – 
 js/aussprache.js      Silben im Ton finden und dem bekannten Text zuordnen, Betonung prüfen
 js/punkte.js          Punkte, Ränge und der Vergleich auf dem Gerät
 js/rennen.js          Renn-Modus: Zeit-Punkte-Kurve der Runde, Geisterrennen gegen sich selbst
+js/ueberraschung.js   Überraschungsrätsel des Tages: aus dem Kalendertag berechnet, für alle gleich
 js/silben.js          Deutsche Silbentrennung – Grundlage der Silbenfärbung
 js/lesen.js           Lesetexte und Auswertung der Leseflüssigkeit (Tempo, Pausen, Betonung)
 js/version.js         Fassung, Datum und Änderungsverlauf – die einzige Stelle dafür

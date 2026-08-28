@@ -108,6 +108,7 @@ function migriere(p) {
   p.stats.streakBest      ??= 0;
   p.stats.letzterTag      ??= null;
   p.stats.tage            ??= {};
+  p.ueberraschung ||= { letzte: null, serie: 0, serieBest: 0 };
   return p;
 }
 
@@ -587,6 +588,27 @@ export function merkeRunde(profil, punkteDerRunde) {
   const vorher = s.besteRunde || 0;
   if (punkteDerRunde > vorher) { s.besteRunde = punkteDerRunde; speichern(); }
   return vorher;
+}
+
+/* Überraschungsrätsel des Tages: schon gelöst? Und wenn ja, merken - mit
+   Bonuspunkten und einer Serie, genau wie beim übrigen Streak (serieAktuell
+   oben). Ein zweiter Versuch am selben Tag gibt keinen zweiten Bonus, sonst
+   könnte man den "Punkte steigen nur"-Grundsatz mit einem einzigen Rätsel
+   beliebig oft ausnutzen. */
+export function raetselHeuteGeloest(profil) {
+  return profil.ueberraschung?.letzte === heute();
+}
+export function merkeUeberraschungsloesung(profil, bonus) {
+  const u = profil.ueberraschung;
+  const h = heute();
+  if (u.letzte === h) return false;
+  const gestern = new Date(Date.now() - 864e5).toISOString().slice(0,10);
+  u.serie = u.letzte === gestern ? u.serie + 1 : 1;
+  u.serieBest = Math.max(u.serieBest, u.serie);
+  u.letzte = h;
+  profil.stats.punkte = (profil.stats.punkte || 0) + bonus;
+  speichern();
+  return true;
 }
 
 /* Geisterrennen: die Zeit-Punkte-Kurve der bisher besten Runde, zum

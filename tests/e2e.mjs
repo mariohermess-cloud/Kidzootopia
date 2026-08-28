@@ -713,6 +713,35 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   await p.waitForSelector('#mission');
 }
 
+// Überraschungsrätsel des Tages: Teaser sichtbar, lösbar, Zustand bleibt
+// für den Rest des Tages "schon gelöst".
+{
+  await bannerWeg(p);
+  await p.click('.nav-btn[data-route="lernen"]');
+  await p.waitForSelector('.ueberraschungs-karte');
+  const teaserVorher = await p.textContent('.ueberraschungs-karte');
+  if (!/Überraschungsrätsel/.test(teaserVorher)) throw new Error('Teaser-Karte fehlt auf der Lernen-Seite');
+  await p.click('#zurUeberraschung');
+  await p.waitForSelector('#raetselEingabe, .small');
+  const antwort = await p.evaluate(async () => {
+    const mod = await import('/js/ueberraschung.js');
+    return mod.raetselFuer().antwort;
+  });
+  await p.fill('#raetselEingabe', antwort);
+  await p.click('#raetselPruefen');
+  await p.waitForFunction(() => {
+    const el = document.querySelector('#raetselRueckmeldung');
+    return el && /Richtig/.test(el.textContent);
+  }, { timeout: 5000 });
+  console.log('Überraschungsrätsel gelöst ✅');
+  await p.screenshot({ path: `${S}/17-ueberraschung.png`, fullPage: true });
+  await p.click('#raetselZurueck');
+  await p.waitForSelector('.ueberraschungs-karte');
+  const teaserNachher = await p.textContent('.ueberraschungs-karte');
+  if (!/schon gelöst/.test(teaserNachher)) throw new Error('Teaser zeigt nach dem Lösen nicht "schon gelöst": ' + teaserNachher);
+  console.log('Teaser zeigt danach korrekt "heute schon gelöst" ✅');
+}
+
 // Notausgang gegen die festgebissene alte Fassung: Offline-Speicher leeren.
 // Entscheidend ist die Zusicherung im Text daneben – der Fortschritt muss das ueberleben.
 await p.click('.nav-btn[data-route="eltern"]');
