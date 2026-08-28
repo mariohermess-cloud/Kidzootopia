@@ -6,6 +6,12 @@ const p = await b.newPage({ viewport:{width:390,height:844}, deviceScaleFactor:2
 const fehler = [];
 p.on('pageerror', e => fehler.push('pageerror: '+e.message));
 p.on('console', m => { if (m.type()==='error') fehler.push('console: '+m.text()); });
+/* EIN dauerhafter Dialog-Handler statt vieler p.once(): Zwei once()-Handler
+   koennen sich ueberschneiden, wenn ein fruehes Freies-Blatt-Bild seinen
+   Namens-Dialog aus irgendeinem Grund erst spaeter feuert - dann greifen
+   zwei Handler nach demselben Dialog und Playwright wirft "already handled".
+   Ein einzelner dauerhafter Handler kann das nicht. */
+p.on('dialog', d => d.accept(d.type() === 'prompt' ? 'Testbild' : undefined).catch(() => {}));
 const S = process.argv[2] || '.';
 
 /* Löst die gerade gezeigte Aufgabe – egal welcher Art.
@@ -25,8 +31,7 @@ async function loeseAufgabe(p) {
         for (const q of l) await p.mouse.move(k.x + q.x*k.w, k.y + q.y*k.h);
         await p.mouse.up();
       }
-    } else {                                   // freies Blatt
-      p.once('dialog', d => d.accept('Testbild'));
+    } else {                                   // freies Blatt - der Dialog-Handler oben fängt den Namen ab
       await p.mouse.move(k.x + k.w*.3, k.y + k.h*.3);
       await p.mouse.down();
       for (let i=0;i<20;i++) await p.mouse.move(k.x + k.w*(.3+i*.02), k.y + k.h*(.3+Math.sin(i/3)*.1));
@@ -83,10 +88,18 @@ await p.waitForSelector('#testStart');
 await p.screenshot({path:S+'/1-test-start.png', fullPage:true});
 await p.click('#testStart');
 
-const teilDurchspielen = async () => {
+/* Gemeldeter Fehler: Der Zurueck-Knopf gab es nur im ersten Testteil. Also
+   wird ab jetzt bei JEDER Frage geprueft, ob er da ist - ausser bei der
+   allerersten, wo es nichts gibt, wohin man zurueck koennte. */
+const zurueckFehlt = [];
+let frageNr = 0;
+
+const teilDurchspielen = async (teilNr) => {
   for (let n = 0; n < 60; n++) {
     if (await p.$('#weiterTeil')) return 'pause';
     if (await p.$('#losgehts')) return 'fertig';
+    frageNr++;
+    if (frageNr > 1 && !(await p.$('#zurueck'))) zurueckFehlt.push('Teil ' + teilNr);
     if (await p.$('.scale [data-v]')) { await p.click(`.scale [data-v="${[4,3,2,1][n%4]}"]`); continue; }
     if (await p.$('.choice')) { await p.click('.choice'); continue; }
     return 'unbekannt';
@@ -94,16 +107,19 @@ const teilDurchspielen = async () => {
   return 'zu-lang';
 };
 
-let zustand = await teilDurchspielen();
+let zustand = await teilDurchspielen(1);
 let teile = 1;
 while (zustand === 'pause') {
   if (teile === 1) await p.screenshot({path:S+'/2-teil-pause.png', fullPage:true});
   await p.click('#weiterTeil');
-  zustand = await teilDurchspielen();
   teile++;
+  zustand = await teilDurchspielen(teile);
 }
 if (zustand !== 'fertig') throw new Error('Talent-Test endete unerwartet: ' + zustand);
 console.log('Testteile durchgespielt:', teile);
+if (zurueckFehlt.length)
+  throw new Error('Zurück-Knopf fehlt in Testteil(en): ' + [...new Set(zurueckFehlt)].join(', '));
+console.log('Zurück-Knopf in jedem Testteil vorhanden ✅');
 await p.waitForSelector('#losgehts');
 await p.screenshot({path:S+'/3-radar.png', fullPage:true});
 await p.click('#losgehts');
@@ -233,9 +249,13 @@ await p.click('#raus');
 await p.waitForSelector('#mission');
 
 // Fach-Runde + Ziel-Runde
+// Das Fach "Deutsch" kann inzwischen auch auf "Vorlesen" oder "Silben" fallen -
+// beide hat die einfache #eingabe/.choice-Unterscheidung von frueher nicht
+// gekannt. loeseAufgabe() kennt alle Aufgabentypen, also die gemeinsame
+// Loesung benutzen statt sie hier ein zweites Mal unvollstaendig nachzubauen.
 await p.click('[data-fach="deutsch"]');
 await p.waitForSelector('.task');
-if (await p.$('#eingabe')) { await p.fill('#eingabe','1'); await p.click('#pruefen'); } else await p.click('.choice');
+await loeseAufgabe(p);
 await p.waitForSelector('#weiter'); await p.click('#raus');
 await p.waitForSelector('#mission');
 await p.click('[data-ziel="einmaleins"]');
@@ -310,8 +330,7 @@ if (!/Profile hier:\s*keine/.test(bericht.replace(/\s+/g,' ')))
 if (!/Zweitkopie:\s*vorhanden/.test(bericht.replace(/\s+/g,' ')))
   throw new Error('Diagnose findet die Zweitkopie nicht');
 await p.screenshot({path:S+'/w-diagnose.png', fullPage:true});
-// Wiederherstellung aus der Zweitkopie prüfen
-p.once('dialog', d => d.accept());
+// Wiederherstellung aus der Zweitkopie prüfen - der dauerhafte Handler oben bestätigt
 await p.click('#sicherungHolen');
 await p.waitForSelector('#mission', { timeout: 5000 });
 const nachSicherung = await p.evaluate(() =>
@@ -341,6 +360,46 @@ await p.waitForSelector('#mission');
 const kopf = await p.textContent('#topName');
 const sw = await p.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length);
 console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
+// Punkte: Kopfzeile zaehlt mit, Zuwachs erscheint, Rundenbilanz steht am Ende.
+{
+  await bannerWeg(p);
+  const vorher = Number((await p.textContent('#punkteZahl')).replace(',', '.').replace('k', '000'));
+  await p.click('#mission');
+  await p.waitForSelector('.task');
+  await loeseAufgabe(p);
+  await p.waitForSelector('#weiter');
+  const stand = async () =>
+    Number((await p.textContent('#punkteZahl')).replace(',', '.').replace('k', '000'));
+  let letzter = await stand();
+  if (letzter < vorher) throw new Error(`Punktestand sinkt: ${vorher} → ${letzter}`);
+  await p.click('#weiter');
+  /* Über die ganze Runde: Der Stand darf NIE fallen (falsch gibt null, nie
+     Abzug) und muss am Ende gestiegen sein. */
+  for (let i = 0; i < 14 && !(await p.$('#nochmal')); i++) {
+    await p.waitForSelector('.task'); await loeseAufgabe(p);
+    await p.waitForSelector('#weiter');
+    const jetzt = await stand();
+    if (jetzt < letzter) throw new Error(`Punkte wurden abgezogen: ${letzter} → ${jetzt}`);
+    letzter = jetzt;
+    await p.click('#weiter');
+  }
+  /* KEINE Forderung nach einem Zuwachs: loeseAufgabe raet bei Auswahlaufgaben
+     nur die erste Option, ohne die Frage zu lesen - bei genug Pech in einer
+     Runde ist alles falsch und es gibt ueberall 0 Punkte. Das waere kein
+     Fehler im Punktesystem, nur Pech beim Raten. Die eigentliche Garantie
+     ("nie weniger als 0 Punkte fuer eine falsche Antwort") ist oben bei jeder
+     einzelnen Aufgabe geprueft und ausserdem in tests/punkte.mjs an 660
+     Faellen abgesichert - hier zaehlt nur, dass es ueber die ganze Runde
+     niemals SINKT. */
+  console.log(`Punktestand über die Runde: ${vorher} → ${letzter}, nie gefallen ✅`);
+  await p.waitForSelector('#nochmal', { timeout: 8000 });
+  const bilanz = await p.textContent('.card');
+  if (!/Diese Runde/.test(bilanz)) throw new Error('Keine Punktebilanz am Rundenende');
+  console.log('Punktebilanz am Rundenende ✅');
+  await p.screenshot({ path: `${S}/13-punkte.png`, fullPage: true });
+  await p.click('#heim'); await p.waitForSelector('#mission');
+}
+
 // Silbenaufgaben und der gesprochene Kommentar: beides im echten Browser.
 {
   await bannerWeg(p);
@@ -357,6 +416,76 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
     throw new Error('Kein Kommentar zur Antwort: "' + komm + '"');
   console.log(`Rückmeldung zur Antwort: „${komm.trim()}" ✅`);
   await p.click('#weiter');
+  for (let i = 0; i < 14 && !(await p.$('#nochmal')); i++) {
+    await p.waitForSelector('.task'); await loeseAufgabe(p);
+    await p.waitForSelector('#weiter'); await p.click('#weiter');
+  }
+  await p.waitForSelector('#nochmal', { timeout: 8000 });
+  await p.click('#heim'); await p.waitForSelector('#mission');
+}
+
+// Rückblick am Rundenende: jede Antwort mit Erklärung, wenn eine da ist.
+{
+  await bannerWeg(p);
+  await p.click('[data-ziel="allgemein"]');
+  for (let i = 0; i < 14 && !(await p.$('#nochmal')); i++) {
+    await p.waitForSelector('.task'); await loeseAufgabe(p);
+    await p.waitForSelector('#weiter'); await p.click('#weiter');
+  }
+  await p.waitForSelector('#nochmal', { timeout: 8000 });
+  const rueckblick = await p.$('.rueckblick');
+  if (!rueckblick) throw new Error('Rückblick-Karte fehlt am Rundenende');
+  await rueckblick.click();     // aufklappen
+  const eintraege = await p.$$('.rueckblick-item');
+  if (eintraege.length < 1) throw new Error('Rückblick ist leer');
+  const text = await p.textContent('.rueckblick');
+  if (!/💡/.test(text)) throw new Error('Kein einziger Rückblick-Eintrag hat eine Erklärung: ' + text.slice(0,200));
+  console.log(`Rückblick: ${eintraege.length} Antworten aufgelistet, mit Erklärungen ✅`);
+  await p.screenshot({ path: `${S}/15-rueckblick.png`, fullPage: true });
+
+  // Renn-Modus: die Runde als Rennen ansehen, mit animiertem Avatar.
+  const rennKarte = await p.$('.renn-karte');
+  if (!rennKarte) throw new Error('Renn-Karte fehlt am Rundenende');
+  const startVorher = await p.getAttribute('#rennIch', 'style');
+  if (!/left:\s*0%/.test(startVorher || '')) throw new Error('Avatar startet nicht bei 0%: ' + startVorher);
+  await p.click('#rennStart');
+  await p.waitForFunction(() => {
+    const el = document.querySelector('#rennErgebnis');
+    return el && el.textContent.trim().length > 0;
+  }, { timeout: 10000 });
+  const rennText = await p.textContent('#rennErgebnis');
+  console.log(`Renn-Modus: animiert und Ergebnis gezeigt: „${rennText.trim()}" ✅`);
+  await p.screenshot({ path: `${S}/16-rennen.png`, fullPage: true });
+  await p.click('#heim'); await p.waitForSelector('#mission');
+}
+
+// Neues Lernziel "Gesund essen": Fragen erscheinen, keine Diätregeln nötig
+// zum Funktionieren zu pruefen - nur, dass die Aufgaben normal ablaufen.
+{
+  await bannerWeg(p);
+  await p.click('[data-ziel="ernaehrung"]');
+  await p.waitForSelector('.task');
+  await loeseAufgabe(p);
+  await p.waitForSelector('#weiter');
+  console.log('Aufgabe zu „Gesund essen" gelöst ✅');
+  await p.click('#weiter');
+  for (let i = 0; i < 14 && !(await p.$('#nochmal')); i++) {
+    await p.waitForSelector('.task'); await loeseAufgabe(p);
+    await p.waitForSelector('#weiter'); await p.click('#weiter');
+  }
+  await p.waitForSelector('#nochmal', { timeout: 8000 });
+  await p.click('#heim'); await p.waitForSelector('#mission');
+}
+
+// Knacknuesse: das Schmierblatt muss von Anfang an offen sein, nicht erst
+// entdeckt werden - genau hier hilft eine Skizze am meisten.
+{
+  await bannerWeg(p);
+  await p.click('[data-ziel="knacknuss"]');
+  await p.waitForSelector('.task');
+  const offen = await p.$eval('.schmier', el => el.open).catch(() => false);
+  if (!offen) throw new Error('Schmierblatt bei einer Knacknuss ist nicht von vornherein offen');
+  console.log('Schmierblatt bei Knacknüssen von Anfang an offen ✅');
   for (let i = 0; i < 14 && !(await p.$('#nochmal')); i++) {
     await p.waitForSelector('.task'); await loeseAufgabe(p);
     await p.waitForSelector('#weiter'); await p.click('#weiter');
@@ -457,6 +586,31 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   if (!/2 Punkte/.test(stand)) throw new Error('Zurück nahm das Falsche: ' + stand);
   console.log('Schmierblatt: zeichnen, zählen und zurück funktionieren ✅');
   await p.screenshot({ path: `${S}/11-schmierblatt.png`, fullPage: true });
+
+  /* Sicherheitsfrage: "Leeren" darf die Arbeit nicht ohne Rueckfrage wegwerfen -
+     aber bei einem LEEREN Blatt darf es auch nicht nerven. */
+  await p.click('#schmierLeeren');
+  if (!(await p.$('.nachfrage'))) throw new Error('Leeren fragt nicht nach, obwohl etwas gemalt ist');
+  await p.click('[data-nein]');
+  if (await p.$('.nachfrage')) throw new Error('Abbrechen schließt die Rückfrage nicht');
+  let nochDa = await p.textContent('#zaehlStand');
+  if (!/2 Punkte/.test(nochDa)) throw new Error('Abbrechen hat trotzdem gelöscht: ' + nochDa);
+  console.log('Rückfrage vor dem Leeren, Abbrechen behält die Skizze ✅');
+
+  await p.click('#schmierLeeren');
+  await p.click('[data-ja]');
+  const leer = await p.$eval('#zaehlStand', el => el.hidden).catch(() => true);
+  if (leer === false) throw new Error('Nach dem Bestätigen ist das Blatt nicht leer');
+  /* Jetzt ist es leer - eine zweite Rueckfrage waere nur noch laestig. */
+  await p.click('#schmierLeeren');
+  if (await p.$('.nachfrage'))
+    throw new Error('Ein leeres Blatt zu leeren fragt nach – das nervt und macht die Rückfrage wertlos');
+  console.log('Leeres Blatt fragt NICHT nach ✅');
+
+  /* Fuer die naechste Pruefung wieder etwas malen. */
+  await p.click('[data-wz="zaehlen"]');
+  const k2 = await lage();
+  for (const [dx, dy] of [[.3,.5],[.6,.5]]) await p.mouse.click(k2.x + k2.width*dx, k2.y + k2.height*dy);
 
   /* Nach dem Antworten muss die Skizze stehen bleiben - wer falsch lag, will
      sie neben der Loesung sehen. */

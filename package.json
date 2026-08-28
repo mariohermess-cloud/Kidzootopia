@@ -17,7 +17,9 @@
     "test:skizze": "node tests/skizze.mjs",
     "test:zahlfeld": "node tests/zahlfeld.mjs",
     "test:kommentar": "node tests/kommentar.mjs",
-    "test:aussprache": "node tests/aussprache.mjs"
+    "test:aussprache": "node tests/aussprache.mjs",
+    "test:punkte": "node tests/punkte.mjs",
+    "test:rennen": "node tests/rennen.mjs"
   },
   "devDependencies": {
     "playwright": "^1.49.1"

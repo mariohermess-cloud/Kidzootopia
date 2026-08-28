@@ -9,11 +9,34 @@
    Bei jeder Änderung: NUMMER hier hochzählen UND in sw.js (CACHE) gleichziehen.
    tests/version.mjs prüft, dass beide übereinstimmen. */
 
-export const NUMMER = 20;
-export const STAND = '25.08.2026';
+export const NUMMER = 25;
+export const STAND = '28.08.2026';
 
 /* Neueste zuerst. Kurz und in Alltagssprache – das lesen Eltern, nicht Entwickler. */
 export const VERLAUF = [
+  { nr: 25, stand: '28.08.2026', was: [
+    'Neu: Renn-Modus am Rundenende – der Avatar tritt gegen das eigene bisher beste Rennen an',
+    'Kein Netz-Gegner: der „Geist" ist genau die Zeit-Punkte-Kurve der eigenen besten Runde',
+    'Neues Lernziel „Gesund essen" – warum Wasser, Frühstück, Vielfalt und Zähneputzen wichtig sind, ohne Diätregeln oder verbotene Speisen'
+  ]},
+  { nr: 24, stand: '26.08.2026', was: [
+    'Knacknüsse: das Schmierblatt steht von Anfang an offen da, statt erst entdeckt werden zu müssen',
+    'Der Hinweis zu jeder Knacknuss sagt jetzt immer, dass man sich die Aufgabe aufmalen kann'
+  ]},
+  { nr: 23, stand: '26.08.2026', was: [
+    'Rückblick am Rundenende: jede Frage mit gegebener und richtiger Antwort, und wo möglich einer Erklärung',
+    'Allgemeinwissen erklärt jetzt jede Antwort – vorher stand dort nur „richtig wäre X", nie warum'
+  ]},
+  { nr: 22, stand: '25.08.2026', was: [
+    'Sicherheitsfrage, bevor Arbeit weggeworfen wird: Zeichnung leeren, Schmierblatt leeren, neu legen, Talent-Test wiederholen',
+    'Gefragt wird nur, wenn es etwas zu verlieren gibt – ein leeres Blatt zu leeren fragt nicht nach'
+  ]},
+  { nr: 21, stand: '25.08.2026', was: [
+    'Zurück-Knopf im Talent-Test an JEDER Frage – vorher gab es ihn nur im ersten Teil',
+    'Punkte für jede Aufgabe, mit Rang und bester Runde',
+    'Vergleich auf dem Gerät: Geschwister nebeneinander',
+    'Punkte können nur steigen – eine falsche Antwort gibt null, nie Abzug'
+  ]},
   { nr: 20, stand: '25.08.2026', was: [
     'Beim Vorlesen wandert eine Markierung mit – die App weiß, wo im Text du gerade bist',
     'Danach ist der Text Silbe für Silbe eingefärbt: grün flüssig, rot langer Halt',

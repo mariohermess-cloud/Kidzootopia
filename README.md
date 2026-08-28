@@ -320,6 +320,88 @@ Aufgaben werden **generiert**, nicht aus einer Liste gezogen – der Vorrat geht
 Aktuell: **31 Lernziele × bis zu 5 Wege = 110 Aufgabentypen**, darunter **1.394 verschiedene Knacknüsse** auf je 5 Schwierigkeitsstufen,
 verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
 
+
+17. **Punkte, Ränge und Vergleich** ⭐ – *ohne dass es zur Note wird*
+   Punkte sind erwünscht, aber sie dürfen nicht dasselbe tun wie Noten. Vier Entscheidungen
+   halten sie auseinander:
+   * **Punkte gehen nie verloren.** Eine falsche Antwort gibt **null, niemals Abzug**. Wer
+     Angst vor Punktverlust hat, wählt die leichte Aufgabe – und lernt weniger. Der Stand
+     kann nur steigen. Der Durchklicktest prüft das über eine ganze Runde nach.
+   * **Schwerer gibt mehr.** Die Stufe zählt kräftig mit (Stufe 5 bringt gut das Doppelte von
+     Stufe 1). Damit lohnt sich das Schwierige statt des Leichten.
+   * **Auch das Unbewertete zählt.** Ein Denk-Impuls, ein freies Bild, ein vorgelesener Text
+     geben Punkte fürs Machen – weniger als eine gelöste Aufgabe, aber nicht nichts. Sonst
+     wären ausgerechnet die offenen Aufgaben im Punktesystem tote Gleise.
+   * **Tipps kosten etwas, aber nie alles.** Es bleibt ein Boden: Hilfe holen ist besser als
+     aufgeben.
+
+   Acht Ränge von 🌱 *Neugierig* bis 🌟 *Gelehrte:r*, mit Balken zum nächsten. Nach jeder
+   Runde der Vergleich **mit der eigenen besten Runde** – und im Eltern-Bereich, sobald mehr
+   als ein Profil auf dem Gerät ist, die **Geschwister nebeneinander**. Eine Bestenliste im
+   Netz gibt es nicht: Es gibt keinen Server. Daneben steht, was der Vergleich wert ist –
+   wer in einer höheren Etappe rechnet, bekommt für dieselbe Aufgabe mehr Punkte.
+
+
+18. **Sicherheitsfrage vor dem Wegwerfen** ⚠️
+   Vier Knöpfe warfen Arbeit weg, ohne zu fragen: *↺ Nochmal* auf dem Zeichenbrett,
+   *↺ Leeren* am Schmierblatt, *↺ Nochmal legen* beim Ordnen und *Talent-Test wiederholen*
+   (der das ganze Talent-Radar ersetzt). Jetzt verwandelt sich der Knopf in die Frage —
+   bewusst **kein `confirm()` des Browsers**: Das sieht in einer App vom Startbildschirm
+   fremd aus, lässt sich nicht gestalten und öffnet in manchen Fassungen gar nicht.
+   * **Gefragt wird nur, wenn es etwas zu verlieren gibt.** Ein leeres Blatt zu leeren fragt
+     nicht nach — sonst wird die Rückfrage zur Gewohnheit und damit wirkungslos.
+   * Beim **ersten** Talent-Test wird nicht gefragt, beim Wiederholen schon.
+   * Solange gefragt wird, tritt der Rest der Knopfleiste zurück, damit die Frage nicht
+     zwischen die Nachbarknöpfe gequetscht wird.
+
+
+19. **Jede Antwort erklärt** 📖
+   Nach jeder Aufgabe steht schon während des Spiels eine Erklärung dabei, wo eine hinterlegt
+   ist – ob richtig oder falsch beantwortet. Am Ende einer Runde gibt es zusätzlich einen
+   **Rückblick**: jede Frage der Runde mit der gegebenen und der richtigen Antwort, und –
+   wo vorhanden – der Erklärung dazu. Nichts wird dabei erfunden: Hat eine Aufgabe keine
+   hinterlegte Erklärung, steht dort nur Frage und Antwort. Zeichnen und Vorlesen haben ihre
+   eigene Rückmeldung schon während des Spiels bekommen und bleiben hier außen vor.
+
+   Beim Aufräumen kam eine echte Lücke zutage: **Allgemeinwissen** hatte bei keiner einzigen
+   Aufgabe eine Erklärung – nach einer falschen Antwort stand dort nur „richtig wäre X", nie
+   *warum*. Jetzt erklärt jede der über 20 Fragen ihre Antwort in ein bis zwei Sätzen.
+   `tests/aufgaben.mjs` verhindert, dass sich diese Lücke wiederholt: Kein Lernziel darf bei
+   mehr als 30 % seiner Aufgaben ganz ohne Erklärung dastehen (die Schwelle liegt nicht bei
+   0 %, weil manche Aufgaben – „6 × 7 = 42" – wirklich selbsterklärend sind).
+
+
+20. **Bei Knacknüssen steht das Schmierblatt schon offen da** 📝
+   Genau bei Knacknüssen hilft eine Skizze am meisten – ein Gitter zeichnen, Personen als
+   Punkte setzen, eine Wegstrecke aufmalen (die Schnecke im 55-Meter-Brunnen zum Beispiel).
+   Das Schmierblatt gab es dort technisch schon lange, aber **zugeklappt** wie bei jeder
+   anderen Aufgabe auch – leicht zu übersehen, gerade wenn man mitten im Knobeln steckt.
+   Jetzt öffnet es sich bei Knacknüssen von selbst, mit dem Zeichnen-Werkzeug schon aktiv,
+   und der Aufgabentext erinnert unabhängig vom Lernweg daran, dass man sich die Aufgabe
+   aufmalen kann. `tests/aufgaben.mjs` verhindert, dass eine Knacknuss künftig wieder ohne
+   dieses offene Blatt ausgeliefert wird.
+
+
+21. **Renn-Modus: der Avatar tritt gegen das eigene Geisterrennen an** 🏁
+   Am Ende jeder Runde lässt sich das Ergebnis als kleines Rennen ansehen: der eigene Avatar
+   läuft über eine Strecke, angetrieben genau von der Zeit-Punkte-Kurve der gerade gespielten
+   Runde. Ein **Geist** fährt mit – nicht irgendein erfundener Gegner, sondern exakt die
+   Kurve der bisher besten eigenen Runde. Die App hat keinen Server und keine Bestenliste
+   im Netz; der einzige faire Gegner ist deshalb man selbst. Wer die eigene Bestleistung
+   nicht schlägt, „verliert" nicht – die Karte formuliert das bewusst ohne Wertung
+   („knapp hinter deinem besten Rennen – nächstes Mal!"), genau wie beim übrigen
+   Punktesystem. `tests/rennen.mjs` prüft dabei vor allem eines: dass die Strecke nie
+   rückwärts geht – Punkte können pro Aufgabe nur 0 oder mehr sein, also kann die Kurve nur
+   wachsen oder stehen bleiben, nie fallen.
+
+22. **Neues Lernziel: Gesund essen** 🥕
+   Warum regelmäßig Wasser trinken, warum Frühstück, warum bunte Vielfalt auf dem Teller,
+   warum Zähneputzen nach Süßem – bewusst **ohne** Kalorien, Diätregeln oder als „schlecht"
+   markierte Lebensmittel. Ein einzelnes Stück Kuchen bei einem Fest ist in dieser App weder
+   verboten noch ein Anlass zur Sorge; es geht um Zusammenhänge, die ein Kind selbst
+   nachvollziehen kann, nicht um Verzicht.
+
+
 ---
 
 ## Auf dem Handy nutzen
@@ -372,7 +454,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 20 · Stand 25.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 25 · Stand 28.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.
@@ -459,6 +541,8 @@ npm run test:skizze       # Schmierblatt: Zählen, Zurücknehmen, Reihenfolge
 npm run test:zahlfeld     # Zahleneingabe: alle 2037 Zahlantworten tippbar und anerkannt
 npm run test:kommentar    # Rückmeldungen: stimmen sie, und loben sie nie die Person?
 npm run test:aussprache   # Silben im Ton finden und zuordnen, an künstlichen Aufnahmen
+npm run test:punkte       # Punkte: nie Abzug, Schweres lohnt mehr, Unbewertetes zählt mit
+npm run test:rennen       # Renn-Modus: die Strecke geht nie rückwärts, kein falsches "verloren"
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
@@ -482,6 +566,8 @@ js/skizze.js          Schmierblatt: Striche, Zählmarken, Rückgängig
 js/zahlfeld.js        Zahleneingabe mit Minus und Komma
 js/kommentar.js       Rückmeldung zur einzelnen Antwort (kein Sprachmodell – siehe Kopf)
 js/aussprache.js      Silben im Ton finden und dem bekannten Text zuordnen, Betonung prüfen
+js/punkte.js          Punkte, Ränge und der Vergleich auf dem Gerät
+js/rennen.js          Renn-Modus: Zeit-Punkte-Kurve der Runde, Geisterrennen gegen sich selbst
 js/silben.js          Deutsche Silbentrennung – Grundlage der Silbenfärbung
 js/lesen.js           Lesetexte und Auswertung der Leseflüssigkeit (Tempo, Pausen, Betonung)
 js/version.js         Fassung, Datum und Änderungsverlauf – die einzige Stelle dafür

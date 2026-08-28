@@ -33,6 +33,7 @@ jobs:
       - run: node tests/zahlfeld.mjs
       - run: node tests/kommentar.mjs
       - run: node tests/aussprache.mjs
+      - run: node tests/punkte.mjs
 
   deploy:
     needs: test

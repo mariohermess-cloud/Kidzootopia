@@ -14,11 +14,13 @@ import { NUMMER, STAND, VERLAUF } from './version.js';
 import { textInSilben } from './silben.js';
 import * as Lesen from './lesen.js';
 import * as Aussprache from './aussprache.js';
+import * as Punkte from './punkte.js';
 import * as Skizze from './skizze.js';
 import * as Zahl from './zahlfeld.js';
 import { kommentar, vorlesbar } from './kommentar.js';
 import { pruefe } from './generators.js';
 import { radar } from './chart.js';
+import * as Rennen from './rennen.js';
 
 const view = () => document.getElementById('view');
 export const esc = s => String(s).replace(/[&<>"']/g, c =>
@@ -55,6 +57,13 @@ function kopfzeile(p) {
     p.testGemacht ? `${TALENTE[t].emoji} ${TALENTE[t].name} · ${S.etappeVon(p).name}`
                   : `${S.etappeVon(p).name} · Talent-Test offen`;
   document.getElementById('streakCount').textContent = S.serieAktuell(p);
+  const stand = p.stats?.punkte || 0;
+  const feld = document.getElementById('punkteZahl');
+  if (feld) {
+    feld.textContent = stand >= 1000 ? (stand/1000).toFixed(1).replace('.', ',') + 'k' : stand;
+    document.getElementById('punkteBox').title =
+      `${stand} Punkte · ${Punkte.rang(stand).emoji} ${Punkte.rang(stand).name}`;
+  }
 }
 
 /* ------------------------------ Start / Profil ------------------------------ */
@@ -304,6 +313,199 @@ function skizzenKarte(p) {
     </div>`;
 }
 
+
+/* Punktekarte am Ende einer Runde: Zuwachs, Rang und der Vergleich mit der
+   eigenen besten Runde. Bewusst kein "leider" und kein "nur" – unter der
+   Bestleistung zu bleiben ist der Normalfall, nicht ein Versagen. */
+function punkteKarte(p, punkteDerRunde, besteVorher) {
+  const stand = p.stats?.punkte || 0;
+  const r = Punkte.rang(stand);
+  const blick = Punkte.rundenBlick(punkteDerRunde, besteVorher);
+  return `
+    <div class="card">
+      <div class="row spread" style="align-items:flex-end">
+        <div><div class="small muted">Diese Runde</div>
+          <div style="font-size:2rem;font-weight:800;line-height:1.1">+${punkteDerRunde}</div></div>
+        <div style="text-align:right"><div class="small muted">Insgesamt</div>
+          <div style="font-size:1.3rem;font-weight:800">${stand}</div></div>
+      </div>
+      <div class="small ${blick.rekord ? '' : 'muted'}" style="margin-top:8px;font-weight:${blick.rekord?'800':'600'}">
+        ${blick.rekord ? '🏆 ' : ''}${esc(blick.text)}
+      </div>
+      <div class="row spread small" style="margin-top:14px">
+        <span><b>${r.emoji} ${esc(r.name)}</b></span>
+        ${r.naechster ? `<span class="muted">noch ${r.bisZumNaechsten} bis ${r.naechster.emoji} ${esc(r.naechster.name)}</span>`
+                      : '<span class="muted">höchster Rang</span>'}
+      </div>
+      <div class="bar" style="margin-top:6px"><i style="width:${Math.round(r.anteil*100)}%"></i></div>
+    </div>`;
+}
+
+/* Renn-Modus: die Runde als kleines Kart-Rennen gegen das eigene Geisterrennen
+   ansehen. Der Geist ist keine Erfindung, sondern die genaue Zeit-Punkte-Kurve
+   der bisher besten Runde - der einzige Gegner, den eine App ohne Server
+   fair anbieten kann. Nur sichtbar, wenn es überhaupt bewertete Aufgaben gab. */
+function rennKarte(p, sess, geist) {
+  if (!sess.verlauf.some(v => v.punkte != null)) return '';
+  return `
+    <div class="card renn-karte">
+      <h3>🏁 Als Rennen ansehen</h3>
+      <p class="small muted">Dein Avatar gegen dein eigenes bisher bestes Rennen${
+        geist.spur ? '' : ' – dies wird dein erstes, ab jetzt gibt es einen Geist zum Messen'}.</p>
+      <div class="rennstrecke" id="rennstrecke">
+        <div class="rennspur">
+          <span class="rennfigur ich" id="rennIch" style="left:0%">${esc(p.avatar || '🦊')}</span>
+        </div>
+        ${geist.spur ? `<div class="rennspur geist">
+          <span class="rennfigur geist" id="rennGeist" style="left:0%">👻</span>
+        </div>` : ''}
+        <div class="rennziel">🏁</div>
+      </div>
+      <p class="small" id="rennErgebnis" style="min-height:1.4em;font-weight:700"></p>
+      <button class="btn quiet" id="rennStart" type="button">▶️ Rennen starten</button>
+    </div>`;
+}
+
+/* Spielt das Rennen aus rennKarte() ab: beide Figuren wandern ueber die
+   Strecke, nach der Zeit-Punkte-Kurve der jeweiligen Runde interpoliert.
+   Echte Rundenzeiten koennen Minuten dauern - fuers Zusehen wird das auf eine
+   feste Abspieldauer gestaucht, ohne die Reihenfolge der Ereignisse zu aendern. */
+function rennenStarten(p, sess, geist) {
+  const strecke = view().querySelector('#rennstrecke');
+  if (!strecke) return;
+  const spurEigen = Rennen.spurFuer(sess.verlauf);
+  const eigenEnde = spurEigen[spurEigen.length - 1];
+  const geistEnde = geist.spur ? geist.spur[geist.spur.length - 1] : { ms: 0, punkte: 0 };
+  const zielPunkte = Math.max(eigenEnde.punkte, geistEnde.punkte, 1);
+  const realDauer = Math.max(eigenEnde.ms, geistEnde.ms, 1);
+  const abspielDauer = Math.min(7000, Math.max(2200, realDauer / 8));
+  const ich = strecke.querySelector('#rennIch');
+  const geistFigur = strecke.querySelector('#rennGeist');
+  const ergebnis = view().querySelector('#rennErgebnis');
+  const anzeigen = pkt => Math.min(90, Rennen.prozentAuf(pkt, zielPunkte));
+  ich.style.left = '0%';
+  if (geistFigur) geistFigur.style.left = '0%';
+  if (ergebnis) ergebnis.textContent = '';
+  const start = performance.now();
+  const frame = now => {
+    const anteil = Math.min(1, (now - start) / abspielDauer);
+    const realMs = anteil * realDauer;
+    ich.style.left = anzeigen(Rennen.geistBei(spurEigen, realMs)) + '%';
+    if (geistFigur) geistFigur.style.left = anzeigen(Rennen.geistBei(geist.spur, realMs)) + '%';
+    if (anteil < 1) requestAnimationFrame(frame);
+    else if (ergebnis) {
+      const erg = Rennen.rennErgebnis(eigenEnde.punkte, geistEnde.punkte);
+      ergebnis.textContent = (erg.gewonnen ? '🏆 ' : '') + erg.text;
+    }
+  };
+  requestAnimationFrame(frame);
+}
+
+/* Vergleich auf dem Gerät – Geschwister nebeneinander. Nur, wenn es überhaupt
+   mehr als ein Profil gibt, und mit dem Hinweis, dass ein Erstklässler und
+   eine Achtklässlerin nicht dasselbe Spiel spielen. */
+function vergleichKarte(p) {
+  const liste = Punkte.rangliste(S.alleProfile());
+  if (liste.length < 2) return '';
+  const ETAPPENNAME = { 1:'Grundschule', 2:'Mittelstufe', 3:'Oberstufe', 4:'Studium', 5:'Erwachsene' };
+  return `
+    <div class="card">
+      <h3>🏅 Vergleich auf diesem Gerät</h3>
+      ${liste.map((x, i) => `
+        <div class="talent-row${x.id === p.id ? ' ich' : ''}">
+          <span class="em">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '·'}</span>
+          <div class="tx"><b>${esc(x.avatar || '')} ${esc(x.name)}${x.id === p.id ? ' (du)' : ''}</b>
+            <div class="small muted">${x.rang.emoji} ${esc(x.rang.name)} ·
+              ${esc(ETAPPENNAME[x.etappe] || '')} · ${x.aufgaben} Aufgaben</div></div>
+          <span class="val">${x.punkte}</span>
+        </div>`).join('')}
+      <p class="small muted" style="margin-top:10px">Die Punkte hängen davon ab, wie viel
+        geübt wurde – nicht davon, wer klüger ist. Wer in einer höheren Etappe rechnet,
+        bekommt für dieselbe Aufgabe auch mehr Punkte. Ein Vergleich zwischen verschiedenen
+        Etappen sagt deshalb wenig; ein Vergleich mit der eigenen letzten Woche sagt viel.</p>
+    </div>`;
+}
+
+
+/* ------------------------ Sicherheitsfrage ------------------------
+   Vor allem, was Arbeit wegwirft: erst nachfragen. Absichtlich KEIN
+   confirm() des Browsers – das sieht in einer App vom Startbildschirm fremd
+   aus, lässt sich nicht gestalten und in manchen Fassungen gar nicht öffnen.
+   Stattdessen verwandelt sich der Knopf selbst in die Frage.
+
+   Wichtig ist die zweite Bedingung: Gefragt wird nur, wenn es überhaupt etwas
+   zu verlieren gibt. Ein leeres Blatt zu leeren muss niemand bestätigen –
+   sonst wird die Rückfrage zur Gewohnheit und damit wirkungslos. */
+function mitNachfrage(knopf, { frage, jaText = 'Ja, neu', wennEtwasDaIst = () => true, dann }) {
+  if (!knopf) return;
+  const urspruenglich = knopf.outerHTML;
+  knopf.onclick = () => {
+    if (!wennEtwasDaIst()) return dann();      // nichts zu verlieren: sofort tun
+
+    const zeile = document.createElement('div');
+    zeile.className = 'nachfrage';
+    zeile.innerHTML = `
+      <span class="small">${esc(frage)}</span>
+      <span class="row" style="gap:8px">
+        <button type="button" class="btn small danger" data-ja>${esc(jaText)}</button>
+        <button type="button" class="btn small quiet" data-nein>Abbrechen</button>
+      </span>`;
+    /* Steht der Knopf in einer Knopfleiste, bekommt die Frage die Zeile für
+       sich – sonst quetscht sie die Nachbarknöpfe zusammen und niemand liest
+       sie. Nur bei einer echten Leiste, nicht irgendwo im Bildschirm: sonst
+       würde die Frage den halben Inhalt ausblenden. */
+    const leiste = knopf.parentElement?.classList.contains('row') ? knopf.parentElement : null;
+    leiste?.classList.add('fragt');
+    knopf.replaceWith(zeile);
+
+    /* Nach BEIDEN Wegen muss der ursprüngliche Knopf zurückkommen – auch nach
+       "Ja". Beim ersten Entwurf blieb er nach dem Bestätigen verschwunden,
+       und man konnte kein zweites Mal leeren. Der Durchklicktest hat das
+       gefunden, weil er zweimal hintereinander geleert hat. */
+    const knopfZurueck = () => {
+      leiste?.classList.remove('fragt');
+      const huelle = document.createElement('div');
+      huelle.innerHTML = urspruenglich;
+      const neu = huelle.firstElementChild;
+      zeile.replaceWith(neu);
+      mitNachfrage(neu, { frage, jaText, wennEtwasDaIst, dann });
+    };
+    zeile.querySelector('[data-ja]').onclick = () => { knopfZurueck(); dann(); };
+    zeile.querySelector('[data-nein]').onclick = knopfZurueck;
+  };
+}
+
+
+/* Rückblick am Rundenende: jede Frage mit gegebener und richtiger Antwort,
+   und - wo vorhanden - einer Erklärung dazu. Nichts wird dabei erfunden: Hat
+   eine Aufgabe keine hinterlegte Erklärung, steht dort nur Frage und Antwort.
+   Zeichnen und Vorlesen haben keine "richtige Antwort" im selben Sinn und
+   ihre eigene Rückmeldung bereits während des Spiels bekommen - sie bleiben
+   hier aussen vor, damit die Liste nicht in die Irre führt. */
+function rueckblickKarte(sess) {
+  const eintraege = sess.verlauf.filter(v => v.typ !== 'zeichnen' && v.typ !== 'lesen' && v.frage);
+  if (!eintraege.length) return '';
+  /* Nur die erste Zeile der Frage - viele Aufgaben haengen einen Tipp oder
+     eine zweite Zeile an, die hier nur ablenken wuerde. */
+  const kurz = f => String(f).split('\n')[0];
+  return `
+    <details class="card rueckblick">
+      <summary><h3 style="display:inline">📖 Deine Antworten in dieser Runde ansehen</h3></summary>
+      <div style="margin-top:10px">
+        ${eintraege.map(v => `
+          <div class="rueckblick-item ${v.ok ? 'ok' : 'bad'}">
+            <div class="rueckblick-frage">${v.ok ? '✅' : '❌'} ${esc(kurz(v.frage))}</div>
+            ${v.ok
+              ? `<div class="small muted">Antwort: <b>${esc(String(v.antwort))}</b></div>`
+              : `<div class="small muted">Deine Antwort: <b>${esc(String(v.eingabe))}</b> ·
+                   richtig wäre: <b>${esc(String(v.antwort))}</b></div>`}
+            ${v.erklaerung ? `<div class="small" style="margin-top:4px;font-weight:500">
+              💡 ${esc(v.erklaerung)}</div>` : ''}
+          </div>`).join('')}
+      </div>
+    </details>`;
+}
+
 /* ------------------------------ Schmierblatt ------------------------------
    Nebenrechnung zum Mitmalen, an jeder Aufgabe. Standardmäßig zugeklappt,
    damit es die Aufgabe nicht verdeckt – aber immer einen Tipp entfernt.
@@ -433,7 +635,12 @@ function schmierblatt(a, host) {
     werkzeug = b.dataset.wz; werkzeugZeigen();
   });
   huelle.querySelector('#schmierZurueck').onclick = () => { Skizze.zurueck(blatt); malen(); };
-  huelle.querySelector('#schmierLeeren').onclick = () => { Skizze.leeren(blatt); malen(); };
+  mitNachfrage(huelle.querySelector('#schmierLeeren'), {
+    frage: 'Das ganze Schmierblatt leeren?',
+    jaText: 'Ja, leeren',
+    wennEtwasDaIst: () => !Skizze.istLeer(blatt),
+    dann: () => { Skizze.leeren(blatt); malen(); }
+  });
   huelle.addEventListener('toggle', () => {
     a.blattOffen = huelle.open;
     if (huelle.open) groesse();
@@ -795,7 +1002,12 @@ function zeichenbrett(a, bereich, fertig) {
   leinwand.addEventListener('pointercancel', loslassen);
   leinwand.addEventListener('pointerleave', loslassen);
 
-  bereich.querySelector('#brettLeeren').onclick = () => { striche = []; malen(); };
+  mitNachfrage(bereich.querySelector('#brettLeeren'), {
+    frage: 'Alles wegwischen und neu anfangen?',
+    jaText: 'Ja, neu',
+    wennEtwasDaIst: () => striche.some(s => s.length),
+    dann: () => { striche = []; malen(); }
+  });
   bereich.querySelector('#brettZurueck').onclick = () => { striche.pop(); malen(); };
   bereich.querySelector('#brettFertig').onclick = () => {
     if (!striche.flat().length) { hinweis.textContent = 'Da ist noch nichts gezeichnet.'; return; }
@@ -961,6 +1173,30 @@ function screenTest(p) {
       <div class="bar" style="margin:12px 0 18px"><i style="width:${i/n*100}%"></i></div>`;
   };
 
+  /* Ein Zurück-Knopf an JEDER Frage, nicht nur im ersten Teil.
+     Vorher hatte nur Teil 1 einen – wer sich in Teil 2 bis 5 vertippt hatte,
+     kam nicht mehr zurück und musste den ganzen Test von vorn machen oder mit
+     der falschen Antwort leben. Der Knopf springt auch über Teilgrenzen: von
+     der ersten Frage eines Teils zur letzten Frage des vorigen. */
+  const laengen = () => [likert.length, paare.length, szenarien.length, proben.length, stich.length];
+
+  const zurueckKnopf = (teilNr, i) => {
+    if (teilNr === 0 && i === 0) return '';     // ganz am Anfang gibt es kein Zurück
+    return `<button class="btn quiet small" id="zurueck" style="margin-top:14px">← zurück</button>`;
+  };
+
+  const zurueckVerdrahten = (teilNr, i) => {
+    const knopf = view().querySelector('#zurueck');
+    if (!knopf) return;
+    knopf.onclick = () => {
+      if (i > 0) return starts[teilNr](i - 1);
+      /* Erste Frage eines Teils: zurück in den vorigen Teil, an dessen Ende. */
+      const vorher = teilNr - 1;
+      const wieViele = laengen()[vorher];
+      starts[vorher](Math.max(0, wieViele - 1));
+    };
+  };
+
   /* Zwischenstand: weitermachen oder Ergebnis ansehen */
   const pause = (naechsterTeil) => {
     const teil = TEST_TEILE[naechsterTeil];
@@ -989,13 +1225,13 @@ function screenTest(p) {
         <p class="task pop">${esc(f.q)}</p>
         <div class="scale">${SKALA.map(sk =>
           `<button data-v="${sk.v}"><b>${sk.em}</b><small>${sk.label}</small></button>`).join('')}</div>
-        ${i>0?'<button class="btn quiet small" id="zurueck" style="margin-top:14px">← zurück</button>':''}
+        ${zurueckKnopf(0, i)}
       </div>
       <p class="muted small center">Es gibt kein Richtig oder Falsch. Antworte einfach ehrlich.</p>`;
     view().querySelectorAll('[data-v]').forEach(b => b.onclick = () => {
       antworten.likert[i] = { t: f.t, v: Number(b.dataset.v) }; teil1(i+1);
     });
-    view().querySelector('#zurueck')?.addEventListener('click', () => teil1(i-1));
+    zurueckVerdrahten(0, i);
   };
 
   /* Teil 2: Entweder-oder */
@@ -1011,11 +1247,13 @@ function screenTest(p) {
           <button class="choice" data-w="${ea}" data-l="${eb}">${esc(ta)}</button>
           <button class="choice" data-w="${eb}" data-l="${ea}">${esc(tb)}</button>
         </div>
+        ${zurueckKnopf(1, i)}
       </div>
       <p class="muted small center">Auch wenn du beides magst: Wähl das, was dir zuerst Spaß macht.</p>`;
     view().querySelectorAll('[data-w]').forEach(b => b.onclick = () => {
       antworten.paare[i] = { gewinner: b.dataset.w, verlierer: b.dataset.l }; teil2(i+1);
     });
+    zurueckVerdrahten(1, i);
   };
 
   /* Teil 3: Szenarien */
@@ -1027,10 +1265,12 @@ function screenTest(p) {
         <p class="task pop">${esc(f.q)}</p>
         <div class="choices">${opts.map(o =>
           `<button class="choice" data-t="${o.t}">${esc(o.text)}</button>`).join('')}</div>
+        ${zurueckKnopf(2, i)}
       </div>`;
     view().querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
       antworten.szenarien[i] = { gewaehlt: b.dataset.t, angeboten: f.opt.map(o => o.t) }; teil3(i+1);
     });
+    zurueckVerdrahten(2, i);
   };
 
   /* Teil 4: Kleine Proben – mit Zeitmessung */
@@ -1042,12 +1282,14 @@ function screenTest(p) {
         <p class="task pop">${esc(f.q)}</p>
         <div class="choices">${mischen([...f.optionen]).map(o =>
           `<button class="choice" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+        ${zurueckKnopf(3, i)}
       </div>
       <p class="muted small center">Denk nach – aber trödle nicht. Beides zählt.</p>`;
     view().querySelectorAll('[data-o]').forEach(b => b.onclick = () => {
       antworten.proben[i] = { t: f.t, richtig: b.dataset.o === f.a, ms: performance.now() - start };
       teil4(i+1);
     });
+    zurueckVerdrahten(3, i);
   };
 
   /* Teil 5: Feinschliff – nur dort, wo Talente dicht beieinander liegen */
@@ -1064,10 +1306,12 @@ function screenTest(p) {
           <button class="choice" data-w="${f.a}" data-l="${f.b}">${esc(f.fa)}</button>
           <button class="choice" data-w="${f.b}" data-l="${f.a}">${esc(f.fb)}</button>
         </div>
+        ${zurueckKnopf(4, i)}
       </div>`;
     view().querySelectorAll('[data-w]').forEach(b => b.onclick = () => {
       antworten.stich[i] = { gewinner: b.dataset.w, verlierer: b.dataset.l }; teil5(i+1);
     });
+    zurueckVerdrahten(4, i);
   };
 
   const starts = [teil1, teil2, teil3, teil4, teil5];
@@ -1370,7 +1614,12 @@ function screenSession(p, opts = {}) {
           if (gelegt.length === a.elemente.length) auswerten(a, gelegt.join(' → '));
           else zeichnen();
         });
-        bereich.querySelector('#reset')?.addEventListener('click', () => { gelegt = []; zeichnen(); });
+        mitNachfrage(bereich.querySelector('#reset'), {
+          frage: 'Alles wieder wegnehmen und neu legen?',
+          jaText: 'Ja, neu legen',
+          wennEtwasDaIst: () => gelegt.length > 0,
+          dann: () => { gelegt = []; zeichnen(); }
+        });
       };
       zeichnen();
 
@@ -1451,6 +1700,7 @@ function screenSession(p, opts = {}) {
         <button class="btn" id="weiter" style="margin-top:12px">
           ${sess.index >= sess.laenge ? 'Ergebnis ansehen' : 'Weiter →'}</button>` : `
         <div class="feedback ${ergebnis?'ok':'bad'} pop">
+          ${a.punkte > 0 ? `<div class="punktezuwachs">+${a.punkte} Punkte</div>` : ''}
           ${a.kommentar ? `<div class="kommentar">${esc(a.kommentar)}</div>` : ''}
           ${a.leseWerte ? leseRueckmeldung(a) : zeichenAufgabe
             ? (ergebnis ? `✅ Getroffen! ${esc(eingabe)}` : `🖌️ Noch nicht ganz: ${esc(eingabe)}`)
@@ -1491,7 +1741,14 @@ function screenSession(p, opts = {}) {
     sess.index++;
     if (a.keineWertung) sess.laenge--;          // zählt nicht in die Quote der Runde
     else if (ok) sess.richtig++;
-    if (!a.keineWertung) sess.verlauf.push({ ziel:a.ziel.id, weg:a.weg, ok, bruecke:a.bruecke, ms });
+    if (!a.keineWertung) sess.verlauf.push({
+      ziel:a.ziel.id, weg:a.weg, ok, bruecke:a.bruecke, ms,
+      /* Für den Rückblick am Rundenende: Frage, gegebene und richtige Antwort,
+         und die Erklärung, falls diese Aufgabe eine mitbringt (quelle oder
+         hilfe – nichts wird dafür erfunden, wo keine da ist). */
+      typ: a.typ, frage: a.frage, eingabe, antwort: a.antwort,
+      erklaerung: a.quelle || a.hilfe || null
+    });
     // Zeit fliesst in die Wirksamkeit eines Weges ein – schnell und sicher zaehlt mehr.
     S.verbuche(p, { zielId:a.ziel.id, weg:a.weg, level:a.level, richtig:ok, bruecke:a.bruecke, ms,
                     tippsGenutzt, knacknuss: !!a.knacknuss, keineWertung: !!a.keineWertung,
@@ -1508,6 +1765,13 @@ function screenSession(p, opts = {}) {
         wegName: a.wegInfo?.name || '', knacknuss: !!a.knacknuss });
       if (p.vorlesen && vorlesbar(a.kommentar)) vorlesen(a.kommentar);
     }
+    /* Wie viele Punkte diese Antwort gebracht hat – dieselbe Rechnung wie im
+       Speicher, damit die Anzeige nicht von der Buchung abweichen kann. */
+    a.punkte = Punkte.punkteFuer({ richtig: ok, level: a.level || 1, serie: standNachher.serie,
+      tipps: tippsGenutzt, knacknuss: !!a.knacknuss, keineWertung: !!a.keineWertung });
+    sess.punkte = (sess.punkte || 0) + a.punkte;
+    if (!a.keineWertung) sess.verlauf[sess.verlauf.length - 1].punkte = a.punkte;
+    kopfzeile(p);
     Avatar.reagiere(ok ? 'richtig' : 'falsch', { serie: standNachher.serie });
     if (ok && navigator.vibrate) navigator.vibrate(20);
     render(a, ok, String(eingabe));
@@ -1517,11 +1781,18 @@ function screenSession(p, opts = {}) {
     Avatar.reagiere('fertig');
     const quote = proz(sess.richtig, sess.laenge);
     const neueAbzeichen = S.pruefeAbzeichen(p);
+    /* Erst die alte Bestleistung holen, DANN die neue merken – sonst wäre
+       jede Runde ihr eigener Rekord. */
+    const besteVorher = S.merkeRunde(p, sess.punkte || 0);
+    const geistVorher = S.merkeRennen(p, Rennen.spurFuer(sess.verlauf), sess.punkte || 0);
     const perWeg = {};
     sess.verlauf.forEach(v => { (perWeg[v.weg] ||= {ok:0,n:0}); perWeg[v.weg].n++; if (v.ok) perWeg[v.weg].ok++; });
     view().innerHTML = `
       <div class="hero"><h1>${quote>=80?'Stark! 🌟':quote>=50?'Gut gemacht! 👏':'Weiter so! 💪'}</h1>
         <p>${sess.richtig} von ${sess.laenge} richtig · ${quote} %</p></div>
+      ${punkteKarte(p, sess.punkte || 0, besteVorher)}
+      ${rennKarte(p, sess, geistVorher)}
+      ${rueckblickKarte(sess)}
       <div class="card">
         <h3>Deine Wege in dieser Runde</h3>
         ${Object.entries(perWeg).map(([w,v]) => `<div class="talent-row">
@@ -1535,6 +1806,8 @@ function screenSession(p, opts = {}) {
       <button class="btn quiet" id="heim" style="margin-top:10px">Zur Übersicht</button>`;
     view().querySelector('#nochmal').onclick = () => zeige('session', opts);
     view().querySelector('#heim').onclick = () => zeige('lernen');
+    const rennStart = view().querySelector('#rennStart');
+    if (rennStart) rennStart.onclick = () => rennenStarten(p, sess, geistVorher);
   };
 
   Avatar.reagiere('start');
@@ -1569,7 +1842,14 @@ function screenTalente(p) {
     <button class="btn ghost" id="retest" style="margin-top:10px">Talent-Test ${p.testGemacht?'wiederholen':'starten'}</button>
     <p class="muted small center" style="margin-top:8px">Kinder verändern sich – der Test darf alle paar Monate neu gemacht werden.</p>`;
   view().querySelector('#galerie').onclick = () => zeige('galerie');
-  view().querySelector('#retest').onclick = () => zeige('test');
+  /* Der Talent-Test überschreibt das bisherige Talentbild. Beim ERSTEN Mal
+     gibt es nichts zu verlieren – dann wird auch nicht gefragt. */
+  mitNachfrage(view().querySelector('#retest'), {
+    frage: 'Der Test beginnt von vorn und ersetzt dein bisheriges Talent-Radar. Wirklich?',
+    jaText: 'Ja, von vorn',
+    wennEtwasDaIst: () => !!p.testGemacht,
+    dann: () => zeige('test')
+  });
 }
 
 /* ------------------------------ Galerie ------------------------------ */
@@ -1941,6 +2221,7 @@ function screenEltern(p) {
       <input type="file" id="importFile" accept="application/json" hidden>
       <button class="btn danger" id="reset" style="margin-top:14px">Alle Daten löschen</button>
     </div>
+    ${vergleichKarte(p)}
     ${skizzenKarte(p)}
     ${leseProfilKarte(p)}
     ${versionsKarte()}

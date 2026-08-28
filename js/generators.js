@@ -281,36 +281,136 @@ vokabeln: (() => {
 
 /* ---------------- Allgemeinwissen ---------------- */
 allgemein: (() => {
+  /* Jeder Eintrag traegt jetzt eine Erklaerung als viertes Feld - sie wird
+     nach der Antwort gezeigt, egal ob richtig oder falsch beantwortet. Ohne
+     sie stand da nur "richtig waere X", ohne zu sagen, WARUM. */
   const FAKT = [
-    ['Welcher Planet ist der Erde am nächsten zur Sonne hin?','Venus',['Mars','Jupiter','Saturn']],
-    ['Wie viele Beine hat eine Spinne?','8',['6','10','4']],
-    ['Welches Organ pumpt das Blut durch den Körper?','das Herz',['die Lunge','der Magen','die Leber']],
-    ['Wie viele Kontinente gibt es?','7',['5','6','9']],
-    ['Was ist die Hauptstadt von Deutschland?','Berlin',['Hamburg','München','Köln']],
-    ['Welches ist das größte Tier der Erde?','Blauwal',['Elefant','Giraffe','Hai']],
-    ['Wie viele Minuten hat eine Stunde?','60',['100','30','24']],
-    ['Wie viele Knochen hat ein erwachsener Mensch ungefähr?','206',['150','320','80']]
+    ['Welcher Planet ist der Erde am nächsten zur Sonne hin?','Venus',['Mars','Jupiter','Saturn'],
+      'Von der Sonne aus: Merkur, Venus, Erde, Mars. Die Venus ist unsere Nachbarin nach innen.'],
+    ['Wie viele Beine hat eine Spinne?','8',['6','10','4'],
+      'Acht Beine unterscheiden Spinnen von Insekten – Insekten haben genau sechs.'],
+    ['Welches Organ pumpt das Blut durch den Körper?','das Herz',['die Lunge','der Magen','die Leber'],
+      'Das Herz ist ein Muskel, der sich etwa 70-mal pro Minute zusammenzieht und das Blut durch die Adern presst.'],
+    ['Wie viele Kontinente gibt es?','7',['5','6','9'],
+      'Afrika, Amerika (Nord und Süd getrennt gezählt), Antarktika, Asien, Australien, Europa.'],
+    ['Was ist die Hauptstadt von Deutschland?','Berlin',['Hamburg','München','Köln'],
+      'Berlin ist seit der Wiedervereinigung 1990 wieder Hauptstadt und Sitz von Bundestag und Regierung.'],
+    ['Welches ist das größte Tier der Erde?','Blauwal',['Elefant','Giraffe','Hai'],
+      'Ein ausgewachsener Blauwal kann über 30 Meter lang und schwerer als 20 Elefanten sein.'],
+    ['Wie viele Minuten hat eine Stunde?','60',['100','30','24'],
+      'Die Einteilung in 60 stammt aus dem alten Babylon – daher zählen wir bis heute in Sechzigern.'],
+    ['Wie viele Knochen hat ein erwachsener Mensch ungefähr?','206',['150','320','80'],
+      'Babys haben über 300 Knochen; viele wachsen im Laufe des Lebens zusammen.']
   ];
   const STORY = [
-    ['📖 Ein Bäcker steht um 3 Uhr nachts auf. Warum?','Damit die Brötchen morgens frisch sind',['Weil er nicht schlafen kann','Weil nachts Ferien sind','Weil der Laden nachts offen ist']],
-    ['📖 Im Herbst verlieren viele Bäume ihre Blätter. Warum?','Um im Winter Wasser zu sparen',['Weil die Blätter schwer sind','Weil Vögel sie fressen','Weil es dunkel wird']],
-    ['📖 Auf einer Landkarte ist Wasser meist blau. Was ist dann grün?','flaches Land',['Städte','Berge über 3000 m','Straßen']]
+    ['📖 Ein Bäcker steht um 3 Uhr nachts auf. Warum?','Damit die Brötchen morgens frisch sind',
+      ['Weil er nicht schlafen kann','Weil nachts Ferien sind','Weil der Laden nachts offen ist'],
+      'Teig muss backen und Brötchen müssen fertig sein, bevor die Kundschaft morgens kommt.'],
+    ['📖 Im Herbst verlieren viele Bäume ihre Blätter. Warum?','Um im Winter Wasser zu sparen',
+      ['Weil die Blätter schwer sind','Weil Vögel sie fressen','Weil es dunkel wird'],
+      'Über die Blätter verdunstet Wasser. Im Winter ist der Boden gefroren und der Baum kann kaum Wasser nachholen.'],
+    ['📖 Auf einer Landkarte ist Wasser meist blau. Was ist dann grün?','flaches Land',
+      ['Städte','Berge über 3000 m','Straßen'],
+      'Kartenfarben zeigen meist die Höhe: Grün steht für niedrig gelegenes Land, Braun und Weiß für Berge.']
   ];
   const SCHAETZ = [
-    ['🧠 Was ist schwerer: 1 kg Federn oder 1 kg Steine?','Beides gleich schwer',['1 kg Steine','1 kg Federn']],
-    ['🧠 Was dauert länger: ein Jahr auf der Erde oder ein Tag?','ein Jahr',['ein Tag','gleich lang']],
-    ['🧠 Welche Strecke ist länger: 1000 m oder 1 km?','Beide gleich lang',['1000 m','1 km']],
-    ['🧠 Was ist heißer: kochendes Wasser oder ein Eiswürfel?','kochendes Wasser',['der Eiswürfel','gleich']]
+    ['🧠 Was ist schwerer: 1 kg Federn oder 1 kg Steine?','Beides gleich schwer',['1 kg Steine','1 kg Federn'],
+      'Ein Kilogramm ist ein Kilogramm – nur der Rauminhalt ist verschieden, Federn brauchen viel mehr Platz.'],
+    ['🧠 Was dauert länger: ein Jahr auf der Erde oder ein Tag?','ein Jahr',['ein Tag','gleich lang'],
+      'Ein Tag ist eine Erdumdrehung um sich selbst, ein Jahr eine ganze Runde um die Sonne – das dauert viel länger.'],
+    ['🧠 Welche Strecke ist länger: 1000 m oder 1 km?','Beide gleich lang',['1000 m','1 km'],
+      '„Kilo" bedeutet tausend – ein Kilometer ist per Definition genau 1000 Meter.'],
+    ['🧠 Was ist heißer: kochendes Wasser oder ein Eiswürfel?','kochendes Wasser',['der Eiswürfel','gleich'],
+      'Wasser kocht bei 100 °C, Eis liegt bei 0 °C oder darunter – ein großer Unterschied.']
   ];
   const ALLTAG = [
-    ['🤝 Welche Nummer wählst du im Notfall (Feuerwehr/Rettung) in Europa?','112',['110 für Feuer','911','119']],
-    ['🤝 Die Ampel für Fußgänger zeigt Rot. Was tust du?','Warten, bis sie grün ist',['Schnell laufen','Winken und gehen','Auf die Straße treten']],
-    ['🤝 Ein Kind auf dem Schulhof ist gestürzt und weint. Was hilft zuerst?','Fragen, ob es Hilfe braucht, und Hilfe holen',['Weglaufen','Lachen','Nichts sagen']],
-    ['🤝 Jemand im Netz fragt dich nach deiner Adresse. Was tust du?','Nichts verraten und Erwachsene fragen',['Adresse schicken','Foto schicken','Telefonnummer geben']]
+    ['🤝 Welche Nummer wählst du im Notfall (Feuerwehr/Rettung) in Europa?','112',
+      ['110 für Feuer','911','119'],
+      '112 gilt in ganz Europa für Feuerwehr und Rettungsdienst, auch ohne Guthaben auf dem Handy. 110 ist in Deutschland die Polizei.'],
+    ['🤝 Die Ampel für Fußgänger zeigt Rot. Was tust du?','Warten, bis sie grün ist',
+      ['Schnell laufen','Winken und gehen','Auf die Straße treten'],
+      'Autos rechnen bei Rot nicht mit Fußgängern – warten schützt vor Unfällen, auch wenn die Straße leer aussieht.'],
+    ['🤝 Ein Kind auf dem Schulhof ist gestürzt und weint. Was hilft zuerst?',
+      'Fragen, ob es Hilfe braucht, und Hilfe holen', ['Weglaufen','Lachen','Nichts sagen'],
+      'Erst nachfragen und dann eine erwachsene Person holen ist immer richtig – auch wenn nichts Schlimmes passiert ist.'],
+    ['🤝 Jemand im Netz fragt dich nach deiner Adresse. Was tust du?',
+      'Nichts verraten und Erwachsene fragen', ['Adresse schicken','Foto schicken','Telefonnummer geben'],
+      'Im Internet weiß man nie sicher, wer wirklich fragt. Persönliche Angaben gehören nicht in fremde Hände.']
   ];
-  const q = arr => { const [f,ok,bad] = pick(arr); return wahl(f, ok, bad, ''); };
+  const q = arr => { const [f,ok,bad,erklaerung] = pick(arr); return { ...wahl(f, ok, bad, erklaerung), quelle: erklaerung }; };
   return {
-    entdecken(){ return q(FAKT.map(([f,o,b])=>['🔎 '+f,o,b])); },
+    entdecken(){ return q(FAKT.map(([f,o,b,e])=>['🔎 '+f,o,b,e])); },
+    erzaehlen(){ return q(STORY); },
+    knobeln(){ return q(SCHAETZ); },
+    team(){ return q(ALLTAG); }
+  };
+})(),
+
+/* ---------------- Gesund essen ----------------
+   Bewusst OHNE Diätregeln, Kalorien oder "verbotene" Lebensmittel - das
+   wäre bei Kindern schädlich statt hilfreich. Es geht um Zusammenhänge,
+   die ein Kind selbst nachvollziehen kann: warum Wasser, warum Vielfalt,
+   warum Frühstück - nie um Verzicht oder ein Urteil über einzelne Speisen.
+   Jeder Eintrag hat wieder eine Erklärung, wie bei „Allgemeinwissen". */
+ernaehrung: (() => {
+  const FAKT = [
+    ['Was braucht dein Körper am meisten – öfter über den Tag verteilt?','Wasser',
+      ['Süßigkeiten','Chips','Limonade'],
+      'Der Körper besteht zu einem großen Teil aus Wasser und verliert laufend welches – über Atmen, Schwitzen und die Toilette. Nachfüllen muss regelmäßig passieren.'],
+    ['Welche Mahlzeit füllt morgens den Energiespeicher nach der Nacht wieder auf?','das Frühstück',
+      ['das Mittagessen','das Abendessen','ein Nachtisch'],
+      'Über Nacht isst du nichts – der Körper hat also viele Stunden ohne Nachschub gearbeitet. Frühstück füllt den Speicher wieder auf, bevor der Tag losgeht.'],
+    ['Warum bekommen Zähne öfter Löcher, wenn viel Süßes gegessen wird?','Bakterien im Mund mögen Zucker und bilden daraus Säure',
+      ['Zucker macht die Zähne weich','Süßes ist zu kalt für Zähne','Zucker färbt die Zähne'],
+      'Bakterien auf den Zähnen verwandeln Zucker in Säure, und diese Säure greift den Zahnschmelz an. Zähneputzen entfernt die Bakterien, bevor viel Säure entsteht.'],
+    ['Warum ist es gut, jeden Tag verschiedenfarbiges Obst und Gemüse zu essen?','Unterschiedliche Farben liefern unterschiedliche Nährstoffe',
+      ['Bunte Sachen schmecken automatisch besser','Nur die Farbe zählt, nicht der Geschmack','Grünes Gemüse ist immer am gesündesten'],
+      'Die Farbe in Obst und Gemüse kommt oft von Stoffen, die der Körper braucht – und jede Farbe liefert andere davon. Vielfalt auf dem Teller heißt Vielfalt an Nährstoffen.'],
+    ['Wozu braucht der Körper Ballaststoffe, wie sie in Vollkornbrot oder Gemüse stecken?','Sie helfen der Verdauung, gut zu arbeiten',
+      ['Sie machen besonders schnell satt für eine Minute','Sie schmecken süß','Sie sind nur für Erwachsene wichtig'],
+      'Ballaststoffe werden nicht verdaut, sondern wandern durch den Darm und halten ihn dabei in Bewegung – wichtig, damit die Verdauung rund läuft.']
+  ];
+  const STORY = [
+    ['📖 Nina hat vor dem Sportunterricht nur ein Glas Limonade getrunken und wird dann schnell müde. Woran liegt das am ehesten?',
+      'Limonade gibt kurz Energie, aber kaum das, was der Körper für längere Zeit braucht',
+      ['Sport macht immer müde','Limonade ist zu kalt','Sie hat zu viel getrunken'],
+      'Zucker aus Limonade wird sehr schnell aufgenommen und genauso schnell wieder verbraucht – danach fehlt Nachschub. Eine Mahlzeit mit mehr als nur Zucker hält länger vor.'],
+    ['📖 Tim probiert beim Mittagessen zum ersten Mal Brokkoli, mag ihn aber noch nicht. Was ist der klügste nächste Schritt?',
+      'Ihn in Ruhe lassen und irgendwann einfach nochmal anbieten',
+      ['Nie wieder Brokkoli kochen','Ihn zwingen aufzuessen','Sagen, dass er dumm ist, wenn er ihn nicht mag'],
+      'Geschmack ändert sich mit der Zeit, und neue Lebensmittel brauchen oft mehrere Anläufe, bis sie vertraut werden. Zwang oder Druck machen ein Essen eher unbeliebter, nicht beliebter.'],
+    ['📖 Familie Keller isst am Wochenende einmal Pizza und freut sich richtig darauf. Ist das in Ordnung?',
+      'Ja – worauf es ankommt, ist das Essen über die ganze Woche, nicht eine einzelne Mahlzeit',
+      ['Nein, Pizza ist grundsätzlich schlecht','Nur wenn man vorher nichts anderes isst','Nein, Familien sollten nie Pizza essen'],
+      'Kein einzelnes Essen entscheidet über Gesundheit. Wichtig ist die Mischung über Tage und Wochen – und Vorfreude auf ein gemeinsames Essen gehört genauso dazu.']
+  ];
+  const SCHAETZ = [
+    ['🧠 Was macht länger satt: ein Vollkornbrot oder ein Weißbrot mit derselben Größe?','das Vollkornbrot',
+      ['das Weißbrot','beides exakt gleich lang'],
+      'Vollkornbrot enthält mehr Ballaststoffe, die der Körper langsamer verarbeitet – der Magen ist dadurch länger beschäftigt und das Sättigungsgefühl hält länger an.'],
+    ['🧠 Was liefert mehr Nährstoffe für den Körper: ein ganzer Apfel oder dieselbe Menge Apfelsaft?','der ganze Apfel',
+      ['der Apfelsaft','beides ist identisch'],
+      'Beim Pressen zu Saft bleiben Fruchtfleisch und Ballaststoffe größtenteils zurück – im ganzen Apfel steckt mehr davon, und man kaut ihn auch langsamer.'],
+    ['🧠 Was braucht der Körper an einem Sporttag eher mehr: Wasser oder an einem ruhigen Tag zu Hause?','an einem Sporttag',
+      ['an einem ruhigen Tag','immer gleich viel'],
+      'Beim Schwitzen verliert der Körper zusätzliches Wasser. Wer sich bewegt oder es warm hat, muss also mehr trinken als sonst, um das auszugleichen.']
+  ];
+  const ALLTAG = [
+    ['🤝 Du hast schon Hunger, aber das Essen ist erst in einer halben Stunde fertig. Was ist eine gute Idee?',
+      'In Ruhe warten oder nach etwas Kleinem wie Obst fragen',
+      ['Direkt eine ganze Tüte Chips essen','Sich beschweren und nichts mehr essen wollen','Sich heimlich aus dem Süßigkeitenschrank bedienen'],
+      'Ein kleiner gesunder Snack überbrückt Hunger, ohne die Hauptmahlzeit zu ersetzen. Weder Verzicht noch eine riesige Portion Süßes sind dafür nötig.'],
+    ['🤝 Beim Kindergeburtstag gibt es viel Kuchen und Süßigkeiten. Wie gehst du am besten damit um?','Mitfeiern und genießen – so oft kommt das nicht vor',
+      ['Gar nichts davon anrühren, aus Angst vor Zucker','So viel wie irgend möglich essen, bis einem schlecht wird','Andere Kinder auslachen, die viel essen'],
+      'Ein Fest ist eine Ausnahme, keine tägliche Gewohnheit. Genau deshalb muss dort niemand streng sein – und niemand muss sich beim Essen beobachtet fühlen.'],
+    ['🤝 Ein Freund isst nie Obst und Gemüse und ärgert sich, wenn du danach fragst. Was tust du?',
+      'Es einfach akzeptieren – jeder isst und mag anders',
+      ['Ihn deswegen auslachen','Ihm sein Essen wegnehmen','Ihm sagen, dass er dumm ist'],
+      'Essgewohnheiten sind sehr unterschiedlich und oft Familiensache. Ein Kind über sein Essen zu ärgern hilft niemandem – Respekt tut das eher.']
+  ];
+  const q = arr => { const [f,ok,bad,erklaerung] = pick(arr); return { ...wahl(f, ok, bad, erklaerung), quelle: erklaerung }; };
+  return {
+    entdecken(){ return q(FAKT.map(([f,o,b,e])=>['🔎 '+f,o,b,e])); },
     erzaehlen(){ return q(STORY); },
     knobeln(){ return q(SCHAETZ); },
     team(){ return q(ALLTAG); }
@@ -636,10 +736,10 @@ kunstwerk: (() => {
 /* ---------------- Klassiker: Knacknüsse ---------------- */
 knacknuss: (() => {
   const RAHMEN = {
-    knobeln:   'Knacknuss – nimm dir Zeit.',
-    erzaehlen: 'Diese Aufgabe wird seit Generationen weitererzählt.',
+    knobeln:   'Knacknuss – nimm dir Zeit. Unten kannst du dir die Aufgabe aufmalen.',
+    erzaehlen: 'Diese Aufgabe wird seit Generationen weitererzählt. Male sie dir ruhig unten auf.',
     bauen:     'Zeichne es auf oder leg es mit Gegenständen nach.',
-    team:      'Erkläre die Aufgabe jemandem – beim Erklären fällt die Lösung oft von selbst.'
+    team:      'Erkläre die Aufgabe jemandem – beim Erklären fällt die Lösung oft von selbst. Aufmalen hilft dabei.'
   };
   const bauen = (weg, lvl) => {
     // Fenster um die eigene Stufe herum – groß genug, damit sich nichts
@@ -661,7 +761,12 @@ knacknuss: (() => {
         tipps: a.tipps,
         quelle: f.quelle,
         hilfe: a.tipps.at(-1) || '',
-        knacknuss: true
+        knacknuss: true,
+        /* Knacknuesse sind genau die Aufgaben, bei denen eine Skizze am
+           meisten hilft (ein Gitter zeichnen, Personen als Punkte setzen,
+           eine Wegstrecke aufmalen). Das Schmierblatt steht bei ihnen deshalb
+           von Anfang an offen da, statt erst entdeckt werden zu muessen. */
+        blattOffen: true
       };
     }
 
@@ -676,7 +781,8 @@ knacknuss: (() => {
       tipps: k.tipps || [],
       quelle: k.quelle,
       hilfe: (k.tipps || []).at(-1) || '',
-      knacknuss: true
+      knacknuss: true,
+      blattOffen: true
     };
   };
   return {
