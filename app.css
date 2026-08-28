@@ -205,6 +205,20 @@ details.card ol{margin:8px 0}
 .figur.gaehnen{animation:gaehnen 1.1s ease}
 @keyframes gaehnen{0%,100%{transform:scale(1)}40%{transform:scale(1.18) rotate(-6deg)}70%{transform:scale(.96)}}
 .figur.schlafen{animation:schlafen 3s ease-in-out infinite;opacity:.75}
+
+/* Renn-Modus: die Runde als Kart-Rennen gegen das eigene Geisterrennen */
+.rennstrecke{position:relative;margin:12px 0 4px;padding:10px 0;
+  background:repeating-linear-gradient(90deg,var(--line) 0 14px,transparent 14px 28px);
+  border-radius:10px}
+.rennspur{position:relative;height:38px}
+.rennspur.geist{opacity:.85}
+.rennfigur{position:absolute;top:0;font-size:1.7rem;line-height:1;transform:translateX(-6px);
+  transition:left .12s linear}
+.rennfigur.geist{font-size:1.4rem;filter:grayscale(.4) opacity(.75)}
+.rennfigur.ich{animation:rennwackeln .3s ease-in-out infinite alternate}
+@keyframes rennwackeln{from{transform:translateX(-6px) rotate(-4deg)}to{transform:translateX(-6px) rotate(4deg)}}
+.rennziel{position:absolute;right:2px;top:4px;font-size:1.3rem}
+@media (prefers-reduced-motion: reduce){ .rennfigur.ich{animation:none} .rennfigur{transition:none} }
 @keyframes schlafen{0%,100%{transform:scale(1) rotate(-6deg)}50%{transform:scale(1.05) rotate(-6deg)}}
 
 /* Zeichenbrett */

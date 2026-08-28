@@ -20,6 +20,7 @@ import * as Zahl from './zahlfeld.js';
 import { kommentar, vorlesbar } from './kommentar.js';
 import { pruefe } from './generators.js';
 import { radar } from './chart.js';
+import * as Rennen from './rennen.js';
 
 const view = () => document.getElementById('view');
 export const esc = s => String(s).replace(/[&<>"']/g, c =>
@@ -338,6 +339,66 @@ function punkteKarte(p, punkteDerRunde, besteVorher) {
       </div>
       <div class="bar" style="margin-top:6px"><i style="width:${Math.round(r.anteil*100)}%"></i></div>
     </div>`;
+}
+
+/* Renn-Modus: die Runde als kleines Kart-Rennen gegen das eigene Geisterrennen
+   ansehen. Der Geist ist keine Erfindung, sondern die genaue Zeit-Punkte-Kurve
+   der bisher besten Runde - der einzige Gegner, den eine App ohne Server
+   fair anbieten kann. Nur sichtbar, wenn es überhaupt bewertete Aufgaben gab. */
+function rennKarte(p, sess, geist) {
+  if (!sess.verlauf.some(v => v.punkte != null)) return '';
+  return `
+    <div class="card renn-karte">
+      <h3>🏁 Als Rennen ansehen</h3>
+      <p class="small muted">Dein Avatar gegen dein eigenes bisher bestes Rennen${
+        geist.spur ? '' : ' – dies wird dein erstes, ab jetzt gibt es einen Geist zum Messen'}.</p>
+      <div class="rennstrecke" id="rennstrecke">
+        <div class="rennspur">
+          <span class="rennfigur ich" id="rennIch" style="left:0%">${esc(p.avatar || '🦊')}</span>
+        </div>
+        ${geist.spur ? `<div class="rennspur geist">
+          <span class="rennfigur geist" id="rennGeist" style="left:0%">👻</span>
+        </div>` : ''}
+        <div class="rennziel">🏁</div>
+      </div>
+      <p class="small" id="rennErgebnis" style="min-height:1.4em;font-weight:700"></p>
+      <button class="btn quiet" id="rennStart" type="button">▶️ Rennen starten</button>
+    </div>`;
+}
+
+/* Spielt das Rennen aus rennKarte() ab: beide Figuren wandern ueber die
+   Strecke, nach der Zeit-Punkte-Kurve der jeweiligen Runde interpoliert.
+   Echte Rundenzeiten koennen Minuten dauern - fuers Zusehen wird das auf eine
+   feste Abspieldauer gestaucht, ohne die Reihenfolge der Ereignisse zu aendern. */
+function rennenStarten(p, sess, geist) {
+  const strecke = view().querySelector('#rennstrecke');
+  if (!strecke) return;
+  const spurEigen = Rennen.spurFuer(sess.verlauf);
+  const eigenEnde = spurEigen[spurEigen.length - 1];
+  const geistEnde = geist.spur ? geist.spur[geist.spur.length - 1] : { ms: 0, punkte: 0 };
+  const zielPunkte = Math.max(eigenEnde.punkte, geistEnde.punkte, 1);
+  const realDauer = Math.max(eigenEnde.ms, geistEnde.ms, 1);
+  const abspielDauer = Math.min(7000, Math.max(2200, realDauer / 8));
+  const ich = strecke.querySelector('#rennIch');
+  const geistFigur = strecke.querySelector('#rennGeist');
+  const ergebnis = view().querySelector('#rennErgebnis');
+  const anzeigen = pkt => Math.min(90, Rennen.prozentAuf(pkt, zielPunkte));
+  ich.style.left = '0%';
+  if (geistFigur) geistFigur.style.left = '0%';
+  if (ergebnis) ergebnis.textContent = '';
+  const start = performance.now();
+  const frame = now => {
+    const anteil = Math.min(1, (now - start) / abspielDauer);
+    const realMs = anteil * realDauer;
+    ich.style.left = anzeigen(Rennen.geistBei(spurEigen, realMs)) + '%';
+    if (geistFigur) geistFigur.style.left = anzeigen(Rennen.geistBei(geist.spur, realMs)) + '%';
+    if (anteil < 1) requestAnimationFrame(frame);
+    else if (ergebnis) {
+      const erg = Rennen.rennErgebnis(eigenEnde.punkte, geistEnde.punkte);
+      ergebnis.textContent = (erg.gewonnen ? '🏆 ' : '') + erg.text;
+    }
+  };
+  requestAnimationFrame(frame);
 }
 
 /* Vergleich auf dem Gerät – Geschwister nebeneinander. Nur, wenn es überhaupt
@@ -1709,6 +1770,7 @@ function screenSession(p, opts = {}) {
     a.punkte = Punkte.punkteFuer({ richtig: ok, level: a.level || 1, serie: standNachher.serie,
       tipps: tippsGenutzt, knacknuss: !!a.knacknuss, keineWertung: !!a.keineWertung });
     sess.punkte = (sess.punkte || 0) + a.punkte;
+    if (!a.keineWertung) sess.verlauf[sess.verlauf.length - 1].punkte = a.punkte;
     kopfzeile(p);
     Avatar.reagiere(ok ? 'richtig' : 'falsch', { serie: standNachher.serie });
     if (ok && navigator.vibrate) navigator.vibrate(20);
@@ -1722,12 +1784,14 @@ function screenSession(p, opts = {}) {
     /* Erst die alte Bestleistung holen, DANN die neue merken – sonst wäre
        jede Runde ihr eigener Rekord. */
     const besteVorher = S.merkeRunde(p, sess.punkte || 0);
+    const geistVorher = S.merkeRennen(p, Rennen.spurFuer(sess.verlauf), sess.punkte || 0);
     const perWeg = {};
     sess.verlauf.forEach(v => { (perWeg[v.weg] ||= {ok:0,n:0}); perWeg[v.weg].n++; if (v.ok) perWeg[v.weg].ok++; });
     view().innerHTML = `
       <div class="hero"><h1>${quote>=80?'Stark! 🌟':quote>=50?'Gut gemacht! 👏':'Weiter so! 💪'}</h1>
         <p>${sess.richtig} von ${sess.laenge} richtig · ${quote} %</p></div>
       ${punkteKarte(p, sess.punkte || 0, besteVorher)}
+      ${rennKarte(p, sess, geistVorher)}
       ${rueckblickKarte(sess)}
       <div class="card">
         <h3>Deine Wege in dieser Runde</h3>
@@ -1742,6 +1806,8 @@ function screenSession(p, opts = {}) {
       <button class="btn quiet" id="heim" style="margin-top:10px">Zur Übersicht</button>`;
     view().querySelector('#nochmal').onclick = () => zeige('session', opts);
     view().querySelector('#heim').onclick = () => zeige('lernen');
+    const rennStart = view().querySelector('#rennStart');
+    if (rennStart) rennStart.onclick = () => rennenStarten(p, sess, geistVorher);
   };
 
   Avatar.reagiere('start');

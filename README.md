@@ -382,6 +382,26 @@ verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
    dieses offene Blatt ausgeliefert wird.
 
 
+21. **Renn-Modus: der Avatar tritt gegen das eigene Geisterrennen an** 🏁
+   Am Ende jeder Runde lässt sich das Ergebnis als kleines Rennen ansehen: der eigene Avatar
+   läuft über eine Strecke, angetrieben genau von der Zeit-Punkte-Kurve der gerade gespielten
+   Runde. Ein **Geist** fährt mit – nicht irgendein erfundener Gegner, sondern exakt die
+   Kurve der bisher besten eigenen Runde. Die App hat keinen Server und keine Bestenliste
+   im Netz; der einzige faire Gegner ist deshalb man selbst. Wer die eigene Bestleistung
+   nicht schlägt, „verliert" nicht – die Karte formuliert das bewusst ohne Wertung
+   („knapp hinter deinem besten Rennen – nächstes Mal!"), genau wie beim übrigen
+   Punktesystem. `tests/rennen.mjs` prüft dabei vor allem eines: dass die Strecke nie
+   rückwärts geht – Punkte können pro Aufgabe nur 0 oder mehr sein, also kann die Kurve nur
+   wachsen oder stehen bleiben, nie fallen.
+
+22. **Neues Lernziel: Gesund essen** 🥕
+   Warum regelmäßig Wasser trinken, warum Frühstück, warum bunte Vielfalt auf dem Teller,
+   warum Zähneputzen nach Süßem – bewusst **ohne** Kalorien, Diätregeln oder als „schlecht"
+   markierte Lebensmittel. Ein einzelnes Stück Kuchen bei einem Fest ist in dieser App weder
+   verboten noch ein Anlass zur Sorge; es geht um Zusammenhänge, die ein Kind selbst
+   nachvollziehen kann, nicht um Verzicht.
+
+
 ---
 
 ## Auf dem Handy nutzen
@@ -434,7 +454,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 24 · Stand 26.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 25 · Stand 28.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.
@@ -522,6 +542,7 @@ npm run test:zahlfeld     # Zahleneingabe: alle 2037 Zahlantworten tippbar und a
 npm run test:kommentar    # Rückmeldungen: stimmen sie, und loben sie nie die Person?
 npm run test:aussprache   # Silben im Ton finden und zuordnen, an künstlichen Aufnahmen
 npm run test:punkte       # Punkte: nie Abzug, Schweres lohnt mehr, Unbewertetes zählt mit
+npm run test:rennen       # Renn-Modus: die Strecke geht nie rückwärts, kein falsches "verloren"
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
@@ -546,6 +567,7 @@ js/zahlfeld.js        Zahleneingabe mit Minus und Komma
 js/kommentar.js       Rückmeldung zur einzelnen Antwort (kein Sprachmodell – siehe Kopf)
 js/aussprache.js      Silben im Ton finden und dem bekannten Text zuordnen, Betonung prüfen
 js/punkte.js          Punkte, Ränge und der Vergleich auf dem Gerät
+js/rennen.js          Renn-Modus: Zeit-Punkte-Kurve der Runde, Geisterrennen gegen sich selbst
 js/silben.js          Deutsche Silbentrennung – Grundlage der Silbenfärbung
 js/lesen.js           Lesetexte und Auswertung der Leseflüssigkeit (Tempo, Pausen, Betonung)
 js/version.js         Fassung, Datum und Änderungsverlauf – die einzige Stelle dafür

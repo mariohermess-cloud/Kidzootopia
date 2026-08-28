@@ -442,6 +442,38 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   if (!/💡/.test(text)) throw new Error('Kein einziger Rückblick-Eintrag hat eine Erklärung: ' + text.slice(0,200));
   console.log(`Rückblick: ${eintraege.length} Antworten aufgelistet, mit Erklärungen ✅`);
   await p.screenshot({ path: `${S}/15-rueckblick.png`, fullPage: true });
+
+  // Renn-Modus: die Runde als Rennen ansehen, mit animiertem Avatar.
+  const rennKarte = await p.$('.renn-karte');
+  if (!rennKarte) throw new Error('Renn-Karte fehlt am Rundenende');
+  const startVorher = await p.getAttribute('#rennIch', 'style');
+  if (!/left:\s*0%/.test(startVorher || '')) throw new Error('Avatar startet nicht bei 0%: ' + startVorher);
+  await p.click('#rennStart');
+  await p.waitForFunction(() => {
+    const el = document.querySelector('#rennErgebnis');
+    return el && el.textContent.trim().length > 0;
+  }, { timeout: 10000 });
+  const rennText = await p.textContent('#rennErgebnis');
+  console.log(`Renn-Modus: animiert und Ergebnis gezeigt: „${rennText.trim()}" ✅`);
+  await p.screenshot({ path: `${S}/16-rennen.png`, fullPage: true });
+  await p.click('#heim'); await p.waitForSelector('#mission');
+}
+
+// Neues Lernziel "Gesund essen": Fragen erscheinen, keine Diätregeln nötig
+// zum Funktionieren zu pruefen - nur, dass die Aufgaben normal ablaufen.
+{
+  await bannerWeg(p);
+  await p.click('[data-ziel="ernaehrung"]');
+  await p.waitForSelector('.task');
+  await loeseAufgabe(p);
+  await p.waitForSelector('#weiter');
+  console.log('Aufgabe zu „Gesund essen" gelöst ✅');
+  await p.click('#weiter');
+  for (let i = 0; i < 14 && !(await p.$('#nochmal')); i++) {
+    await p.waitForSelector('.task'); await loeseAufgabe(p);
+    await p.waitForSelector('#weiter'); await p.click('#weiter');
+  }
+  await p.waitForSelector('#nochmal', { timeout: 8000 });
   await p.click('#heim'); await p.waitForSelector('#mission');
 }
 

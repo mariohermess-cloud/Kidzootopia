@@ -346,6 +346,77 @@ allgemein: (() => {
   };
 })(),
 
+/* ---------------- Gesund essen ----------------
+   Bewusst OHNE Diätregeln, Kalorien oder "verbotene" Lebensmittel - das
+   wäre bei Kindern schädlich statt hilfreich. Es geht um Zusammenhänge,
+   die ein Kind selbst nachvollziehen kann: warum Wasser, warum Vielfalt,
+   warum Frühstück - nie um Verzicht oder ein Urteil über einzelne Speisen.
+   Jeder Eintrag hat wieder eine Erklärung, wie bei „Allgemeinwissen". */
+ernaehrung: (() => {
+  const FAKT = [
+    ['Was braucht dein Körper am meisten – öfter über den Tag verteilt?','Wasser',
+      ['Süßigkeiten','Chips','Limonade'],
+      'Der Körper besteht zu einem großen Teil aus Wasser und verliert laufend welches – über Atmen, Schwitzen und die Toilette. Nachfüllen muss regelmäßig passieren.'],
+    ['Welche Mahlzeit füllt morgens den Energiespeicher nach der Nacht wieder auf?','das Frühstück',
+      ['das Mittagessen','das Abendessen','ein Nachtisch'],
+      'Über Nacht isst du nichts – der Körper hat also viele Stunden ohne Nachschub gearbeitet. Frühstück füllt den Speicher wieder auf, bevor der Tag losgeht.'],
+    ['Warum bekommen Zähne öfter Löcher, wenn viel Süßes gegessen wird?','Bakterien im Mund mögen Zucker und bilden daraus Säure',
+      ['Zucker macht die Zähne weich','Süßes ist zu kalt für Zähne','Zucker färbt die Zähne'],
+      'Bakterien auf den Zähnen verwandeln Zucker in Säure, und diese Säure greift den Zahnschmelz an. Zähneputzen entfernt die Bakterien, bevor viel Säure entsteht.'],
+    ['Warum ist es gut, jeden Tag verschiedenfarbiges Obst und Gemüse zu essen?','Unterschiedliche Farben liefern unterschiedliche Nährstoffe',
+      ['Bunte Sachen schmecken automatisch besser','Nur die Farbe zählt, nicht der Geschmack','Grünes Gemüse ist immer am gesündesten'],
+      'Die Farbe in Obst und Gemüse kommt oft von Stoffen, die der Körper braucht – und jede Farbe liefert andere davon. Vielfalt auf dem Teller heißt Vielfalt an Nährstoffen.'],
+    ['Wozu braucht der Körper Ballaststoffe, wie sie in Vollkornbrot oder Gemüse stecken?','Sie helfen der Verdauung, gut zu arbeiten',
+      ['Sie machen besonders schnell satt für eine Minute','Sie schmecken süß','Sie sind nur für Erwachsene wichtig'],
+      'Ballaststoffe werden nicht verdaut, sondern wandern durch den Darm und halten ihn dabei in Bewegung – wichtig, damit die Verdauung rund läuft.']
+  ];
+  const STORY = [
+    ['📖 Nina hat vor dem Sportunterricht nur ein Glas Limonade getrunken und wird dann schnell müde. Woran liegt das am ehesten?',
+      'Limonade gibt kurz Energie, aber kaum das, was der Körper für längere Zeit braucht',
+      ['Sport macht immer müde','Limonade ist zu kalt','Sie hat zu viel getrunken'],
+      'Zucker aus Limonade wird sehr schnell aufgenommen und genauso schnell wieder verbraucht – danach fehlt Nachschub. Eine Mahlzeit mit mehr als nur Zucker hält länger vor.'],
+    ['📖 Tim probiert beim Mittagessen zum ersten Mal Brokkoli, mag ihn aber noch nicht. Was ist der klügste nächste Schritt?',
+      'Ihn in Ruhe lassen und irgendwann einfach nochmal anbieten',
+      ['Nie wieder Brokkoli kochen','Ihn zwingen aufzuessen','Sagen, dass er dumm ist, wenn er ihn nicht mag'],
+      'Geschmack ändert sich mit der Zeit, und neue Lebensmittel brauchen oft mehrere Anläufe, bis sie vertraut werden. Zwang oder Druck machen ein Essen eher unbeliebter, nicht beliebter.'],
+    ['📖 Familie Keller isst am Wochenende einmal Pizza und freut sich richtig darauf. Ist das in Ordnung?',
+      'Ja – worauf es ankommt, ist das Essen über die ganze Woche, nicht eine einzelne Mahlzeit',
+      ['Nein, Pizza ist grundsätzlich schlecht','Nur wenn man vorher nichts anderes isst','Nein, Familien sollten nie Pizza essen'],
+      'Kein einzelnes Essen entscheidet über Gesundheit. Wichtig ist die Mischung über Tage und Wochen – und Vorfreude auf ein gemeinsames Essen gehört genauso dazu.']
+  ];
+  const SCHAETZ = [
+    ['🧠 Was macht länger satt: ein Vollkornbrot oder ein Weißbrot mit derselben Größe?','das Vollkornbrot',
+      ['das Weißbrot','beides exakt gleich lang'],
+      'Vollkornbrot enthält mehr Ballaststoffe, die der Körper langsamer verarbeitet – der Magen ist dadurch länger beschäftigt und das Sättigungsgefühl hält länger an.'],
+    ['🧠 Was liefert mehr Nährstoffe für den Körper: ein ganzer Apfel oder dieselbe Menge Apfelsaft?','der ganze Apfel',
+      ['der Apfelsaft','beides ist identisch'],
+      'Beim Pressen zu Saft bleiben Fruchtfleisch und Ballaststoffe größtenteils zurück – im ganzen Apfel steckt mehr davon, und man kaut ihn auch langsamer.'],
+    ['🧠 Was braucht der Körper an einem Sporttag eher mehr: Wasser oder an einem ruhigen Tag zu Hause?','an einem Sporttag',
+      ['an einem ruhigen Tag','immer gleich viel'],
+      'Beim Schwitzen verliert der Körper zusätzliches Wasser. Wer sich bewegt oder es warm hat, muss also mehr trinken als sonst, um das auszugleichen.']
+  ];
+  const ALLTAG = [
+    ['🤝 Du hast schon Hunger, aber das Essen ist erst in einer halben Stunde fertig. Was ist eine gute Idee?',
+      'In Ruhe warten oder nach etwas Kleinem wie Obst fragen',
+      ['Direkt eine ganze Tüte Chips essen','Sich beschweren und nichts mehr essen wollen','Sich heimlich aus dem Süßigkeitenschrank bedienen'],
+      'Ein kleiner gesunder Snack überbrückt Hunger, ohne die Hauptmahlzeit zu ersetzen. Weder Verzicht noch eine riesige Portion Süßes sind dafür nötig.'],
+    ['🤝 Beim Kindergeburtstag gibt es viel Kuchen und Süßigkeiten. Wie gehst du am besten damit um?','Mitfeiern und genießen – so oft kommt das nicht vor',
+      ['Gar nichts davon anrühren, aus Angst vor Zucker','So viel wie irgend möglich essen, bis einem schlecht wird','Andere Kinder auslachen, die viel essen'],
+      'Ein Fest ist eine Ausnahme, keine tägliche Gewohnheit. Genau deshalb muss dort niemand streng sein – und niemand muss sich beim Essen beobachtet fühlen.'],
+    ['🤝 Ein Freund isst nie Obst und Gemüse und ärgert sich, wenn du danach fragst. Was tust du?',
+      'Es einfach akzeptieren – jeder isst und mag anders',
+      ['Ihn deswegen auslachen','Ihm sein Essen wegnehmen','Ihm sagen, dass er dumm ist'],
+      'Essgewohnheiten sind sehr unterschiedlich und oft Familiensache. Ein Kind über sein Essen zu ärgern hilft niemandem – Respekt tut das eher.']
+  ];
+  const q = arr => { const [f,ok,bad,erklaerung] = pick(arr); return { ...wahl(f, ok, bad, erklaerung), quelle: erklaerung }; };
+  return {
+    entdecken(){ return q(FAKT.map(([f,o,b,e])=>['🔎 '+f,o,b,e])); },
+    erzaehlen(){ return q(STORY); },
+    knobeln(){ return q(SCHAETZ); },
+    team(){ return q(ALLTAG); }
+  };
+})(),
+
 /* ---------------- Muster & Logik ---------------- */
 logik: {
   knobeln(lvl){

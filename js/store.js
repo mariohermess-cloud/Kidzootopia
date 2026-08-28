@@ -588,3 +588,17 @@ export function merkeRunde(profil, punkteDerRunde) {
   if (punkteDerRunde > vorher) { s.besteRunde = punkteDerRunde; speichern(); }
   return vorher;
 }
+
+/* Geisterrennen: die Zeit-Punkte-Kurve der bisher besten Runde, zum
+   Nachfahren im Renn-Modus. Gibt die VORHERIGE beste Strecke zurück (der
+   Geist, gegen den man gerade angetreten ist) und merkt sich danach die neue,
+   falls diese Runde mehr Punkte hatte - genau wie merkeRunde() oben. */
+export function merkeRennen(profil, spur, punkteDerRunde) {
+  const vorherigeSpur = profil.rennen?.spur || null;
+  const vorherigePunkte = profil.rennen?.punkte || 0;
+  if (punkteDerRunde > vorherigePunkte) {
+    profil.rennen = { spur, punkte: punkteDerRunde };
+    speichern();
+  }
+  return { spur: vorherigeSpur, punkte: vorherigePunkte };
+}
