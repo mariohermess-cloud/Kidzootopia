@@ -21,6 +21,7 @@ import { kommentar, vorlesbar } from './kommentar.js';
 import { pruefe } from './generators.js';
 import { radar } from './chart.js';
 import * as Rennen from './rennen.js';
+import * as Ueberraschung from './ueberraschung.js';
 
 const view = () => document.getElementById('view');
 export const esc = s => String(s).replace(/[&<>"']/g, c =>
@@ -46,7 +47,7 @@ export function zeige(neu, daten) {
   window.scrollTo(0,0);
   ({ start:screenStart, lernen:screenLernen, talente:screenTalente, wege:screenWege,
      eltern:screenEltern, test:screenTest, session:screenSession, profile:screenProfile,
-     galerie:screenGalerie }[neu] || screenLernen)(p, daten);
+     galerie:screenGalerie, ueberraschung:screenUeberraschung }[neu] || screenLernen)(p, daten);
 }
 
 function kopfzeile(p) {
@@ -1371,6 +1372,7 @@ function screenLernen(p) {
       <p>8 Aufgaben – auf deinem Weg zusammengestellt.</p>
       <button class="btn" id="mission">Mission starten 🚀</button>
     </div>
+    ${ueberraschungsKarte(p)}
     <div class="card" style="border:2px solid var(--brand)">
       <div class="row spread">
         <div style="flex:1">
@@ -1430,6 +1432,88 @@ function screenLernen(p) {
   view().querySelector('#freiStart').onclick = () => zeige('session', { zielId:'kunstwerk', laenge:1 });
   view().querySelectorAll('[data-fach]').forEach(b => b.onclick = () => zeige('session', { fach:b.dataset.fach, laenge:8 }));
   view().querySelectorAll('[data-ziel]').forEach(b => b.onclick = () => zeige('session', { zielId:b.dataset.ziel, laenge:8 }));
+  view().querySelector('#zurUeberraschung')?.addEventListener('click', () => zeige('ueberraschung'));
+}
+
+/* Teaser für das Überraschungsrätsel des Tages: derselbe Anreiz wie bei
+   einem Kalender mit Türchen, nur ohne Warten auf Dezember. Ungelöst leuchtet
+   die Karte, gelöst wird sie ruhig - kein Countdown, kein Druck, "morgen gibt
+   es ein neues" statt "heute verpasst". */
+/* Das Überraschungsrätsel selbst: eine Zahlenpyramide oder ein Waage-Rätsel,
+   je nachdem, was der Kalendertag ergibt (siehe js/ueberraschung.js). Falsche
+   Versuche kosten nichts und dürfen beliebig oft wiederholt werden - Druck
+   wäre hier fehl am Platz, die Überraschung soll anlocken, nicht abschrecken. */
+function screenUeberraschung(p) {
+  const raetsel = Ueberraschung.raetselFuer();
+  const geloest = S.raetselHeuteGeloest(p);
+  const inhalt = raetsel.typ === 'pyramide' ? pyramideHtml(raetsel, geloest) : waageHtml(raetsel, geloest);
+  view().innerHTML = `
+    <div class="hero"><h1>${raetsel.titel}</h1><p>${esc(raetsel.hinweis)}</p></div>
+    <div class="card">
+      ${inhalt}
+      ${geloest
+        ? `<p class="small" style="font-weight:700;margin-top:14px">✅ Heute schon gelöst – morgen gibt es ein neues Rätsel.</p>`
+        : `<div class="row" style="margin-top:14px;gap:8px">
+             <input type="text" id="raetselEingabe" inputmode="numeric" placeholder="Deine Antwort" style="flex:1;min-width:0;width:auto">
+             <button class="btn" id="raetselPruefen" style="width:auto;flex:0 0 auto">Prüfen</button>
+           </div>
+           <p class="small" id="raetselRueckmeldung" style="min-height:1.4em;margin-top:8px;font-weight:700"></p>`}
+    </div>
+    <button class="btn quiet" id="raetselZurueck" style="margin-top:10px">Zurück</button>`;
+  view().querySelector('#raetselZurueck').onclick = () => zeige('lernen');
+  if (geloest) return;
+  const eingabe = view().querySelector('#raetselEingabe');
+  const rueckmeldung = view().querySelector('#raetselRueckmeldung');
+  const pruefen = () => {
+    if (!eingabe.value.trim()) return;
+    if (Ueberraschung.pruefeAntwort(raetsel, eingabe.value)) {
+      S.merkeUeberraschungsloesung(p, Ueberraschung.BONUS);
+      kopfzeile(p);
+      rueckmeldung.textContent = `🎉 Richtig! +${Ueberraschung.BONUS} Punkte. Morgen gibt es ein neues Rätsel.`;
+      eingabe.disabled = true;
+      view().querySelector('#raetselPruefen').disabled = true;
+      Avatar.reagiere('richtig');
+    } else {
+      rueckmeldung.textContent = 'Noch nicht ganz – versuch es gern nochmal.';
+      Avatar.reagiere('falsch');
+    }
+  };
+  view().querySelector('#raetselPruefen').onclick = pruefen;
+  eingabe.addEventListener('keydown', e => { if (e.key === 'Enter') pruefen(); });
+}
+
+function pyramideHtml(r, geloest) {
+  const rows = r.reihen.map((reihe, i) => ({ reihe, i })).reverse();  // Spitze zuerst
+  return `<div class="pyramide">
+    ${rows.map(({ reihe, i }) => `<div class="pyr-row">
+      ${reihe.map((v, j) => (i === r.versteckt.reihe && j === r.versteckt.spalte)
+        ? `<span class="pyr-zelle versteckt">${geloest ? v : '?'}</span>`
+        : `<span class="pyr-zelle">${v}</span>`).join('')}
+    </div>`).join('')}
+  </div>`;
+}
+
+function waageHtml(r, geloest) {
+  return `<div class="waage-zeilen">
+    ${r.zeilen.map(z => `<div class="waage-zeile">${esc(z.links.join(' + '))} = ${z.rechts}</div>`).join('')}
+    <div class="waage-zeile frage">${esc(geloest ? r.frage.replace('?', r.antwort) : r.frage)}</div>
+  </div>`;
+}
+
+function ueberraschungsKarte(p) {
+  const geloest = S.raetselHeuteGeloest(p);
+  return `
+    <div class="card ueberraschungs-karte${geloest ? '' : ' glimmt'}">
+      <div class="row spread">
+        <div style="flex:1">
+          <b>${geloest ? '✅' : '🎁'} Überraschungsrätsel des Tages</b>
+          <div class="muted small">${geloest
+            ? 'Heute schon gelöst – morgen gibt es ein neues.'
+            : 'Für alle Kinder heute dasselbe Rätsel. Welche Art es diesmal ist, bleibt bis zum Öffnen geheim.'}</div>
+        </div>
+        <button class="btn small${geloest ? ' ghost' : ''}" id="zurUeberraschung">${geloest ? 'Ansehen' : 'Öffnen'}</button>
+      </div>
+    </div>`;
 }
 
 /* ------------------------------ Übungs-Session ------------------------------ */
