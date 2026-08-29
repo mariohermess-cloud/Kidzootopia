@@ -490,29 +490,66 @@ ernaehrung: (() => {
    beschreibt die Frage zusätzlich, wie sich der Fund anfühlt und aussieht -
    Größe, Gewicht, Form, Farbe. */
 strandfunde: (() => {
+  /* Emoji allein fuehrt hier oft in die Irre - der Standard-Zahn-Emoji zeigt
+     einen menschlichen Backenzahn, kein Miesmuschel-Emoji sieht wie eine
+     Miesmuschel aus. Deshalb kleine, selbst gezeichnete Bilder statt Emoji,
+     wo ein Emoji das Fundstueck falsch oder gar nicht zeigen wuerde. */
+  const ZAHN = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M50 12 C60 38 68 58 74 80 C61 90 39 90 26 80 C32 58 40 38 50 12 Z" fill="#dfe3e8" stroke="#6b7280" stroke-width="3"/>
+    <path d="M50 12 C46 38 39 58 30 78" fill="none" stroke="#9aa2ad" stroke-width="1.5"/>
+    <path d="M28 78 C40 86 60 86 72 78" fill="none" stroke="#6b7280" stroke-width="2" opacity="0.6"/>
+  </svg>`;
+  const MUSCHEL_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M50 8 C20 20 12 55 24 82 C34 96 66 96 76 82 C88 55 80 20 50 8 Z" fill="#2b3a67"/>
+    <path d="M50 20 C34 30 28 55 36 74" fill="none" stroke="#4a5f9e" stroke-width="1.5" opacity="0.6"/>
+    <path d="M50 32 C40 40 36 55 42 68" fill="none" stroke="#4a5f9e" stroke-width="1.5" opacity="0.6"/>
+  </svg>`;
+  const SCHNECKE_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="52" cy="55" r="28" fill="none" stroke="#c9a06a" stroke-width="8"/>
+    <circle cx="58" cy="55" r="18" fill="none" stroke="#a97c46" stroke-width="7"/>
+    <circle cx="63" cy="55" r="9" fill="none" stroke="#8a5a2b" stroke-width="6"/>
+    <circle cx="67" cy="55" r="3" fill="#6b4520"/>
+  </svg>`;
+  const SCHULP_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="52" rx="30" ry="42" fill="#f5f1e6" stroke="#d8d0ba" stroke-width="2"/>
+    <path d="M30 30 Q50 34 70 30" fill="none" stroke="#d8d0ba" stroke-width="1.5"/>
+    <path d="M27 45 Q50 50 73 45" fill="none" stroke="#d8d0ba" stroke-width="1.5"/>
+    <path d="M27 62 Q50 67 73 62" fill="none" stroke="#d8d0ba" stroke-width="1.5"/>
+    <path d="M31 78 Q50 82 69 78" fill="none" stroke="#d8d0ba" stroke-width="1.5"/>
+  </svg>`;
+  const KREBS_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M20 55 C20 30 35 18 50 18 C65 18 80 30 80 55 C80 72 66 82 50 82 C34 82 20 72 20 55 Z" fill="#d9633b"/>
+    <circle cx="38" cy="30" r="4" fill="#8a3418"/>
+    <circle cx="62" cy="30" r="4" fill="#8a3418"/>
+    <path d="M28 55 Q50 62 72 55" fill="none" stroke="#b34d2b" stroke-width="2"/>
+  </svg>`;
+  const WURM_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M50 85 C20 85 20 65 40 60 C60 55 60 40 40 38 C24 36 24 20 45 18"
+          fill="none" stroke="#b89468" stroke-width="9" stroke-linecap="round"/>
+  </svg>`;
   const FUNDE = [
     ['Diese harte, oft blau-schwarz glänzende Schale ist leer - wer hat früher darin gelebt?',
-      'Miesmuschel', ['Wattschnecke','Krebs','Seestern'], '🐚',
+      'Miesmuschel', ['Wattschnecke','Krebs','Seestern'], MUSCHEL_SVG,
       'Miesmuscheln filtern mit ihrer Schale Wasser und leben oft dicht gedrängt an Pfählen und Steinen im Wattenmeer.'],
     ['Dieses spiralig gewundene, leere Gehäuse hat mal ein Weichtier bewohnt. Wer war das?',
-      'Wattschnecke', ['Miesmuschel','Krebs','Qualle'], '🐌',
+      'Wattschnecke', ['Miesmuschel','Krebs','Qualle'], SCHNECKE_SVG,
       'Schnecken bauen ihr Gehäuse aus Kalk und tragen es ihr ganzes Leben mit sich - stirbt die Schnecke, bleibt das leere Haus zurück.'],
     ['Dieser kleine, spitze, dreieckige "Stein" besteht in Wahrheit aus Zahnschmelz. Von welchem Tier stammt so ein Fund oft?',
-      'Hai', ['Wal','Delfin','Krebs'], '🦷',
+      'Hai', ['Wal','Delfin','Krebs'], ZAHN,
       'Haie verlieren und erneuern ständig ihre Zähne - manche gefundenen Zähne sind sogar versteinert und Millionen Jahre alt.'],
     ['Dieses leichte, weiße, ovale "Knochenstück" schwimmt oft an den Strand. Was ist es wirklich?',
       'Die innere Stützschale eines Tintenfischs (Sepia)',
-      ['Ein Vogelknochen','Ein Stück Koralle','Ein Fischrückgrat'], '🦴',
+      ['Ein Vogelknochen','Ein Stück Koralle','Ein Fischrückgrat'], SCHULP_SVG,
       'Der "Schulp" sitzt im Körper der Sepia und hilft ihr, im Wasser zu schweben. Er besteht aus Kalk, nicht aus echtem Knochen.'],
     ['Diese leere, harte Hülle sieht aus wie ein Krebs, ist aber ganz leicht - niemand steckt mehr drin. Was ist das wahrscheinlich?',
       'Die abgestreifte Panzerhülle eines Krebses',
-      ['Ein toter Krebs','Ein Stein in Krebsform','Eine Muschel'], '🦀',
+      ['Ein toter Krebs','Ein Stein in Krebsform','Eine Muschel'], KREBS_SVG,
       'Krebse wachsen, indem sie ihren harten Panzer regelmäßig abstreifen (Häutung) und einen neuen bilden. Die leere Hülle sieht täuschend echt aus.'],
     ['Dieser durchsichtige, glibberige "Klumpen" liegt manchmal gestrandet im Sand. Was ist das?',
       'Eine Qualle', ['Ein Stück Plastik','Ein Fischei','Ein Algenklumpen'], '🪼',
       'Auch gestrandete, scheinbar tote Quallen können noch nesseln - am besten nur mit den Augen bewundern, nicht anfassen.'],
     ['Diese kleinen, geringelten Sandhäufchen liegen oft über das Watt verteilt. Wer hinterlässt sie?',
-      'Wattwurm', ['Wattschnecke','Krebs','Möwe'], '🪱',
+      'Wattwurm', ['Wattschnecke','Krebs','Möwe'], WURM_SVG,
       'Der Wattwurm frisst sich durch den Sand und schiebt das, was er nicht braucht, als kleine Spirale wieder nach oben.'],
     ['Diese leichte, weiße Feder mit grauer Spitze liegt oft am Strand. Von welchem Vogel stammt sie meistens?',
       'Möwe', ['Ente','Schwan','Papagei'], '🪶',

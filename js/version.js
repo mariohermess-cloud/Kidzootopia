@@ -9,11 +9,15 @@
    Bei jeder Änderung: NUMMER hier hochzählen UND in sw.js (CACHE) gleichziehen.
    tests/version.mjs prüft, dass beide übereinstimmen. */
 
-export const NUMMER = 30;
+export const NUMMER = 31;
 export const STAND = '29.08.2026';
 
 /* Neueste zuerst. Kurz und in Alltagssprache – das lesen Eltern, nicht Entwickler. */
 export const VERLAUF = [
+  { nr: 31, stand: '29.08.2026', was: [
+    'Strandfunde: falsches Bild korrigiert – der Hai-Zahn zeigte versehentlich einen menschlichen Zahn',
+    'Sechs Funde (Muschel, Schneckenhaus, Hai-Zahn, Sepiaschulp, Krebspanzer, Wattwurm-Spur) haben jetzt selbst gezeichnete, passende Bilder statt eines irreführenden Symbols'
+  ]},
   { nr: 30, stand: '29.08.2026', was: [
     'Neu: Strandfunde – Muschel, Schneckenhaus, Hai-Zahn, Sepiaschulp und mehr, jeweils als großes Bild',
     'Jeder Fund erklärt, woran man ihn wirklich erkennt: Form, Gewicht, Farbe, Herkunft',

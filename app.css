@@ -250,6 +250,7 @@ details.card ol{margin:8px 0}
 
 /* English Basics: das Bild trägt die Bedeutung, nicht der Text */
 .aufgabenbild{font-size:4.4rem;line-height:1;text-align:center;margin:2px 0 10px;animation:pop .3s ease}
+.aufgabenbild svg{width:110px;height:110px;display:block;margin:0 auto;filter:drop-shadow(0 3px 4px rgba(0,0,0,.15))}
 .choices.bildwahl{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .choices.bildwahl .choice{font-size:2.6rem;padding:20px 8px;line-height:1}
 @keyframes schlafen{0%,100%{transform:scale(1) rotate(-6deg)}50%{transform:scale(1.05) rotate(-6deg)}}
