@@ -401,6 +401,13 @@ verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
    gespult wird – das Ergebnis selbst bleibt unverändert das, was die Runde wirklich
    erspielt hat. Nichts wird durch Drehen schöner gerechnet.
 
+   **Zweiter Nachtrag:** Der Kreisel fühlte sich wie ein Ein-Aus-Schalter an – schon die
+   kleinste Bewegung sprang sofort auf Höchsttempo, egal ob bewusst langsam oder schnell
+   gedreht wurde. Grund war eine feste Portion Schwung pro Drehschritt, statt auf die
+   wirkliche Geschwindigkeit der Bewegung zu achten. Jetzt bestimmt die tatsächliche
+   Drehgeschwindigkeit (Grad pro Sekunde) den Schwung – langsames Drehen bringt spürbar
+   wenig voran, schnelles Drehen deutlich mehr. Ein Kreisel eben, kein Schalter.
+
 22. **Neues Lernziel: Gesund essen** 🥕
    Warum regelmäßig Wasser trinken, warum Frühstück, warum bunte Vielfalt auf dem Teller,
    warum Zähneputzen nach Süßem – bewusst **ohne** Kalorien, Diätregeln oder als „schlecht"
@@ -546,7 +553,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 32 · Stand 29.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 33 · Stand 29.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.

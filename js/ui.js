@@ -402,14 +402,15 @@ function rennenStarten(p, sess, geist) {
      echte Runde gedauert hat. */
   const MS_JE_GRAD = realDauer / 2400;
 
-  let winkel = 0, tempo = 0, virtuelleMs = 0, fertig = false, letzterZeitpunkt = null, ziehWinkel = null;
+  let winkel = 0, tempo = 0, virtuelleMs = 0, fertig = false, letzterZeitpunkt = null;
+  let ziehWinkel = null, ziehZeitpunkt = null;
 
   const aktualisieren = () => {
     ich.style.left = anzeigen(Rennen.geistBei(spurEigen, virtuelleMs)) + '%';
     if (geistFigur) geistFigur.style.left = anzeigen(Rennen.geistBei(geist.spur, virtuelleMs)) + '%';
     kreisel.style.transform = `rotate(${winkel}deg)`;
     if (tempoText) tempoText.textContent =
-      tempo > 260 ? '🔥 Volle Fahrt!' : tempo > 90 ? '💨 Es rollt!' : 'Dreh den Kreisel an!';
+      tempo > 380 ? '🔥 Volle Fahrt!' : tempo > 60 ? '💨 Es rollt!' : 'Dreh den Kreisel an!';
   };
 
   const schritt = jetzt => {
@@ -440,6 +441,7 @@ function rennenStarten(p, sess, geist) {
   kreisel.addEventListener('pointerdown', e => {
     if (fertig) return;
     ziehWinkel = winkelZu(e);
+    ziehZeitpunkt = performance.now();
     kreisel.setPointerCapture(e.pointerId);
   });
   kreisel.addEventListener('pointermove', e => {
@@ -448,10 +450,21 @@ function rennenStarten(p, sess, geist) {
     let delta = w - ziehWinkel;
     if (delta > 180) delta -= 360;
     if (delta < -180) delta += 360;
+    const jetzt = performance.now();
+    const dtSek = Math.max(0.001, (jetzt - ziehZeitpunkt) / 1000);
+    /* Wie schnell WIRKLICH gedreht wurde (Grad pro Sekunde) - vorher wurde
+       hier bei jedem Zwischenschritt ein fester Betrag draufaddiert, egal
+       wie schnell die Bewegung wirklich war. Dadurch reichte praktisch jede
+       Bewegung, um sofort auf Höchsttempo zu springen - "Geschwindigkeit
+       ändern" ging gar nicht, es gab nur an oder aus. Jetzt bestimmt allein
+       das wirkliche Tempo der Drehung den Schwung, leicht geglättet gegen
+       einzelne Ausreißer beim Abtasten. */
+    const momentanTempo = Math.max(-900, Math.min(900, delta / dtSek));
+    tempo = tempo * 0.35 + momentanTempo * 0.65;
     ziehWinkel = w;
-    tempo = Math.max(-500, Math.min(500, tempo + delta * 12));  // Schwung addiert sich
+    ziehZeitpunkt = jetzt;
   });
-  const loslassen = () => { ziehWinkel = null; };
+  const loslassen = () => { ziehWinkel = null; ziehZeitpunkt = null; };
   kreisel.addEventListener('pointerup', loslassen);
   kreisel.addEventListener('pointercancel', loslassen);
 
