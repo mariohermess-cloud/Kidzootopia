@@ -477,6 +477,23 @@ verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
    Beschreibungstext nicht zu unterscheiden.
 
 
+27. **Knacknüsse erklären jetzt wirklich, warum die Antwort stimmt** 🗼
+   Nach dem Antworten stand bei den 48 handverlesenen Klassikern bisher nur die
+   Herkunftsangabe da ("Édouard Lucas, 1883") – nie eine Erklärung, WARUM die Lösung
+   stimmt. Wer ohne Tipps geraten und falsch gelegen hatte, erfuhr also gar nicht, wie man
+   auf die richtige Antwort kommt. Jetzt hat jeder der 48 Klassiker eine eigenständige,
+   für sich verständliche Lösungserklärung – unabhängig von den Tipps, die man vorher schon
+   gesehen haben könnte oder auch nicht.
+
+   Besonders betroffen war **"Türme von Hanoi"**: rein textlich beschrieben, für viele schwer
+   vorstellbar. Jetzt gibt es dazu ein Bild der Scheiben auf dem Stab – als kleine, selbst
+   gezeichnete Grafik, passend zur jeweils gezogenen Scheibenzahl (auch bei der häufigeren,
+   zufällig erzeugten Variante mit 3 bis 9 Scheiben, nicht nur bei der festen 3er-Aufgabe).
+   `tests/knacknuesse.mjs` prüft seither, dass jeder Klassiker eine echte, ausreichend lange
+   Lösungserklärung hat – und dass sie nicht versehentlich mit der Herkunftsangabe
+   verwechselt wird, genau der Fehler, der den Anlass gab.
+
+
 ---
 
 ## Auf dem Handy nutzen
@@ -529,7 +546,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 31 · Stand 29.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 32 · Stand 29.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.

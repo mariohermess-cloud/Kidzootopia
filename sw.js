@@ -2,7 +2,7 @@
    Die Nummer in CACHE muss zu NUMMER in js/version.js passen – sonst zeigt der
    Eltern-Bereich eine andere Fassung an als die, die ausgeliefert wird.
    tests/version.mjs prueft das. */
-const CACHE = 'kidzootopia-v31';
+const CACHE = 'kidzootopia-v32';
 const DATEIEN = [
   './', './index.html', './app.css', './manifest.webmanifest',
   './icons/icon.svg', './icons/icon-maskable.svg',

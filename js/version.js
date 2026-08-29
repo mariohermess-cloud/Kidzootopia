@@ -9,11 +9,16 @@
    Bei jeder Änderung: NUMMER hier hochzählen UND in sw.js (CACHE) gleichziehen.
    tests/version.mjs prüft, dass beide übereinstimmen. */
 
-export const NUMMER = 31;
+export const NUMMER = 32;
 export const STAND = '29.08.2026';
 
 /* Neueste zuerst. Kurz und in Alltagssprache – das lesen Eltern, nicht Entwickler. */
 export const VERLAUF = [
+  { nr: 32, stand: '29.08.2026', was: [
+    'Knacknüsse erklären jetzt jede Lösung wirklich, statt nur die Herkunft der Aufgabe zu nennen',
+    'Türme von Hanoi: endlich ein Bild der Scheiben auf dem Stab – vorher nur Text, jetzt zum Anschauen',
+    'Alle 48 handverlesenen Klassiker haben eine eigenständige, in sich verständliche Lösungserklärung'
+  ]},
   { nr: 31, stand: '29.08.2026', was: [
     'Strandfunde: falsches Bild korrigiert – der Hai-Zahn zeigte versehentlich einen menschlichen Zahn',
     'Sechs Funde (Muschel, Schneckenhaus, Hai-Zahn, Sepiaschulp, Krebspanzer, Wattwurm-Spur) haben jetzt selbst gezeichnete, passende Bilder statt eines irreführenden Symbols'

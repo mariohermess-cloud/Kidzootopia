@@ -942,7 +942,8 @@ knacknuss: (() => {
         antwort: a.antwort,
         tipps: a.tipps,
         quelle: f.quelle,
-        hilfe: a.tipps.at(-1) || '',
+        hilfe: a.loesung || a.tipps.at(-1) || '',
+        bild: a.bild,
         knacknuss: true,
         /* Knacknuesse sind genau die Aufgaben, bei denen eine Skizze am
            meisten hilft (ein Gitter zeichnen, Personen als Punkte setzen,
@@ -962,7 +963,17 @@ knacknuss: (() => {
       antwort: k.antwort,
       tipps: k.tipps || [],
       quelle: k.quelle,
-      hilfe: (k.tipps || []).at(-1) || '',
+      /* loesung ist eine eigenstaendige Erklaerung, warum die Antwort
+         stimmt - anders als die Tipps (die vor der Antwort haeppchenweise
+         helfen) und anders als quelle (die nur die Herkunft nennt). Ohne
+         sie stand nach dem Antworten oft nur ein einzelner, aus dem
+         Zusammenhang gerissener letzter Tipp da, der allein oft nicht
+         reichte. Faellt bei den Raetsel-Familien (prozedural erzeugt) auf
+         den letzten Tipp zurueck, weil dort nichts vorformuliert werden
+         kann - der bezieht sich dort wenigstens auf die konkret gezogenen
+         Zahlen. */
+      hilfe: k.loesung || (k.tipps || []).at(-1) || '',
+      bild: k.bild,
       knacknuss: true,
       blattOffen: true
     };
