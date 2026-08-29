@@ -481,6 +481,87 @@ ernaehrung: (() => {
   };
 })(),
 
+/* ---------------- Strandfunde ----------------
+   Dinge, die man am Strand oder im Watt im Schlamm findet - Muschelschale,
+   Schneckenhaus, Hai-Zahn, Sepiaschulp und mehr. Jeder Fund bekommt ein
+   großes Bild (Emoji), damit ein Kind das wirklich vor Augen hat, statt nur
+   den Namen zu lesen. Ein Emoji allein wäre bei manchen Funden trotzdem
+   mehrdeutig (ein Bild von 🦴 könnte alles Mögliche sein), deshalb
+   beschreibt die Frage zusätzlich, wie sich der Fund anfühlt und aussieht -
+   Größe, Gewicht, Form, Farbe. */
+strandfunde: (() => {
+  const FUNDE = [
+    ['Diese harte, oft blau-schwarz glänzende Schale ist leer - wer hat früher darin gelebt?',
+      'Miesmuschel', ['Wattschnecke','Krebs','Seestern'], '🐚',
+      'Miesmuscheln filtern mit ihrer Schale Wasser und leben oft dicht gedrängt an Pfählen und Steinen im Wattenmeer.'],
+    ['Dieses spiralig gewundene, leere Gehäuse hat mal ein Weichtier bewohnt. Wer war das?',
+      'Wattschnecke', ['Miesmuschel','Krebs','Qualle'], '🐌',
+      'Schnecken bauen ihr Gehäuse aus Kalk und tragen es ihr ganzes Leben mit sich - stirbt die Schnecke, bleibt das leere Haus zurück.'],
+    ['Dieser kleine, spitze, dreieckige "Stein" besteht in Wahrheit aus Zahnschmelz. Von welchem Tier stammt so ein Fund oft?',
+      'Hai', ['Wal','Delfin','Krebs'], '🦷',
+      'Haie verlieren und erneuern ständig ihre Zähne - manche gefundenen Zähne sind sogar versteinert und Millionen Jahre alt.'],
+    ['Dieses leichte, weiße, ovale "Knochenstück" schwimmt oft an den Strand. Was ist es wirklich?',
+      'Die innere Stützschale eines Tintenfischs (Sepia)',
+      ['Ein Vogelknochen','Ein Stück Koralle','Ein Fischrückgrat'], '🦴',
+      'Der "Schulp" sitzt im Körper der Sepia und hilft ihr, im Wasser zu schweben. Er besteht aus Kalk, nicht aus echtem Knochen.'],
+    ['Diese leere, harte Hülle sieht aus wie ein Krebs, ist aber ganz leicht - niemand steckt mehr drin. Was ist das wahrscheinlich?',
+      'Die abgestreifte Panzerhülle eines Krebses',
+      ['Ein toter Krebs','Ein Stein in Krebsform','Eine Muschel'], '🦀',
+      'Krebse wachsen, indem sie ihren harten Panzer regelmäßig abstreifen (Häutung) und einen neuen bilden. Die leere Hülle sieht täuschend echt aus.'],
+    ['Dieser durchsichtige, glibberige "Klumpen" liegt manchmal gestrandet im Sand. Was ist das?',
+      'Eine Qualle', ['Ein Stück Plastik','Ein Fischei','Ein Algenklumpen'], '🪼',
+      'Auch gestrandete, scheinbar tote Quallen können noch nesseln - am besten nur mit den Augen bewundern, nicht anfassen.'],
+    ['Diese kleinen, geringelten Sandhäufchen liegen oft über das Watt verteilt. Wer hinterlässt sie?',
+      'Wattwurm', ['Wattschnecke','Krebs','Möwe'], '🪱',
+      'Der Wattwurm frisst sich durch den Sand und schiebt das, was er nicht braucht, als kleine Spirale wieder nach oben.'],
+    ['Diese leichte, weiße Feder mit grauer Spitze liegt oft am Strand. Von welchem Vogel stammt sie meistens?',
+      'Möwe', ['Ente','Schwan','Papagei'], '🪶',
+      'Möwen verlieren beim Mausern regelmäßig Federn - am Strand liegen deshalb besonders viele davon herum.']
+  ];
+  const STORY = [
+    ['📖 Lina findet am Strand eine leere Muschelschale, hält sie ans Ohr und hört ein Rauschen. Woher kommt das wirklich?',
+      'Vom Umgebungslärm, der in der Schale widerhallt',
+      ['Vom Meer, das in der Schale eingeschlossen ist','Von einem Tier in der Schale','Von Wind, der durch die Schale pfeift'],
+      'Was man hört, ist der eigene Umgebungslärm (Blutfluss, Wind, Stimmen), der in der Hohlform verstärkt zurückgeworfen wird - nicht das Meer selbst.'],
+    ['📖 Ben findet einen spitzen Hai-Zahn im Sand und erschrickt: Schwimmen hier etwa gerade Haie? Ist die Sorge berechtigt?',
+      'Nein - solche Zähne können winzig, sehr alt oder sogar versteinert sein',
+      ['Ja, sofort das Wasser verlassen','Nein, in Nord- und Ostsee gibt es überhaupt keine Haie','Ja, das bedeutet, gerade ist ein Hai in der Nähe'],
+      'Auch in Nord- und Ostsee leben einzelne, meist harmlose Haiarten - ein gefundener Zahn sagt aber nichts darüber aus, ob gerade einer in der Nähe ist.']
+  ];
+  const SCHAETZ = [
+    ['🧠 Was ist meistens älter: eine Muschelschale vom letzten Sommer oder ein Stück Bernstein?','das Bernsteinstück',
+      ['die Muschelschale','beide gleich alt'],
+      'Bernstein ist versteinertes Baumharz und oft Millionen Jahre alt - viel älter als jede Muschel, die erst kürzlich gestorben ist.'],
+    ['🧠 Was ist leichter: ein Sepiaschulp oder ein gleich großer Stein?','der Sepiaschulp',
+      ['der Stein','beide gleich schwer'],
+      'Der Schulp ist von feinen, luftgefüllten Kammern durchzogen, damit die Sepia im Wasser schweben kann - deshalb ist er auffallend leicht.']
+  ];
+  const ALLTAG = [
+    ['🤝 Du findest eine Qualle im Sand liegen, sie sieht schon vertrocknet aus. Was tust du?',
+      'Nur ansehen, nicht anfassen',
+      ['Draufstellen, sie ist ja tot','Mit bloßen Händen aufheben','Sie zurück ins Wasser werfen'],
+      'Auch getrocknete Nesselzellen können noch reizen - am sichersten ist, Quallen nur mit den Augen zu untersuchen.'],
+    ['🤝 Beim Wattwandern merkt ihr, dass das Wasser plötzlich schneller zurückkommt. Was tut ihr?',
+      'Sofort zum festen Ufer zurückgehen, am besten mit einer erwachsenen Person',
+      ['Weiter nach Muscheln suchen','Ins Watt hineinlaufen, um nachzusehen','Abwarten und erstmal Fotos machen'],
+      'Die Flut kann im Watt sehr schnell kommen und Wege abschneiden - deshalb Gezeiten immer im Blick behalten und nie allein weit hinauslaufen.'],
+    ['🤝 Du hast einen spitzen Hai-Zahn und eine scharfkantige Muschel gefunden. Wie nimmst du sie am besten mit nach Hause?',
+      'Gut verpackt in einer Dose oder einem Beutel',
+      ['Lose in der Hosentasche','Die ganze Zeit fest in der Hand halten','Einfach im Sand liegen lassen'],
+      'Scharfe Fundstücke können in der Tasche Löcher machen oder Finger verletzen - sicher verpackt bleibt der Fund heil und niemand verletzt sich.']
+  ];
+  const q = arr => { const [f,ok,bad,erklaerung] = pick(arr); return { ...wahl(f, ok, bad, erklaerung), quelle: erklaerung }; };
+  return {
+    entdecken(){
+      const [frage, antwort, falsche, bild, erklaerung] = pick(FUNDE);
+      return { ...wahl(frage, antwort, falsche, erklaerung), quelle: erklaerung, bild };
+    },
+    erzaehlen(){ return q(STORY); },
+    knobeln(){ return q(SCHAETZ); },
+    team(){ return q(ALLTAG); }
+  };
+})(),
+
 /* ---------------- Muster & Logik ---------------- */
 logik: {
   knobeln(lvl){

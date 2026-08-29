@@ -457,6 +457,20 @@ verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
    wirklich alle sechs Arten vorkommen und jede Aufgabe die Merkmale ausführlich erklärt.
 
 
+26. **Strandfunde: was der Sommer im Schlamm freigibt** 🐚
+   Muschelschale, Schneckenhaus, Hai-Zahn, Sepiaschulp, Krebspanzer, Qualle, Wattwurm-Spur,
+   Möwenfeder – jeder Fund bekommt ein großes Bild (Emoji), damit ein Kind ihn wirklich vor
+   Augen hat, nicht nur den Namen liest. Weil ein einzelnes Symbol allein trotzdem mehrdeutig
+   wäre (ein 🦴 könnte alles sein), beschreibt jede Frage zusätzlich, wie sich der Fund
+   anfühlt und aussieht – Größe, Gewicht, Form, Farbe –, genau wie man ihn auch draußen ohne
+   Nachschlagewerk erkennen würde. Dazu Geschichten (ein Hai-Zahn im Sand bedeutet nicht,
+   dass gerade ein Hai schwimmt), Schätzfragen (Bernstein ist fast immer älter als jede
+   Muschel) und Sicherheitsfragen fürs Watt (gestrandete Quallen nicht anfassen, Gezeiten im
+   Blick behalten). `tests/strandfunde.mjs` prüft unter anderem, dass jedes Bild eindeutig zu
+   genau einem Fund gehört – zwei verschiedene Lösungen mit demselben Symbol wären ohne den
+   Beschreibungstext nicht zu unterscheiden.
+
+
 ---
 
 ## Auf dem Handy nutzen
@@ -509,7 +523,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 29 · Stand 29.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 30 · Stand 29.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.
@@ -601,6 +615,7 @@ npm run test:rennen       # Renn-Modus: die Strecke geht nie rückwärts, kein f
 npm run test:ueberraschung # Rätsel des Tages: für alle gleich, immer rein rechnerisch lösbar
 npm run test:englisch     # English Basics: bildbasiert, jede Vokabel deutsch ≠ englisch
 npm run test:tiererkennung # Tiererkennung: alle sechs Insektenarten kommen vor und sind erklärt
+npm run test:strandfunde  # Strandfunde: jedes Bild gehört eindeutig zu genau einem Fund
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```

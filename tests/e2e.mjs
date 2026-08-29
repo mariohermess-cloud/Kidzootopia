@@ -520,6 +520,26 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   await p.click('#heim'); await p.waitForSelector('#mission');
 }
 
+// Strandfunde: Muschel, Hai-Zahn, Sepiaschulp und Co. muessen wirklich als
+// Bild zu sehen sein, nicht nur als Name.
+{
+  await bannerWeg(p);
+  await p.click('[data-ziel="strandfunde"]');
+  let sahBild = false;
+  for (let i = 0; i < 14 && !(await p.$('#nochmal')); i++) {
+    await p.waitForSelector('.task');
+    if (await p.$('.aufgabenbild')) sahBild = true;
+    await loeseAufgabe(p);
+    await p.waitForSelector('#weiter');
+    await p.click('#weiter');
+  }
+  if (!sahBild) throw new Error('Strandfunde: keine einzige Aufgabe zeigte ein Bild');
+  console.log('Strandfunde: Fund als Bild gesehen ✅');
+  await p.screenshot({ path: `${S}/19-strandfunde.png`, fullPage: true });
+  await p.waitForSelector('#nochmal', { timeout: 8000 });
+  await p.click('#heim'); await p.waitForSelector('#mission');
+}
+
 // Knacknuesse: das Schmierblatt muss von Anfang an offen sein, nicht erst
 // entdeckt werden - genau hier hilft eine Skizze am meisten.
 {
