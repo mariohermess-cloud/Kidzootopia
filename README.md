@@ -394,6 +394,13 @@ verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
    rückwärts geht – Punkte können pro Aufgabe nur 0 oder mehr sein, also kann die Kurve nur
    wachsen oder stehen bleiben, nie fallen.
 
+   **Nachtrag:** Ein reines Zusehen war zu Recht langweilig – "es passiert ja gar nix".
+   Jetzt treibt ein bunter **Kreisel** das Rennen an: mit dem Daumen andrehen, und wie ein
+   echter Kreisel läuft er danach noch eine Weile nach und wird ohne Nachdrehen langsamer
+   (Reibung). Wie schnell und wie oft gedreht wird, bestimmt nur, wie schnell durchs Rennen
+   gespult wird – das Ergebnis selbst bleibt unverändert das, was die Runde wirklich
+   erspielt hat. Nichts wird durch Drehen schöner gerechnet.
+
 22. **Neues Lernziel: Gesund essen** 🥕
    Warum regelmäßig Wasser trinken, warum Frühstück, warum bunte Vielfalt auf dem Teller,
    warum Zähneputzen nach Süßem – bewusst **ohne** Kalorien, Diätregeln oder als „schlecht"
@@ -489,7 +496,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 27 · Stand 28.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 28 · Stand 29.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.

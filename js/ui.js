@@ -345,14 +345,23 @@ function punkteKarte(p, punkteDerRunde, besteVorher) {
 /* Renn-Modus: die Runde als kleines Kart-Rennen gegen das eigene Geisterrennen
    ansehen. Der Geist ist keine Erfindung, sondern die genaue Zeit-Punkte-Kurve
    der bisher besten Runde - der einzige Gegner, den eine App ohne Server
-   fair anbieten kann. Nur sichtbar, wenn es überhaupt bewertete Aufgaben gab. */
+   fair anbieten kann. Nur sichtbar, wenn es überhaupt bewertete Aufgaben gab.
+
+   Ein reines Zusehen-Video war zu Recht langweilig ("es passiert ja gar
+   nix") - jetzt treibt ein Kreisel das Rennen an: mit dem Daumen andrehen,
+   und wie ein echter Kreisel läuft er nach dem Antippen noch eine Weile
+   nach und wird langsamer, bis wieder nachgedreht wird. Wie schnell und wie
+   oft gedreht wird, bestimmt, wie schnell die Zeit-Punkte-Kurve durchlaufen
+   wird - das Kind steuert das Tempo, das Ergebnis selbst bleibt unverändert
+   das, was die Runde wirklich erspielt hat. */
 function rennKarte(p, sess, geist) {
   if (!sess.verlauf.some(v => v.punkte != null)) return '';
   return `
     <div class="card renn-karte">
       <h3>🏁 Als Rennen ansehen</h3>
       <p class="small muted">Dein Avatar gegen dein eigenes bisher bestes Rennen${
-        geist.spur ? '' : ' – dies wird dein erstes, ab jetzt gibt es einen Geist zum Messen'}.</p>
+        geist.spur ? '' : ' – dies wird dein erstes, ab jetzt gibt es einen Geist zum Messen'}.
+        Dreh den Kreisel mit dem Daumen an – er treibt das Rennen an!</p>
       <div class="rennstrecke" id="rennstrecke">
         <div class="rennspur">
           <span class="rennfigur ich" id="rennIch" style="left:0%">${esc(p.avatar || '🦊')}</span>
@@ -362,44 +371,92 @@ function rennKarte(p, sess, geist) {
         </div>` : ''}
         <div class="rennziel">🏁</div>
       </div>
+      <div class="rennkreisel-zeile">
+        <div class="rennkreisel" id="rennKreisel"></div>
+        <span class="renntempo muted small" id="rennTempoText">Dreh den Kreisel an!</span>
+      </div>
       <p class="small" id="rennErgebnis" style="min-height:1.4em;font-weight:700"></p>
-      <button class="btn quiet" id="rennStart" type="button">▶️ Rennen starten</button>
     </div>`;
 }
 
-/* Spielt das Rennen aus rennKarte() ab: beide Figuren wandern ueber die
-   Strecke, nach der Zeit-Punkte-Kurve der jeweiligen Runde interpoliert.
-   Echte Rundenzeiten koennen Minuten dauern - fuers Zusehen wird das auf eine
-   feste Abspieldauer gestaucht, ohne die Reihenfolge der Ereignisse zu aendern. */
+/* Treibt das Rennen aus rennKarte() an: der Kreisel wird per Pointer-Events
+   gedreht, sein Schwung (mit Reibung, wie bei einem echten Kreisel) bestimmt,
+   wie viel "echte" Rennzeit vergeht - beide Figuren werden dafür an derselben
+   Zeitmarke aus ihrer Zeit-Punkte-Kurve nachgezeichnet (siehe js/rennen.js). */
 function rennenStarten(p, sess, geist) {
   const strecke = view().querySelector('#rennstrecke');
-  if (!strecke) return;
+  const kreisel = view().querySelector('#rennKreisel');
+  if (!strecke || !kreisel) return;
   const spurEigen = Rennen.spurFuer(sess.verlauf);
   const eigenEnde = spurEigen[spurEigen.length - 1];
   const geistEnde = geist.spur ? geist.spur[geist.spur.length - 1] : { ms: 0, punkte: 0 };
   const zielPunkte = Math.max(eigenEnde.punkte, geistEnde.punkte, 1);
   const realDauer = Math.max(eigenEnde.ms, geistEnde.ms, 1);
-  const abspielDauer = Math.min(7000, Math.max(2200, realDauer / 8));
   const ich = strecke.querySelector('#rennIch');
   const geistFigur = strecke.querySelector('#rennGeist');
   const ergebnis = view().querySelector('#rennErgebnis');
+  const tempoText = view().querySelector('#rennTempoText');
   const anzeigen = pkt => Math.min(90, Rennen.prozentAuf(pkt, zielPunkte));
-  ich.style.left = '0%';
-  if (geistFigur) geistFigur.style.left = '0%';
-  if (ergebnis) ergebnis.textContent = '';
-  const start = performance.now();
-  const frame = now => {
-    const anteil = Math.min(1, (now - start) / abspielDauer);
-    const realMs = anteil * realDauer;
-    ich.style.left = anzeigen(Rennen.geistBei(spurEigen, realMs)) + '%';
-    if (geistFigur) geistFigur.style.left = anzeigen(Rennen.geistBei(geist.spur, realMs)) + '%';
-    if (anteil < 1) requestAnimationFrame(frame);
-    else if (ergebnis) {
-      const erg = Rennen.rennErgebnis(eigenEnde.punkte, geistEnde.punkte);
-      ergebnis.textContent = (erg.gewonnen ? '🏆 ' : '') + erg.text;
-    }
+  /* Wie viel Rennzeit ein Grad Drehung bringt - so reicht ein paar Sekunden
+     beherztes Drehen, um das ganze Rennen abzuspielen, egal wie lange die
+     echte Runde gedauert hat. */
+  const MS_JE_GRAD = realDauer / 2400;
+
+  let winkel = 0, tempo = 0, virtuelleMs = 0, fertig = false, letzterZeitpunkt = null, ziehWinkel = null;
+
+  const aktualisieren = () => {
+    ich.style.left = anzeigen(Rennen.geistBei(spurEigen, virtuelleMs)) + '%';
+    if (geistFigur) geistFigur.style.left = anzeigen(Rennen.geistBei(geist.spur, virtuelleMs)) + '%';
+    kreisel.style.transform = `rotate(${winkel}deg)`;
+    if (tempoText) tempoText.textContent =
+      tempo > 260 ? '🔥 Volle Fahrt!' : tempo > 90 ? '💨 Es rollt!' : 'Dreh den Kreisel an!';
   };
-  requestAnimationFrame(frame);
+
+  const schritt = jetzt => {
+    if (fertig) return;
+    if (letzterZeitpunkt == null) letzterZeitpunkt = jetzt;
+    const dtSek = Math.min(0.1, (jetzt - letzterZeitpunkt) / 1000);
+    letzterZeitpunkt = jetzt;
+    tempo *= Math.pow(0.06, dtSek);           // Reibung: ohne Nachdrehen wird er langsamer
+    winkel += tempo * dtSek;
+    virtuelleMs = Math.min(realDauer, virtuelleMs + Math.abs(tempo) * dtSek * MS_JE_GRAD);
+    aktualisieren();
+    if (virtuelleMs >= realDauer) {
+      fertig = true;
+      kreisel.classList.add('fertig');
+      if (ergebnis) {
+        const erg = Rennen.rennErgebnis(eigenEnde.punkte, geistEnde.punkte);
+        ergebnis.textContent = (erg.gewonnen ? '🏆 ' : '') + erg.text;
+      }
+      return;
+    }
+    requestAnimationFrame(schritt);
+  };
+
+  const mitte = () => { const r = kreisel.getBoundingClientRect(); return { x: r.x + r.width/2, y: r.y + r.height/2 }; };
+  const winkelZu = e => { const m = mitte();
+    return Math.atan2(e.clientY - m.y, e.clientX - m.x) * 180 / Math.PI; };
+
+  kreisel.addEventListener('pointerdown', e => {
+    if (fertig) return;
+    ziehWinkel = winkelZu(e);
+    kreisel.setPointerCapture(e.pointerId);
+  });
+  kreisel.addEventListener('pointermove', e => {
+    if (ziehWinkel == null || fertig) return;
+    const w = winkelZu(e);
+    let delta = w - ziehWinkel;
+    if (delta > 180) delta -= 360;
+    if (delta < -180) delta += 360;
+    ziehWinkel = w;
+    tempo = Math.max(-500, Math.min(500, tempo + delta * 12));  // Schwung addiert sich
+  });
+  const loslassen = () => { ziehWinkel = null; };
+  kreisel.addEventListener('pointerup', loslassen);
+  kreisel.addEventListener('pointercancel', loslassen);
+
+  aktualisieren();
+  requestAnimationFrame(schritt);
 }
 
 /* Vergleich auf dem Gerät – Geschwister nebeneinander. Nur, wenn es überhaupt
@@ -1897,8 +1954,7 @@ function screenSession(p, opts = {}) {
       <button class="btn quiet" id="heim" style="margin-top:10px">Zur Übersicht</button>`;
     view().querySelector('#nochmal').onclick = () => zeige('session', opts);
     view().querySelector('#heim').onclick = () => zeige('lernen');
-    const rennStart = view().querySelector('#rennStart');
-    if (rennStart) rennStart.onclick = () => rennenStarten(p, sess, geistVorher);
+    if (view().querySelector('#rennKreisel')) rennenStarten(p, sess, geistVorher);
   };
 
   Avatar.reagiere('start');

@@ -9,11 +9,16 @@
    Bei jeder Änderung: NUMMER hier hochzählen UND in sw.js (CACHE) gleichziehen.
    tests/version.mjs prüft, dass beide übereinstimmen. */
 
-export const NUMMER = 27;
-export const STAND = '28.08.2026';
+export const NUMMER = 28;
+export const STAND = '29.08.2026';
 
 /* Neueste zuerst. Kurz und in Alltagssprache – das lesen Eltern, nicht Entwickler. */
 export const VERLAUF = [
+  { nr: 28, stand: '29.08.2026', was: [
+    'Renn-Modus: ein Kreisel treibt das Rennen jetzt an, statt nur zuzusehen',
+    'Mit dem Daumen andrehen – wie ein echter Kreisel läuft er nach und wird ohne Nachdrehen langsamer',
+    'Wer schneller und öfter dreht, spult schneller durchs Rennen – das Ergebnis selbst bleibt unverändert das wirklich Erspielte'
+  ]},
   { nr: 27, stand: '28.08.2026', was: [
     'Englisch komplett neu gedacht: für Kinder, die noch nicht lesen können – das Bild trägt die Bedeutung',
     'Jede Vokabel als großes Bild, mit einem 🔊-Knopf: erst das deutsche Wort, dann – mit echter englischer Stimme – das englische',

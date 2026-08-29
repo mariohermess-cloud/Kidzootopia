@@ -443,18 +443,34 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   console.log(`Rückblick: ${eintraege.length} Antworten aufgelistet, mit Erklärungen ✅`);
   await p.screenshot({ path: `${S}/15-rueckblick.png`, fullPage: true });
 
-  // Renn-Modus: die Runde als Rennen ansehen, mit animiertem Avatar.
+  // Renn-Modus: der Kreisel muss das Rennen wirklich antreiben - ohne Drehen
+  // passiert nichts, das war genau der gemeldete Fehler ("langweilig, es
+  // passiert ja gar nix"). Hier wird der Kreisel wie mit dem Daumen gedreht:
+  // per Maus im Kreis, in vielen kleinen Schritten.
   const rennKarte = await p.$('.renn-karte');
   if (!rennKarte) throw new Error('Renn-Karte fehlt am Rundenende');
   const startVorher = await p.getAttribute('#rennIch', 'style');
   if (!/left:\s*0%/.test(startVorher || '')) throw new Error('Avatar startet nicht bei 0%: ' + startVorher);
-  await p.click('#rennStart');
-  await p.waitForFunction(() => {
-    const el = document.querySelector('#rennErgebnis');
-    return el && el.textContent.trim().length > 0;
-  }, { timeout: 10000 });
+  const box = await p.$eval('#rennKreisel', el => {
+    const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
+  const cx = box.x + box.w / 2, cy = box.y + box.h / 2, radius = box.w / 2 - 8;
+  const fertigGeworden = () => p.$eval('#rennErgebnis', el => el.textContent.trim().length > 0).catch(() => false);
+  await p.mouse.move(cx + radius, cy);
+  await p.mouse.down();
+  for (let lauf = 0; lauf < 80 && !(await fertigGeworden()); lauf++) {
+    const schritte = 16;
+    for (let i = 1; i <= schritte; i++) {
+      const a = (i / schritte) * 2 * Math.PI;
+      await p.mouse.move(cx + radius * Math.cos(a), cy + radius * Math.sin(a), { steps: 2 });
+    }
+  }
+  await p.mouse.up();
+  if (!(await fertigGeworden()))
+    await p.waitForFunction(() => document.querySelector('#rennErgebnis')?.textContent.trim().length > 0,
+      { timeout: 5000 });
   const rennText = await p.textContent('#rennErgebnis');
-  console.log(`Renn-Modus: animiert und Ergebnis gezeigt: „${rennText.trim()}" ✅`);
+  console.log(`Renn-Modus: Kreisel angetrieben, Ergebnis gezeigt: „${rennText.trim()}" ✅`);
   await p.screenshot({ path: `${S}/16-rennen.png`, fullPage: true });
   await p.click('#heim'); await p.waitForSelector('#mission');
 }
