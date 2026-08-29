@@ -254,28 +254,65 @@ lesen: (() => {
 })(),
 
 /* ---------------- Englisch ---------------- */
+/* ---------------- English Basics ----------------
+   Für ein fünfjähriges Kind gedacht, das noch nicht flüssig liest: das Bild
+   trägt die Bedeutung, nicht der Text. Jede Vokabel bekommt deshalb ein
+   großes Emoji als "Foto" UND einen 🔊-Knopf, der erst das deutsche und
+   dann - hörbar in einer echten englischen Stimme - das englische Wort
+   sagt (siehe vorlesenZweisprachig in sprache.js). Zwei Rätselrichtungen
+   wechseln sich ab: Bild → englisches Wort suchen, und (umgekehrt, ein
+   echtes Bilderrätsel) Wort → passendes Bild suchen. */
 vokabeln: (() => {
-  const V = [['Hund','dog','animals'],['Katze','cat','animals'],['Pferd','horse','animals'],['Vogel','bird','animals'],
-    ['rot','red','colours'],['blau','blue','colours'],['grün','green','colours'],['gelb','yellow','colours'],
-    ['Haus','house','home'],['Tisch','table','home'],['Fenster','window','home'],['Tür','door','home'],
-    ['Apfel','apple','food'],['Brot','bread','food'],['Milch','milk','food'],['Wasser','water','food'],
-    ['Montag','Monday','time'],['Sommer','summer','time'],['heute','today','time'],['Jahr','year','time']];
-  const VERBEN = [['springen','jump'],['laufen','run'],['klatschen','clap'],['tanzen','dance'],
-    ['sitzen','sit'],['stehen','stand'],['winken','wave'],['schwimmen','swim']];
-  const LIEDER = [['Twinkle, twinkle, little ___','star',['moon','sun','tree']],
-    ['Head, shoulders, knees and ___','toes',['nose','hands','ears']],
-    ['Happy birthday to ___','you',['me','we','she']],
-    ['Old MacDonald had a ___','farm',['car','house','cat']]];
+  const V = [
+    ['Hund','dog','🐶'], ['Katze','cat','🐱'], ['Pferd','horse','🐴'], ['Vogel','bird','🐦'],
+    ['Fisch','fish','🐟'], ['Kuh','cow','🐄'], ['Schwein','pig','🐷'], ['Ente','duck','🦆'],
+    ['Frosch','frog','🐸'], ['Biene','bee','🐝'], ['Elefant','elephant','🐘'], ['Löwe','lion','🦁'],
+    ['rot','red','🔴'], ['blau','blue','🔵'], ['grün','green','🟢'], ['gelb','yellow','🟡'],
+    ['rosa','pink','🩷'], ['lila','purple','🟣'], ['schwarz','black','⚫'], ['weiß','white','⚪'],
+    ['eins','one','1️⃣'], ['zwei','two','2️⃣'], ['drei','three','3️⃣'], ['vier','four','4️⃣'], ['fünf','five','5️⃣'],
+    ['Mama','mom','👩'], ['Papa','dad','👨'], ['Kind','child','🧒'], ['Oma','grandma','👵'], ['Opa','grandpa','👴'],
+    ['Apfel','apple','🍎'], ['Banane','banana','🍌'], ['Brot','bread','🍞'], ['Milch','milk','🥛'],
+    ['Wasser','water','💧'], ['Kuchen','cake','🍰'], ['Keks','cookie','🍪'], ['Ei','egg','🥚'],
+    ['Haus','house','🏠'], ['Drachen','kite','🪁'], ['Buch','book','📚'], ['Auto','car','🚗'],
+    ['Sonne','sun','☀️'], ['Mond','moon','🌙'], ['Stern','star','⭐'], ['Blume','flower','🌸'],
+    ['Ohr','ear','👂'], ['Fuß','foot','🦶'], ['Auge','eye','👁️'],
+    ['glücklich','happy','😄'], ['traurig','sad','😢'], ['müde','tired','😴']
+  ];
+  const VERBEN = [['springen','jump','🤸'],['laufen','run','🏃'],['klatschen','clap','👏'],['tanzen','dance','💃'],
+    ['sitzen','sit','🪑'],['stehen','stand','🧍'],['winken','wave','👋'],['schwimmen','swim','🏊']];
+  const LIEDER = [['Twinkle, twinkle, little ___','star',['moon','sun','tree'],'⭐'],
+    ['Head, shoulders, knees and ___','toes',['nose','hands','ears'],'🧍'],
+    ['Happy birthday to ___','you',['me','we','she'],'🎂'],
+    ['Old MacDonald had a ___','farm',['car','house','cat'],'🚜']];
   return {
-    erzaehlen(){ const [de,en] = pick(V);
-      return wahl(`📖 Wie heißt „${de}“ auf Englisch?`, en, shuffle(V.filter(x=>x[1]!==en)).slice(0,3).map(x=>x[1]), 'Sag es laut.'); },
-    rhythmus(){ const [zeile, ok, bad] = pick(LIEDER);
-      return wahl(`🥁 Singe weiter:\n„${zeile}“`, ok, bad, 'Der Reim verrät es.'); },
-    bauen(){ const cat = pick(uniq(V.map(v=>v[2])));
-      const drin = pick(V.filter(v=>v[2]===cat)), raus = shuffle(V.filter(v=>v[2]!==cat)).slice(0,3);
-      return wahl(`🧱 Welches Wort gehört zur Gruppe „${cat}“?`, drin[1], raus.map(x=>x[1]), `${cat} = ${cat==='animals'?'Tiere':cat==='colours'?'Farben':cat==='food'?'Essen':cat==='home'?'Zuhause':'Zeit'}`); },
-    bewegen(){ const [de,en] = pick(VERBEN);
-      return wahl(`👟 Mach es vor! Was bedeutet „${en}“?`, de, shuffle(VERBEN.filter(v=>v[1]!==en)).slice(0,3).map(v=>v[0]), 'Probier die Bewegung aus.'); }
+    /* Bild zeigen, englisches Wort suchen - und beim 🔊-Knopf erst "Hund",
+       dann "dog" hören. */
+    erzaehlen(){
+      const [de, en, bild] = pick(V);
+      const falsche = shuffle(V.filter(x => x[1] !== en)).slice(0,3).map(x => x[1]);
+      return { ...wahl('Wie heißt das auf Englisch?', en, falsche, `${de} = ${en}`),
+        bild, zweisprachig: { de, en } };
+    },
+    /* Lied weitersingen, mit einem Bild zur Zeile. */
+    rhythmus(){
+      const [zeile, ok, bad, bild] = pick(LIEDER);
+      return { ...wahl(`🎵 Singe weiter:\n„${zeile}“`, ok, bad, 'Der Reim verrät es.'), bild };
+    },
+    /* Umgekehrtes Bilderrätsel: das englische Wort steht da, gesucht wird
+       das passende Bild unter vier Emoji-Antworten - ein echtes Bild-Puzzle. */
+    bauen(){
+      const [de, en, bild] = pick(V);
+      const falscheBilder = shuffle(V.filter(x => x[1] !== en)).slice(0,3).map(x => x[2]);
+      return { ...wahl(`Welches Bild passt zu „${en}“?`, bild, falscheBilder, `${en} = ${de}`),
+        bildwahl: true, zweisprachig: { de, en } };
+    },
+    /* Bewegung nachmachen - mit Bild und beidsprachigem Hören. */
+    bewegen(){
+      const [de, en, bild] = pick(VERBEN);
+      const falsche = shuffle(VERBEN.filter(v => v[1] !== en)).slice(0,3).map(v => v[0]);
+      return { ...wahl('Mach es vor! Was bedeutet dieses Wort?', de, falsche, `${en} = ${de}`),
+        bild, zweisprachig: { de, en } };
+    }
   };
 })(),
 

@@ -417,6 +417,26 @@ verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
    herauskommt und jedes erzeugte Rätsel rein rechnerisch (ohne Rätselraten) lösbar ist.
 
 
+24. **Englisch komplett neu: für Kinder, die noch nicht lesen können** 🖼️🔊
+   Die alte Fassung fragte "Wie heißt „Hund" auf Englisch?" – reiner Text, für ein
+   fünfjähriges Kind kaum zugänglich. Jetzt trägt in jeder Aufgabe ein **großes Bild**
+   die Bedeutung, nicht der Text: ein 🐶 statt des Wortes "Hund". Ein 🔊-Knopf sagt dazu
+   erst das deutsche Wort und dann – mit einer **echten englischen Stimme**, nicht der
+   deutschen Stimme mit englischem Text – das englische Wort. Zwei Rätselrichtungen
+   wechseln sich ab: **Bild zeigen, englisches Wort suchen** (der Klassiker) und, neu, ein
+   echtes **Bild-Puzzle**: das englische Wort steht da, gesucht wird unter vier großen
+   Symbolen das passende Bild – kein Lesen nötig, um die Aufgabe zu lösen.
+
+   Über 50 kindgerechte Wörter (Tiere, Farben, Zahlen, Familie, Essen, Gefühle) lösten die
+   alte, eher schulische Auswahl ab. `js/sprache.js` bekam dafür eine echte zweite Stimme
+   (`vorlesenZweisprachig`) – vorher gab es nur die deutsche Stimme, die englische Wörter
+   erkennbar falsch ausgesprochen hätte. `tests/englisch.mjs` prüft unter anderem, dass
+   wirklich jede Aufgabe ein Bild hat, dass sich Deutsch und Englisch bei jeder Vokabel auch
+   wirklich unterscheiden (ein Fehler, den der Test beim ersten Lauf tatsächlich fand: die
+   Farbe "orange" heißt auf Englisch zufällig genauso), und dass das Bild-Puzzle wirklich mit
+   Bildern statt mit Wörtern antwortet.
+
+
 ---
 
 ## Auf dem Handy nutzen
@@ -469,7 +489,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 26 · Stand 28.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 27 · Stand 28.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.
@@ -559,6 +579,7 @@ npm run test:aussprache   # Silben im Ton finden und zuordnen, an künstlichen A
 npm run test:punkte       # Punkte: nie Abzug, Schweres lohnt mehr, Unbewertetes zählt mit
 npm run test:rennen       # Renn-Modus: die Strecke geht nie rückwärts, kein falsches "verloren"
 npm run test:ueberraschung # Rätsel des Tages: für alle gleich, immer rein rechnerisch lösbar
+npm run test:englisch     # English Basics: bildbasiert, jede Vokabel deutsch ≠ englisch
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```

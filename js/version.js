@@ -9,11 +9,17 @@
    Bei jeder Änderung: NUMMER hier hochzählen UND in sw.js (CACHE) gleichziehen.
    tests/version.mjs prüft, dass beide übereinstimmen. */
 
-export const NUMMER = 26;
+export const NUMMER = 27;
 export const STAND = '28.08.2026';
 
 /* Neueste zuerst. Kurz und in Alltagssprache – das lesen Eltern, nicht Entwickler. */
 export const VERLAUF = [
+  { nr: 27, stand: '28.08.2026', was: [
+    'Englisch komplett neu gedacht: für Kinder, die noch nicht lesen können – das Bild trägt die Bedeutung',
+    'Jede Vokabel als großes Bild, mit einem 🔊-Knopf: erst das deutsche Wort, dann – mit echter englischer Stimme – das englische',
+    'Neues Bild-Puzzle: das englische Wort steht da, gesucht wird das passende Bild unter vier großen Symbolen',
+    'Über 50 kindgerechte Wörter: Tiere, Farben, Zahlen, Familie, Essen und mehr'
+  ]},
   { nr: 26, stand: '28.08.2026', was: [
     'Neu: Überraschungsrätsel des Tages – eine Zahlenpyramide oder ein Waage-Rätsel, für alle Kinder an diesem Tag dasselbe',
     'Ein Bonus fürs Lösen, und morgen wartet ein neues – ein kleiner, ehrlicher Grund, öfter vorbeizuschauen',

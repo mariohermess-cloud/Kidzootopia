@@ -5,7 +5,7 @@ import { TALENTE, WEGE, FAECHER, ZIELE, ZIEL_MAP, SKALA, AVATARE, ABZEICHEN, ETA
 import * as S from './store.js';
 import { starteSession, empfehlungen, wegRanking, wegeNachWirkung, wegBewertung } from './engine.js';
 import { auswerten, stichPaare, engeTalente } from './talenttest.js';
-import { vorlesen, stopp, kannVorlesen } from './sprache.js';
+import { vorlesen, stopp, kannVorlesen, vorlesenZweisprachig } from './sprache.js';
 import { anleitung, umgebung } from './installhilfe.js';
 import { bewerte, BESTANDEN } from './zeichnen.js';
 import * as Kunst from './kunstanalyse.js';
@@ -1551,7 +1551,10 @@ function screenSession(p, opts = {}) {
           <span class="wegtag">${a.wegInfo.emoji} ${a.wegInfo.name}${a.bruecke ? ' · Brücke 🌉' : ''}</span>
           ${kannVorlesen() ? '<button class="btn small ghost" id="lies" title="Vorlesen">🔊</button>' : ''}
         </div>
+        ${a.bild ? `<div class="aufgabenbild">${a.bild}</div>` : ''}
         <p class="task pop">${esc(a.frage)}</p>
+        ${a.zweisprachig ? `<button class="btn small ghost" id="hoerZweisprachig" style="margin:-4px auto 10px;display:flex">
+          🔊 ${esc(a.zweisprachig.de)} → ${esc(a.zweisprachig.en)}</button>` : ''}
         <div id="antwortbereich"></div>
         <div id="tippBereich"></div>
         <div id="fb"></div>
@@ -1574,15 +1577,19 @@ function screenSession(p, opts = {}) {
       t.hidden = !t.hidden;
       e.target.textContent = t.hidden ? '📖 Text zeigen' : '🙈 Text verbergen';
     });
+    /* Vokabeln: erst deutsch, dann - mit echter englischer Stimme - englisch. */
+    view().querySelector('#hoerZweisprachig')?.addEventListener('click', () =>
+      vorlesenZweisprachig(a.zweisprachig.de, a.zweisprachig.en));
     if (ergebnis === null && p.vorlesen && kannVorlesen()) {
       // Vorlesen ist eingeschaltet: Aufgabe direkt ansagen
-      vorlesen(hatHoertext ? a.hoertext : vorleseText(), { tempo: 0.9 });
+      vorlesen(hatHoertext ? a.hoertext : vorleseText(), { tempo: 0.9,
+        beiEnde: a.zweisprachig ? () => vorlesenZweisprachig(a.zweisprachig.de, a.zweisprachig.en) : undefined });
     }
 
     const bereich = view().querySelector('#antwortbereich');
 
     if (a.typ === 'choice') {
-      bereich.innerHTML = `<div class="choices">${a.optionen.map(o =>
+      bereich.innerHTML = `<div class="choices${a.bildwahl ? ' bildwahl' : ''}">${a.optionen.map(o =>
         `<button class="choice" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
       if (ergebnis === null) bereich.querySelectorAll('[data-o]').forEach(b =>
         b.onclick = () => auswerten(a, b.dataset.o));

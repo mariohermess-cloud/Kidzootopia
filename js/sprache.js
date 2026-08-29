@@ -5,6 +5,7 @@
 
 let stimmen = [];
 let bevorzugt = null;
+let bevorzugtEN = null;
 
 const imBrowser = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
@@ -14,6 +15,9 @@ function stimmenLaden() {
   bevorzugt =
     stimmen.find(s => /^de[-_]DE/i.test(s.lang) && /female|weiblich|Anna|Petra|Marlene/i.test(s.name)) ||
     stimmen.find(s => /^de[-_]/i.test(s.lang)) || null;
+  bevorzugtEN =
+    stimmen.find(s => /^en[-_](US|GB)/i.test(s.lang) && /female|Samantha|Zira|Karen|Google US English/i.test(s.name)) ||
+    stimmen.find(s => /^en[-_]/i.test(s.lang)) || null;
 }
 if (imBrowser) {
   stimmenLaden();
@@ -47,22 +51,49 @@ export function stopp() {
   if (kannVorlesen()) { try { speechSynthesis.cancel(); } catch {} }
 }
 
-/* Liest vor. tempo: 1 = normal, kleiner = langsamer (für jüngere Kinder). */
-export function vorlesen(text, { tempo = 0.95, beiEnde = null } = {}) {
+/* Gemeinsamer Kern: eine Sprachausgabe in genau EINER Sprache, ohne die
+   Warteschlange anzufassen - das erledigen die Funktionen darunter, je
+   nachdem ob eine einzelne Ansage oder eine Kette (deutsch, dann englisch)
+   gebraucht wird. */
+function sprich(text, { lang, stimme, tempo, beiEnde }) {
   if (!kannVorlesen()) { beiEnde?.(); return null; }
-  stopp();
   const inhalt = sprechbar(text);
   if (!inhalt) { beiEnde?.(); return null; }
   const u = new SpeechSynthesisUtterance(inhalt);
-  u.lang = 'de-DE';
+  u.lang = lang;
   u.rate = tempo;
   u.pitch = 1.05;
   if (!stimmen.length) stimmenLaden();
-  if (bevorzugt) u.voice = bevorzugt;
+  if (stimme) u.voice = stimme;
   u.onend = () => beiEnde?.();
   u.onerror = () => beiEnde?.();
   try { speechSynthesis.speak(u); } catch { beiEnde?.(); }
   return u;
+}
+
+/* Liest vor. tempo: 1 = normal, kleiner = langsamer (für jüngere Kinder). */
+export function vorlesen(text, { tempo = 0.95, beiEnde = null } = {}) {
+  stopp();
+  return sprich(text, { lang: 'de-DE', stimme: bevorzugt, tempo, beiEnde });
+}
+
+/* Liest englischen Text mit einer englischen Stimme vor - eine deutsche
+   Stimme spricht englische Wörter erkennbar falsch aus, und genau darauf
+   kommt es beim Sprachenlernen an. */
+export function vorlesenEnglisch(text, { tempo = 0.85, beiEnde = null } = {}) {
+  stopp();
+  return sprich(text, { lang: 'en-US', stimme: bevorzugtEN, tempo, beiEnde });
+}
+
+/* Erst das deutsche Wort, dann - nach kurzem Innehalten - dasselbe auf
+   Englisch. Genau das Prinzip für den Vokabel-Einstieg: erst hören, was man
+   schon kennt, dann hören, wie es auf Englisch heißt. */
+export function vorlesenZweisprachig(de, en, { beiEnde = null } = {}) {
+  if (!kannVorlesen()) { beiEnde?.(); return; }
+  stopp();
+  sprich(de, { lang: 'de-DE', stimme: bevorzugt, tempo: 0.9, beiEnde: () => {
+    setTimeout(() => sprich(en, { lang: 'en-US', stimme: bevorzugtEN, tempo: 0.8, beiEnde }), 350);
+  }});
 }
 
 /* Liest mehrere Teile nacheinander (z. B. Geschichte, dann Frage). */

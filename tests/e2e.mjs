@@ -477,6 +477,30 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   await p.click('#heim'); await p.waitForSelector('#mission');
 }
 
+// English Basics: bildbasiert genug, dass ein Kind, das noch nicht liest,
+// die Aufgabe trotzdem loesen kann - Bild und Hoer-Knopf muessen wirklich da sein.
+{
+  await bannerWeg(p);
+  await p.click('[data-fach="englisch"]');
+  let sahBild = false, sahBildwahl = false, sahHoerKnopf = false;
+  for (let i = 0; i < 14 && !(await p.$('#nochmal')); i++) {
+    await p.waitForSelector('.task');
+    if (await p.$('.aufgabenbild')) sahBild = true;
+    if (await p.$('.choices.bildwahl')) sahBildwahl = true;
+    if (await p.$('#hoerZweisprachig')) sahHoerKnopf = true;
+    await loeseAufgabe(p);
+    await p.waitForSelector('#weiter');
+    await p.click('#weiter');
+  }
+  if (!sahBild) throw new Error('English Basics: keine einzige Aufgabe zeigte ein Bild');
+  if (!sahBildwahl) throw new Error('English Basics: das Bild-Puzzle (Wort -> passendes Bild) kam nicht vor');
+  if (!sahHoerKnopf) throw new Error('English Basics: der zweisprachige Hoer-Knopf kam nicht vor');
+  console.log('English Basics: Bild, Bild-Puzzle und zweisprachiger Hoer-Knopf gesehen ✅');
+  await p.screenshot({ path: `${S}/18-englisch.png`, fullPage: true });
+  await p.waitForSelector('#nochmal', { timeout: 8000 });
+  await p.click('#heim'); await p.waitForSelector('#mission');
+}
+
 // Knacknuesse: das Schmierblatt muss von Anfang an offen sein, nicht erst
 // entdeckt werden - genau hier hilft eine Skizze am meisten.
 {

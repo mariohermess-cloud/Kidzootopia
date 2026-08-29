@@ -235,6 +235,11 @@ details.card ol{margin:8px 0}
 
 .waage-zeilen{display:flex;flex-direction:column;gap:10px;margin:6px 0;font-size:1.15rem;font-weight:700}
 .waage-zeile.frage{color:var(--brand)}
+
+/* English Basics: das Bild trägt die Bedeutung, nicht der Text */
+.aufgabenbild{font-size:4.4rem;line-height:1;text-align:center;margin:2px 0 10px;animation:pop .3s ease}
+.choices.bildwahl{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.choices.bildwahl .choice{font-size:2.6rem;padding:20px 8px;line-height:1}
 @keyframes schlafen{0%,100%{transform:scale(1) rotate(-6deg)}50%{transform:scale(1.05) rotate(-6deg)}}
 
 /* Zeichenbrett */
