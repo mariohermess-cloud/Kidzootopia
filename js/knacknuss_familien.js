@@ -9,6 +9,8 @@
    Jede Familie meldet über `varianten`, wie viele verschiedene Aufgaben sie
    hergibt – die Summe steht im README und wird im Test nachgezählt. */
 
+import { hanoiBild } from './klassiker.js';
+
 const ganz = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const waehle = a => a[Math.floor(Math.random() * a.length)];
 
@@ -98,11 +100,16 @@ export const FAMILIEN = [
     quelle:'Édouard Lucas, 1883 – als Spiel „Tour de Hanoï“ verkauft.',
     erzeuge() {
       const n = ganz(3, 9);
+      const ergebnis = 2 ** n - 1;
       return { frage:`🗼 Türme von Hanoi mit ${n} Scheiben.\nImmer nur eine Scheibe umlegen, nie eine größere auf eine kleinere.\nWie viele Züge braucht man mindestens?`,
-        antwort:String(2 ** n - 1),
+        antwort:String(ergebnis),
         tipps:['Fang klein an: 1 Scheibe braucht 1 Zug, 2 Scheiben brauchen 3.',
                'Bei jeder weiteren Scheibe verdoppelt sich die Zahl und eins kommt dazu.',
-               `Die Formel lautet 2 hoch n minus 1, hier also 2 hoch ${n} minus 1.`] };
+               `Die Formel lautet 2 hoch n minus 1, hier also 2 hoch ${n} minus 1 gleich ${ergebnis}.`],
+        /* Eigenstaendige Erklaerung statt nur des letzten Tipps - siehe
+           generators.js, das hilfe sonst aus dem letzten Tipp bastelt. */
+        loesung:`Mit 1 Scheibe braucht man 1 Zug, mit 2 Scheiben 3 Züge. Mit jeder weiteren Scheibe verdoppelt sich die Zahl der nötigen Züge, und einer kommt dazu. Bei ${n} Scheiben sind das 2 hoch ${n} minus 1, also ${ergebnis} Züge.`,
+        bild: hanoiBild(n) };
     } },
 
   { id:'handschlag', stufe:3, varianten: 22,

@@ -394,6 +394,20 @@ verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
    rückwärts geht – Punkte können pro Aufgabe nur 0 oder mehr sein, also kann die Kurve nur
    wachsen oder stehen bleiben, nie fallen.
 
+   **Nachtrag:** Ein reines Zusehen war zu Recht langweilig – "es passiert ja gar nix".
+   Jetzt treibt ein bunter **Kreisel** das Rennen an: mit dem Daumen andrehen, und wie ein
+   echter Kreisel läuft er danach noch eine Weile nach und wird ohne Nachdrehen langsamer
+   (Reibung). Wie schnell und wie oft gedreht wird, bestimmt nur, wie schnell durchs Rennen
+   gespult wird – das Ergebnis selbst bleibt unverändert das, was die Runde wirklich
+   erspielt hat. Nichts wird durch Drehen schöner gerechnet.
+
+   **Zweiter Nachtrag:** Der Kreisel fühlte sich wie ein Ein-Aus-Schalter an – schon die
+   kleinste Bewegung sprang sofort auf Höchsttempo, egal ob bewusst langsam oder schnell
+   gedreht wurde. Grund war eine feste Portion Schwung pro Drehschritt, statt auf die
+   wirkliche Geschwindigkeit der Bewegung zu achten. Jetzt bestimmt die tatsächliche
+   Drehgeschwindigkeit (Grad pro Sekunde) den Schwung – langsames Drehen bringt spürbar
+   wenig voran, schnelles Drehen deutlich mehr. Ein Kreisel eben, kein Schalter.
+
 22. **Neues Lernziel: Gesund essen** 🥕
    Warum regelmäßig Wasser trinken, warum Frühstück, warum bunte Vielfalt auf dem Teller,
    warum Zähneputzen nach Süßem – bewusst **ohne** Kalorien, Diätregeln oder als „schlecht"
@@ -415,6 +429,76 @@ verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
    Grundsatz mit einem einzigen Rätsel beliebig oft ausnutzen. `tests/ueberraschung.mjs`
    prüft unter anderem, dass wirklich für alle Geräte am selben Tag dasselbe Rätsel
    herauskommt und jedes erzeugte Rätsel rein rechnerisch (ohne Rätselraten) lösbar ist.
+
+
+24. **Englisch komplett neu: für Kinder, die noch nicht lesen können** 🖼️🔊
+   Die alte Fassung fragte "Wie heißt „Hund" auf Englisch?" – reiner Text, für ein
+   fünfjähriges Kind kaum zugänglich. Jetzt trägt in jeder Aufgabe ein **großes Bild**
+   die Bedeutung, nicht der Text: ein 🐶 statt des Wortes "Hund". Ein 🔊-Knopf sagt dazu
+   erst das deutsche Wort und dann – mit einer **echten englischen Stimme**, nicht der
+   deutschen Stimme mit englischem Text – das englische Wort. Zwei Rätselrichtungen
+   wechseln sich ab: **Bild zeigen, englisches Wort suchen** (der Klassiker) und, neu, ein
+   echtes **Bild-Puzzle**: das englische Wort steht da, gesucht wird unter vier großen
+   Symbolen das passende Bild – kein Lesen nötig, um die Aufgabe zu lösen.
+
+   Über 50 kindgerechte Wörter (Tiere, Farben, Zahlen, Familie, Essen, Gefühle) lösten die
+   alte, eher schulische Auswahl ab. `js/sprache.js` bekam dafür eine echte zweite Stimme
+   (`vorlesenZweisprachig`) – vorher gab es nur die deutsche Stimme, die englische Wörter
+   erkennbar falsch ausgesprochen hätte. `tests/englisch.mjs` prüft unter anderem, dass
+   wirklich jede Aufgabe ein Bild hat, dass sich Deutsch und Englisch bei jeder Vokabel auch
+   wirklich unterscheiden (ein Fehler, den der Test beim ersten Lauf tatsächlich fand: die
+   Farbe "orange" heißt auf Englisch zufällig genauso), und dass das Bild-Puzzle wirklich mit
+   Bildern statt mit Wörtern antwortet.
+
+
+25. **Tiererkennung: Insekten, die sich zum Verwechseln ähnlich sehen** 🐝
+   Ein einzelnes Emoji (🐝) reicht nicht aus, um Honigbiene, Hummel, Wespe, Schwebfliege,
+   Wildbiene und Hornisse auseinanderzuhalten – genau das war die gemeldete Schwierigkeit.
+   Die neuen Fragen bei Allgemeinwissen (Entdecker-Weg) beschreiben deshalb die wirklich
+   unterscheidenden Merkmale in Worten: Körperform, Fell, Flugverhalten, Lebensweise – so,
+   wie man ein Tier auch draußen ohne Nachschlagewerk erkennen würde. Bewusst sehr
+   unterschiedliche "Bienenverwandte" nebeneinander (die pelzige, langsame Hummel; die
+   glatte, tailleneingeschnürte Wespe; die harmlose, bienenfarbene Schwebfliege ohne
+   Stachel; die einzeln lebende Wildbiene; die zu Unrecht gefürchtete Hornisse), damit klar
+   wird: nicht alles Gestreifte ist dieselbe Biene. `tests/tiererkennung.mjs` prüft, dass
+   wirklich alle sechs Arten vorkommen und jede Aufgabe die Merkmale ausführlich erklärt.
+
+
+26. **Strandfunde: was der Sommer im Schlamm freigibt** 🐚
+   Muschelschale, Schneckenhaus, Hai-Zahn, Sepiaschulp, Krebspanzer, Qualle, Wattwurm-Spur,
+   Möwenfeder – jeder Fund bekommt ein großes Bild, damit ein Kind ihn wirklich vor Augen
+   hat, nicht nur den Namen liest. Weil ein einzelnes Symbol allein trotzdem mehrdeutig wäre,
+   beschreibt jede Frage zusätzlich, wie sich der Fund anfühlt und aussieht – Größe, Gewicht,
+   Form, Farbe –, genau wie man ihn auch draußen ohne Nachschlagewerk erkennen würde. Dazu
+   Geschichten (ein Hai-Zahn im Sand bedeutet nicht, dass gerade ein Hai schwimmt),
+   Schätzfragen (Bernstein ist fast immer älter als jede Muschel) und Sicherheitsfragen fürs
+   Watt (gestrandete Quallen nicht anfassen, Gezeiten im Blick behalten).
+
+   **Nachtrag:** Der Standard-Emoji für "Zahn" (🦷) zeigt einen menschlichen Backenzahn –
+   für einen Hai-Zahn-Fund also schlicht falsch, und das ist im Gebrauch aufgefallen. Sechs
+   Funde (Muschel, Schneckenhaus, Hai-Zahn, Sepiaschulp, Krebspanzer, Wattwurm-Spur) haben
+   deshalb jetzt eigens gezeichnete, kleine Bilder statt eines irreführenden oder gar nicht
+   existierenden Emojis – Qualle und Möwenfeder hatten schon treffende Emoji und blieben
+   unverändert. `tests/strandfunde.mjs` prüft unter anderem, dass jedes Bild eindeutig zu
+   genau einem Fund gehört – zwei verschiedene Lösungen mit demselben Bild wären ohne den
+   Beschreibungstext nicht zu unterscheiden.
+
+
+27. **Knacknüsse erklären jetzt wirklich, warum die Antwort stimmt** 🗼
+   Nach dem Antworten stand bei den 48 handverlesenen Klassikern bisher nur die
+   Herkunftsangabe da ("Édouard Lucas, 1883") – nie eine Erklärung, WARUM die Lösung
+   stimmt. Wer ohne Tipps geraten und falsch gelegen hatte, erfuhr also gar nicht, wie man
+   auf die richtige Antwort kommt. Jetzt hat jeder der 48 Klassiker eine eigenständige,
+   für sich verständliche Lösungserklärung – unabhängig von den Tipps, die man vorher schon
+   gesehen haben könnte oder auch nicht.
+
+   Besonders betroffen war **"Türme von Hanoi"**: rein textlich beschrieben, für viele schwer
+   vorstellbar. Jetzt gibt es dazu ein Bild der Scheiben auf dem Stab – als kleine, selbst
+   gezeichnete Grafik, passend zur jeweils gezogenen Scheibenzahl (auch bei der häufigeren,
+   zufällig erzeugten Variante mit 3 bis 9 Scheiben, nicht nur bei der festen 3er-Aufgabe).
+   `tests/knacknuesse.mjs` prüft seither, dass jeder Klassiker eine echte, ausreichend lange
+   Lösungserklärung hat – und dass sie nicht versehentlich mit der Herkunftsangabe
+   verwechselt wird, genau der Fehler, der den Anlass gab.
 
 
 ---
@@ -469,7 +553,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 26 · Stand 28.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 33 · Stand 29.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.
@@ -559,6 +643,9 @@ npm run test:aussprache   # Silben im Ton finden und zuordnen, an künstlichen A
 npm run test:punkte       # Punkte: nie Abzug, Schweres lohnt mehr, Unbewertetes zählt mit
 npm run test:rennen       # Renn-Modus: die Strecke geht nie rückwärts, kein falsches "verloren"
 npm run test:ueberraschung # Rätsel des Tages: für alle gleich, immer rein rechnerisch lösbar
+npm run test:englisch     # English Basics: bildbasiert, jede Vokabel deutsch ≠ englisch
+npm run test:tiererkennung # Tiererkennung: alle sechs Insektenarten kommen vor und sind erklärt
+npm run test:strandfunde  # Strandfunde: jedes Bild gehört eindeutig zu genau einem Fund
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```

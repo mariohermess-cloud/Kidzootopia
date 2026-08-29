@@ -9,11 +9,45 @@
    Bei jeder Änderung: NUMMER hier hochzählen UND in sw.js (CACHE) gleichziehen.
    tests/version.mjs prüft, dass beide übereinstimmen. */
 
-export const NUMMER = 26;
-export const STAND = '28.08.2026';
+export const NUMMER = 33;
+export const STAND = '29.08.2026';
 
 /* Neueste zuerst. Kurz und in Alltagssprache – das lesen Eltern, nicht Entwickler. */
 export const VERLAUF = [
+  { nr: 33, stand: '29.08.2026', was: [
+    'Renn-Kreisel behoben: Drehen fühlte sich wie an-oder-aus an, egal wie schnell oder langsam gedreht wurde',
+    'Jetzt bestimmt die wirkliche Drehgeschwindigkeit das Tempo – langsam drehen bringt wenig voran, schnell drehen deutlich mehr'
+  ]},
+  { nr: 32, stand: '29.08.2026', was: [
+    'Knacknüsse erklären jetzt jede Lösung wirklich, statt nur die Herkunft der Aufgabe zu nennen',
+    'Türme von Hanoi: endlich ein Bild der Scheiben auf dem Stab – vorher nur Text, jetzt zum Anschauen',
+    'Alle 48 handverlesenen Klassiker haben eine eigenständige, in sich verständliche Lösungserklärung'
+  ]},
+  { nr: 31, stand: '29.08.2026', was: [
+    'Strandfunde: falsches Bild korrigiert – der Hai-Zahn zeigte versehentlich einen menschlichen Zahn',
+    'Sechs Funde (Muschel, Schneckenhaus, Hai-Zahn, Sepiaschulp, Krebspanzer, Wattwurm-Spur) haben jetzt selbst gezeichnete, passende Bilder statt eines irreführenden Symbols'
+  ]},
+  { nr: 30, stand: '29.08.2026', was: [
+    'Neu: Strandfunde – Muschel, Schneckenhaus, Hai-Zahn, Sepiaschulp und mehr, jeweils als großes Bild',
+    'Jeder Fund erklärt, woran man ihn wirklich erkennt: Form, Gewicht, Farbe, Herkunft',
+    'Dazu Geschichten, Schätzfragen und Sicherheitsfragen rund um Strand und Watt (Quallen, Gezeiten)'
+  ]},
+  { nr: 29, stand: '29.08.2026', was: [
+    'Neue Tiererkennung bei Allgemeinwissen: Insekten, die sich zum Verwechseln ähnlich sehen',
+    'Honigbiene, Hummel, Wespe, Schwebfliege, Wildbiene und Hornisse – anhand echter Merkmale unterschieden, nicht nur an einem Bild',
+    'Jede Frage erklärt, woran man die Art draußen wirklich erkennt – Körperform, Fell, Flugverhalten, Lebensweise'
+  ]},
+  { nr: 28, stand: '29.08.2026', was: [
+    'Renn-Modus: ein Kreisel treibt das Rennen jetzt an, statt nur zuzusehen',
+    'Mit dem Daumen andrehen – wie ein echter Kreisel läuft er nach und wird ohne Nachdrehen langsamer',
+    'Wer schneller und öfter dreht, spult schneller durchs Rennen – das Ergebnis selbst bleibt unverändert das wirklich Erspielte'
+  ]},
+  { nr: 27, stand: '28.08.2026', was: [
+    'Englisch komplett neu gedacht: für Kinder, die noch nicht lesen können – das Bild trägt die Bedeutung',
+    'Jede Vokabel als großes Bild, mit einem 🔊-Knopf: erst das deutsche Wort, dann – mit echter englischer Stimme – das englische',
+    'Neues Bild-Puzzle: das englische Wort steht da, gesucht wird das passende Bild unter vier großen Symbolen',
+    'Über 50 kindgerechte Wörter: Tiere, Farben, Zahlen, Familie, Essen und mehr'
+  ]},
   { nr: 26, stand: '28.08.2026', was: [
     'Neu: Überraschungsrätsel des Tages – eine Zahlenpyramide oder ein Waage-Rätsel, für alle Kinder an diesem Tag dasselbe',
     'Ein Bonus fürs Lösen, und morgen wartet ein neues – ein kleiner, ehrlicher Grund, öfter vorbeizuschauen',

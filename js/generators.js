@@ -254,28 +254,65 @@ lesen: (() => {
 })(),
 
 /* ---------------- Englisch ---------------- */
+/* ---------------- English Basics ----------------
+   Für ein fünfjähriges Kind gedacht, das noch nicht flüssig liest: das Bild
+   trägt die Bedeutung, nicht der Text. Jede Vokabel bekommt deshalb ein
+   großes Emoji als "Foto" UND einen 🔊-Knopf, der erst das deutsche und
+   dann - hörbar in einer echten englischen Stimme - das englische Wort
+   sagt (siehe vorlesenZweisprachig in sprache.js). Zwei Rätselrichtungen
+   wechseln sich ab: Bild → englisches Wort suchen, und (umgekehrt, ein
+   echtes Bilderrätsel) Wort → passendes Bild suchen. */
 vokabeln: (() => {
-  const V = [['Hund','dog','animals'],['Katze','cat','animals'],['Pferd','horse','animals'],['Vogel','bird','animals'],
-    ['rot','red','colours'],['blau','blue','colours'],['grün','green','colours'],['gelb','yellow','colours'],
-    ['Haus','house','home'],['Tisch','table','home'],['Fenster','window','home'],['Tür','door','home'],
-    ['Apfel','apple','food'],['Brot','bread','food'],['Milch','milk','food'],['Wasser','water','food'],
-    ['Montag','Monday','time'],['Sommer','summer','time'],['heute','today','time'],['Jahr','year','time']];
-  const VERBEN = [['springen','jump'],['laufen','run'],['klatschen','clap'],['tanzen','dance'],
-    ['sitzen','sit'],['stehen','stand'],['winken','wave'],['schwimmen','swim']];
-  const LIEDER = [['Twinkle, twinkle, little ___','star',['moon','sun','tree']],
-    ['Head, shoulders, knees and ___','toes',['nose','hands','ears']],
-    ['Happy birthday to ___','you',['me','we','she']],
-    ['Old MacDonald had a ___','farm',['car','house','cat']]];
+  const V = [
+    ['Hund','dog','🐶'], ['Katze','cat','🐱'], ['Pferd','horse','🐴'], ['Vogel','bird','🐦'],
+    ['Fisch','fish','🐟'], ['Kuh','cow','🐄'], ['Schwein','pig','🐷'], ['Ente','duck','🦆'],
+    ['Frosch','frog','🐸'], ['Biene','bee','🐝'], ['Elefant','elephant','🐘'], ['Löwe','lion','🦁'],
+    ['rot','red','🔴'], ['blau','blue','🔵'], ['grün','green','🟢'], ['gelb','yellow','🟡'],
+    ['rosa','pink','🩷'], ['lila','purple','🟣'], ['schwarz','black','⚫'], ['weiß','white','⚪'],
+    ['eins','one','1️⃣'], ['zwei','two','2️⃣'], ['drei','three','3️⃣'], ['vier','four','4️⃣'], ['fünf','five','5️⃣'],
+    ['Mama','mom','👩'], ['Papa','dad','👨'], ['Kind','child','🧒'], ['Oma','grandma','👵'], ['Opa','grandpa','👴'],
+    ['Apfel','apple','🍎'], ['Banane','banana','🍌'], ['Brot','bread','🍞'], ['Milch','milk','🥛'],
+    ['Wasser','water','💧'], ['Kuchen','cake','🍰'], ['Keks','cookie','🍪'], ['Ei','egg','🥚'],
+    ['Haus','house','🏠'], ['Drachen','kite','🪁'], ['Buch','book','📚'], ['Auto','car','🚗'],
+    ['Sonne','sun','☀️'], ['Mond','moon','🌙'], ['Stern','star','⭐'], ['Blume','flower','🌸'],
+    ['Ohr','ear','👂'], ['Fuß','foot','🦶'], ['Auge','eye','👁️'],
+    ['glücklich','happy','😄'], ['traurig','sad','😢'], ['müde','tired','😴']
+  ];
+  const VERBEN = [['springen','jump','🤸'],['laufen','run','🏃'],['klatschen','clap','👏'],['tanzen','dance','💃'],
+    ['sitzen','sit','🪑'],['stehen','stand','🧍'],['winken','wave','👋'],['schwimmen','swim','🏊']];
+  const LIEDER = [['Twinkle, twinkle, little ___','star',['moon','sun','tree'],'⭐'],
+    ['Head, shoulders, knees and ___','toes',['nose','hands','ears'],'🧍'],
+    ['Happy birthday to ___','you',['me','we','she'],'🎂'],
+    ['Old MacDonald had a ___','farm',['car','house','cat'],'🚜']];
   return {
-    erzaehlen(){ const [de,en] = pick(V);
-      return wahl(`📖 Wie heißt „${de}“ auf Englisch?`, en, shuffle(V.filter(x=>x[1]!==en)).slice(0,3).map(x=>x[1]), 'Sag es laut.'); },
-    rhythmus(){ const [zeile, ok, bad] = pick(LIEDER);
-      return wahl(`🥁 Singe weiter:\n„${zeile}“`, ok, bad, 'Der Reim verrät es.'); },
-    bauen(){ const cat = pick(uniq(V.map(v=>v[2])));
-      const drin = pick(V.filter(v=>v[2]===cat)), raus = shuffle(V.filter(v=>v[2]!==cat)).slice(0,3);
-      return wahl(`🧱 Welches Wort gehört zur Gruppe „${cat}“?`, drin[1], raus.map(x=>x[1]), `${cat} = ${cat==='animals'?'Tiere':cat==='colours'?'Farben':cat==='food'?'Essen':cat==='home'?'Zuhause':'Zeit'}`); },
-    bewegen(){ const [de,en] = pick(VERBEN);
-      return wahl(`👟 Mach es vor! Was bedeutet „${en}“?`, de, shuffle(VERBEN.filter(v=>v[1]!==en)).slice(0,3).map(v=>v[0]), 'Probier die Bewegung aus.'); }
+    /* Bild zeigen, englisches Wort suchen - und beim 🔊-Knopf erst "Hund",
+       dann "dog" hören. */
+    erzaehlen(){
+      const [de, en, bild] = pick(V);
+      const falsche = shuffle(V.filter(x => x[1] !== en)).slice(0,3).map(x => x[1]);
+      return { ...wahl('Wie heißt das auf Englisch?', en, falsche, `${de} = ${en}`),
+        bild, zweisprachig: { de, en } };
+    },
+    /* Lied weitersingen, mit einem Bild zur Zeile. */
+    rhythmus(){
+      const [zeile, ok, bad, bild] = pick(LIEDER);
+      return { ...wahl(`🎵 Singe weiter:\n„${zeile}“`, ok, bad, 'Der Reim verrät es.'), bild };
+    },
+    /* Umgekehrtes Bilderrätsel: das englische Wort steht da, gesucht wird
+       das passende Bild unter vier Emoji-Antworten - ein echtes Bild-Puzzle. */
+    bauen(){
+      const [de, en, bild] = pick(V);
+      const falscheBilder = shuffle(V.filter(x => x[1] !== en)).slice(0,3).map(x => x[2]);
+      return { ...wahl(`Welches Bild passt zu „${en}“?`, bild, falscheBilder, `${en} = ${de}`),
+        bildwahl: true, zweisprachig: { de, en } };
+    },
+    /* Bewegung nachmachen - mit Bild und beidsprachigem Hören. */
+    bewegen(){
+      const [de, en, bild] = pick(VERBEN);
+      const falsche = shuffle(VERBEN.filter(v => v[1] !== en)).slice(0,3).map(v => v[0]);
+      return { ...wahl('Mach es vor! Was bedeutet dieses Wort?', de, falsche, `${en} = ${de}`),
+        bild, zweisprachig: { de, en } };
+    }
   };
 })(),
 
@@ -337,9 +374,36 @@ allgemein: (() => {
       'Nichts verraten und Erwachsene fragen', ['Adresse schicken','Foto schicken','Telefonnummer geben'],
       'Im Internet weiß man nie sicher, wer wirklich fragt. Persönliche Angaben gehören nicht in fremde Hände.']
   ];
+  /* Tiererkennung: Insekten, die sich zum Verwechseln ähnlich sehen. Ein
+     einzelnes Emoji (🐝) hilft dabei kaum - genau das war das Problem.
+     Stattdessen beschreibt jede Frage die wirklich unterscheidenden Merkmale
+     in Worten: Körperform, Fell, Flugverhalten, Lebensweise - so, wie man
+     ein Tier auch draußen ohne Nachschlagewerk erkennen würde. Bewusst
+     mehrere, sehr unterschiedliche "Bienenverwandte" nebeneinander, damit
+     klar wird: nicht alles Gestreifte ist dieselbe Biene. */
+  const TIERE = [
+    ['Dieses Insekt ist rundlich und dicht pelzig, oft schwarz-gelb oder mit oranger Spitze, und fliegt mit lautem Brummen eher langsam. Welches Insekt ist das?',
+      'Hummel', ['Honigbiene','Wespe','Schwebfliege'],
+      'Hummeln sind runder und viel pelziger als Honigbienen. Das laute Brummen kommt von ihrem kräftigen Flügelschlag, nicht von einem Warnruf.'],
+    ['Dieses Insekt hat einen glatten, glänzenden Körper mit einer deutlich eingeschnürten Taille und kräftigen schwarz-gelben Streifen. Es kann mehrmals stechen. Welches Insekt ist das?',
+      'Wespe', ['Honigbiene','Hummel','Marienkäfer'],
+      'Die schmale „Wespentaille" gibt es nur bei Wespen und Hornissen. Bienen und Hummeln sind pelziger und wirken rundlicher, ohne diese Einschnürung.'],
+    ['Dieses Insekt sieht aus wie eine kleine Biene, hat aber nur ein Flügelpaar statt zwei, kann in der Luft wie ein Hubschrauber stillstehen und sticht nicht. Welches Insekt ist das?',
+      'Schwebfliege', ['Honigbiene','Wespe','Hummel'],
+      'Schwebfliegen tarnen sich mit Bienen- oder Wespenfarben, um Fressfeinde abzuschrecken - sind aber harmlose Fliegen ohne Stachel.'],
+    ['Dieses Insekt lebt zu Tausenden in einem Volk zusammen, sammelt Nektar und Pollen für Honig und stirbt nach dem einzigen Stich, den es je setzen kann. Welches Insekt ist das?',
+      'Honigbiene', ['Hummel','Wespe','Schwebfliege'],
+      'Der Stachel der Honigbiene bleibt mit einem Widerhaken in der Haut stecken - beim Wegfliegen reißt ein Teil ihres Körpers ab. Hummeln und Wespen haben diesen Widerhaken nicht und überleben einen Stich.'],
+    ['Dieses Insekt lebt nicht in einem großen Volk, sondern meist ganz allein, baut sein Nest in hohlen Pflanzenstängeln oder kleinen Löchern und sticht nur in großer Not. Welches Insekt ist das?',
+      'Wildbiene', ['Honigbiene','Wespe','Hornisse'],
+      'Von den über 500 Wildbienenarten in Deutschland lebt die Mehrheit einzeln statt im Volk - ganz anders als die bekannte Honigbiene.'],
+    ['Dieses Insekt ist die größte heimische Faltenwespe, wirkt durch ihre Größe furchteinflößend, ist Menschen gegenüber aber eher scheu, und ihr Stich ist für die meisten Menschen nicht gefährlicher als ein Wespenstich. Welches Insekt ist das?',
+      'Hornisse', ['Wespe','Hummel','Honigbiene'],
+      'Der Mythos „7 Hornissenstiche töten ein Pferd" ist längst widerlegt. Hornissen sind sogar friedlicher als gewöhnliche Wespen und stechen nur, wenn ihr Nest bedroht wird.']
+  ];
   const q = arr => { const [f,ok,bad,erklaerung] = pick(arr); return { ...wahl(f, ok, bad, erklaerung), quelle: erklaerung }; };
   return {
-    entdecken(){ return q(FAKT.map(([f,o,b,e])=>['🔎 '+f,o,b,e])); },
+    entdecken(){ return q([...FAKT, ...TIERE].map(([f,o,b,e])=>['🔎 '+f,o,b,e])); },
     erzaehlen(){ return q(STORY); },
     knobeln(){ return q(SCHAETZ); },
     team(){ return q(ALLTAG); }
@@ -411,6 +475,124 @@ ernaehrung: (() => {
   const q = arr => { const [f,ok,bad,erklaerung] = pick(arr); return { ...wahl(f, ok, bad, erklaerung), quelle: erklaerung }; };
   return {
     entdecken(){ return q(FAKT.map(([f,o,b,e])=>['🔎 '+f,o,b,e])); },
+    erzaehlen(){ return q(STORY); },
+    knobeln(){ return q(SCHAETZ); },
+    team(){ return q(ALLTAG); }
+  };
+})(),
+
+/* ---------------- Strandfunde ----------------
+   Dinge, die man am Strand oder im Watt im Schlamm findet - Muschelschale,
+   Schneckenhaus, Hai-Zahn, Sepiaschulp und mehr. Jeder Fund bekommt ein
+   großes Bild (Emoji), damit ein Kind das wirklich vor Augen hat, statt nur
+   den Namen zu lesen. Ein Emoji allein wäre bei manchen Funden trotzdem
+   mehrdeutig (ein Bild von 🦴 könnte alles Mögliche sein), deshalb
+   beschreibt die Frage zusätzlich, wie sich der Fund anfühlt und aussieht -
+   Größe, Gewicht, Form, Farbe. */
+strandfunde: (() => {
+  /* Emoji allein fuehrt hier oft in die Irre - der Standard-Zahn-Emoji zeigt
+     einen menschlichen Backenzahn, kein Miesmuschel-Emoji sieht wie eine
+     Miesmuschel aus. Deshalb kleine, selbst gezeichnete Bilder statt Emoji,
+     wo ein Emoji das Fundstueck falsch oder gar nicht zeigen wuerde. */
+  const ZAHN = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M50 12 C60 38 68 58 74 80 C61 90 39 90 26 80 C32 58 40 38 50 12 Z" fill="#dfe3e8" stroke="#6b7280" stroke-width="3"/>
+    <path d="M50 12 C46 38 39 58 30 78" fill="none" stroke="#9aa2ad" stroke-width="1.5"/>
+    <path d="M28 78 C40 86 60 86 72 78" fill="none" stroke="#6b7280" stroke-width="2" opacity="0.6"/>
+  </svg>`;
+  const MUSCHEL_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M50 8 C20 20 12 55 24 82 C34 96 66 96 76 82 C88 55 80 20 50 8 Z" fill="#2b3a67"/>
+    <path d="M50 20 C34 30 28 55 36 74" fill="none" stroke="#4a5f9e" stroke-width="1.5" opacity="0.6"/>
+    <path d="M50 32 C40 40 36 55 42 68" fill="none" stroke="#4a5f9e" stroke-width="1.5" opacity="0.6"/>
+  </svg>`;
+  const SCHNECKE_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="52" cy="55" r="28" fill="none" stroke="#c9a06a" stroke-width="8"/>
+    <circle cx="58" cy="55" r="18" fill="none" stroke="#a97c46" stroke-width="7"/>
+    <circle cx="63" cy="55" r="9" fill="none" stroke="#8a5a2b" stroke-width="6"/>
+    <circle cx="67" cy="55" r="3" fill="#6b4520"/>
+  </svg>`;
+  const SCHULP_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="52" rx="30" ry="42" fill="#f5f1e6" stroke="#d8d0ba" stroke-width="2"/>
+    <path d="M30 30 Q50 34 70 30" fill="none" stroke="#d8d0ba" stroke-width="1.5"/>
+    <path d="M27 45 Q50 50 73 45" fill="none" stroke="#d8d0ba" stroke-width="1.5"/>
+    <path d="M27 62 Q50 67 73 62" fill="none" stroke="#d8d0ba" stroke-width="1.5"/>
+    <path d="M31 78 Q50 82 69 78" fill="none" stroke="#d8d0ba" stroke-width="1.5"/>
+  </svg>`;
+  const KREBS_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M20 55 C20 30 35 18 50 18 C65 18 80 30 80 55 C80 72 66 82 50 82 C34 82 20 72 20 55 Z" fill="#d9633b"/>
+    <circle cx="38" cy="30" r="4" fill="#8a3418"/>
+    <circle cx="62" cy="30" r="4" fill="#8a3418"/>
+    <path d="M28 55 Q50 62 72 55" fill="none" stroke="#b34d2b" stroke-width="2"/>
+  </svg>`;
+  const WURM_SVG = `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M50 85 C20 85 20 65 40 60 C60 55 60 40 40 38 C24 36 24 20 45 18"
+          fill="none" stroke="#b89468" stroke-width="9" stroke-linecap="round"/>
+  </svg>`;
+  const FUNDE = [
+    ['Diese harte, oft blau-schwarz glänzende Schale ist leer - wer hat früher darin gelebt?',
+      'Miesmuschel', ['Wattschnecke','Krebs','Seestern'], MUSCHEL_SVG,
+      'Miesmuscheln filtern mit ihrer Schale Wasser und leben oft dicht gedrängt an Pfählen und Steinen im Wattenmeer.'],
+    ['Dieses spiralig gewundene, leere Gehäuse hat mal ein Weichtier bewohnt. Wer war das?',
+      'Wattschnecke', ['Miesmuschel','Krebs','Qualle'], SCHNECKE_SVG,
+      'Schnecken bauen ihr Gehäuse aus Kalk und tragen es ihr ganzes Leben mit sich - stirbt die Schnecke, bleibt das leere Haus zurück.'],
+    ['Dieser kleine, spitze, dreieckige "Stein" besteht in Wahrheit aus Zahnschmelz. Von welchem Tier stammt so ein Fund oft?',
+      'Hai', ['Wal','Delfin','Krebs'], ZAHN,
+      'Haie verlieren und erneuern ständig ihre Zähne - manche gefundenen Zähne sind sogar versteinert und Millionen Jahre alt.'],
+    ['Dieses leichte, weiße, ovale "Knochenstück" schwimmt oft an den Strand. Was ist es wirklich?',
+      'Die innere Stützschale eines Tintenfischs (Sepia)',
+      ['Ein Vogelknochen','Ein Stück Koralle','Ein Fischrückgrat'], SCHULP_SVG,
+      'Der "Schulp" sitzt im Körper der Sepia und hilft ihr, im Wasser zu schweben. Er besteht aus Kalk, nicht aus echtem Knochen.'],
+    ['Diese leere, harte Hülle sieht aus wie ein Krebs, ist aber ganz leicht - niemand steckt mehr drin. Was ist das wahrscheinlich?',
+      'Die abgestreifte Panzerhülle eines Krebses',
+      ['Ein toter Krebs','Ein Stein in Krebsform','Eine Muschel'], KREBS_SVG,
+      'Krebse wachsen, indem sie ihren harten Panzer regelmäßig abstreifen (Häutung) und einen neuen bilden. Die leere Hülle sieht täuschend echt aus.'],
+    ['Dieser durchsichtige, glibberige "Klumpen" liegt manchmal gestrandet im Sand. Was ist das?',
+      'Eine Qualle', ['Ein Stück Plastik','Ein Fischei','Ein Algenklumpen'], '🪼',
+      'Auch gestrandete, scheinbar tote Quallen können noch nesseln - am besten nur mit den Augen bewundern, nicht anfassen.'],
+    ['Diese kleinen, geringelten Sandhäufchen liegen oft über das Watt verteilt. Wer hinterlässt sie?',
+      'Wattwurm', ['Wattschnecke','Krebs','Möwe'], WURM_SVG,
+      'Der Wattwurm frisst sich durch den Sand und schiebt das, was er nicht braucht, als kleine Spirale wieder nach oben.'],
+    ['Diese leichte, weiße Feder mit grauer Spitze liegt oft am Strand. Von welchem Vogel stammt sie meistens?',
+      'Möwe', ['Ente','Schwan','Papagei'], '🪶',
+      'Möwen verlieren beim Mausern regelmäßig Federn - am Strand liegen deshalb besonders viele davon herum.']
+  ];
+  const STORY = [
+    ['📖 Lina findet am Strand eine leere Muschelschale, hält sie ans Ohr und hört ein Rauschen. Woher kommt das wirklich?',
+      'Vom Umgebungslärm, der in der Schale widerhallt',
+      ['Vom Meer, das in der Schale eingeschlossen ist','Von einem Tier in der Schale','Von Wind, der durch die Schale pfeift'],
+      'Was man hört, ist der eigene Umgebungslärm (Blutfluss, Wind, Stimmen), der in der Hohlform verstärkt zurückgeworfen wird - nicht das Meer selbst.'],
+    ['📖 Ben findet einen spitzen Hai-Zahn im Sand und erschrickt: Schwimmen hier etwa gerade Haie? Ist die Sorge berechtigt?',
+      'Nein - solche Zähne können winzig, sehr alt oder sogar versteinert sein',
+      ['Ja, sofort das Wasser verlassen','Nein, in Nord- und Ostsee gibt es überhaupt keine Haie','Ja, das bedeutet, gerade ist ein Hai in der Nähe'],
+      'Auch in Nord- und Ostsee leben einzelne, meist harmlose Haiarten - ein gefundener Zahn sagt aber nichts darüber aus, ob gerade einer in der Nähe ist.']
+  ];
+  const SCHAETZ = [
+    ['🧠 Was ist meistens älter: eine Muschelschale vom letzten Sommer oder ein Stück Bernstein?','das Bernsteinstück',
+      ['die Muschelschale','beide gleich alt'],
+      'Bernstein ist versteinertes Baumharz und oft Millionen Jahre alt - viel älter als jede Muschel, die erst kürzlich gestorben ist.'],
+    ['🧠 Was ist leichter: ein Sepiaschulp oder ein gleich großer Stein?','der Sepiaschulp',
+      ['der Stein','beide gleich schwer'],
+      'Der Schulp ist von feinen, luftgefüllten Kammern durchzogen, damit die Sepia im Wasser schweben kann - deshalb ist er auffallend leicht.']
+  ];
+  const ALLTAG = [
+    ['🤝 Du findest eine Qualle im Sand liegen, sie sieht schon vertrocknet aus. Was tust du?',
+      'Nur ansehen, nicht anfassen',
+      ['Draufstellen, sie ist ja tot','Mit bloßen Händen aufheben','Sie zurück ins Wasser werfen'],
+      'Auch getrocknete Nesselzellen können noch reizen - am sichersten ist, Quallen nur mit den Augen zu untersuchen.'],
+    ['🤝 Beim Wattwandern merkt ihr, dass das Wasser plötzlich schneller zurückkommt. Was tut ihr?',
+      'Sofort zum festen Ufer zurückgehen, am besten mit einer erwachsenen Person',
+      ['Weiter nach Muscheln suchen','Ins Watt hineinlaufen, um nachzusehen','Abwarten und erstmal Fotos machen'],
+      'Die Flut kann im Watt sehr schnell kommen und Wege abschneiden - deshalb Gezeiten immer im Blick behalten und nie allein weit hinauslaufen.'],
+    ['🤝 Du hast einen spitzen Hai-Zahn und eine scharfkantige Muschel gefunden. Wie nimmst du sie am besten mit nach Hause?',
+      'Gut verpackt in einer Dose oder einem Beutel',
+      ['Lose in der Hosentasche','Die ganze Zeit fest in der Hand halten','Einfach im Sand liegen lassen'],
+      'Scharfe Fundstücke können in der Tasche Löcher machen oder Finger verletzen - sicher verpackt bleibt der Fund heil und niemand verletzt sich.']
+  ];
+  const q = arr => { const [f,ok,bad,erklaerung] = pick(arr); return { ...wahl(f, ok, bad, erklaerung), quelle: erklaerung }; };
+  return {
+    entdecken(){
+      const [frage, antwort, falsche, bild, erklaerung] = pick(FUNDE);
+      return { ...wahl(frage, antwort, falsche, erklaerung), quelle: erklaerung, bild };
+    },
     erzaehlen(){ return q(STORY); },
     knobeln(){ return q(SCHAETZ); },
     team(){ return q(ALLTAG); }
@@ -760,7 +942,8 @@ knacknuss: (() => {
         antwort: a.antwort,
         tipps: a.tipps,
         quelle: f.quelle,
-        hilfe: a.tipps.at(-1) || '',
+        hilfe: a.loesung || a.tipps.at(-1) || '',
+        bild: a.bild,
         knacknuss: true,
         /* Knacknuesse sind genau die Aufgaben, bei denen eine Skizze am
            meisten hilft (ein Gitter zeichnen, Personen als Punkte setzen,
@@ -780,7 +963,17 @@ knacknuss: (() => {
       antwort: k.antwort,
       tipps: k.tipps || [],
       quelle: k.quelle,
-      hilfe: (k.tipps || []).at(-1) || '',
+      /* loesung ist eine eigenstaendige Erklaerung, warum die Antwort
+         stimmt - anders als die Tipps (die vor der Antwort haeppchenweise
+         helfen) und anders als quelle (die nur die Herkunft nennt). Ohne
+         sie stand nach dem Antworten oft nur ein einzelner, aus dem
+         Zusammenhang gerissener letzter Tipp da, der allein oft nicht
+         reichte. Faellt bei den Raetsel-Familien (prozedural erzeugt) auf
+         den letzten Tipp zurueck, weil dort nichts vorformuliert werden
+         kann - der bezieht sich dort wenigstens auf die konkret gezogenen
+         Zahlen. */
+      hilfe: k.loesung || (k.tipps || []).at(-1) || '',
+      bild: k.bild,
       knacknuss: true,
       blattOffen: true
     };

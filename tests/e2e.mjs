@@ -443,18 +443,37 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   console.log(`Rückblick: ${eintraege.length} Antworten aufgelistet, mit Erklärungen ✅`);
   await p.screenshot({ path: `${S}/15-rueckblick.png`, fullPage: true });
 
-  // Renn-Modus: die Runde als Rennen ansehen, mit animiertem Avatar.
+  // Renn-Modus: der Kreisel muss das Rennen wirklich antreiben - ohne Drehen
+  // passiert nichts, das war genau der gemeldete Fehler ("langweilig, es
+  // passiert ja gar nix"). Hier wird der Kreisel wie mit dem Daumen gedreht:
+  // per Maus im Kreis, in vielen kleinen Schritten.
   const rennKarte = await p.$('.renn-karte');
   if (!rennKarte) throw new Error('Renn-Karte fehlt am Rundenende');
   const startVorher = await p.getAttribute('#rennIch', 'style');
   if (!/left:\s*0%/.test(startVorher || '')) throw new Error('Avatar startet nicht bei 0%: ' + startVorher);
-  await p.click('#rennStart');
-  await p.waitForFunction(() => {
-    const el = document.querySelector('#rennErgebnis');
-    return el && el.textContent.trim().length > 0;
-  }, { timeout: 10000 });
+  const box = await p.$eval('#rennKreisel', el => {
+    const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height };
+  });
+  const cx = box.x + box.w / 2, cy = box.y + box.h / 2, radius = box.w / 2 - 8;
+  const fertigGeworden = () => p.$eval('#rennErgebnis', el => el.textContent.trim().length > 0).catch(() => false);
+  await p.mouse.move(cx + radius, cy);
+  await p.mouse.down();
+  /* Zeitbudget statt fester Rundenzahl: der Kreisel hat Reibung, also darf
+     die Maus erst losgelassen werden, wenn das Rennen WIRKLICH fertig ist -
+     sonst dreht sich nichts mehr weiter und ein Timeout danach wartet ewig. */
+  const spielEnde = Date.now() + 45000;
+  while (!(await fertigGeworden()) && Date.now() < spielEnde) {
+    const schritte = 16;
+    for (let i = 1; i <= schritte; i++) {
+      const a = (i / schritte) * 2 * Math.PI;
+      await p.mouse.move(cx + radius * Math.cos(a), cy + radius * Math.sin(a), { steps: 2 });
+    }
+  }
+  await p.mouse.up();
+  if (!(await fertigGeworden()))
+    throw new Error('Renn-Modus: der Kreisel hat das Rennen auch nach 45 Sekunden Drehen nicht beendet');
   const rennText = await p.textContent('#rennErgebnis');
-  console.log(`Renn-Modus: animiert und Ergebnis gezeigt: „${rennText.trim()}" ✅`);
+  console.log(`Renn-Modus: Kreisel angetrieben, Ergebnis gezeigt: „${rennText.trim()}" ✅`);
   await p.screenshot({ path: `${S}/16-rennen.png`, fullPage: true });
   await p.click('#heim'); await p.waitForSelector('#mission');
 }
@@ -473,6 +492,50 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
     await p.waitForSelector('.task'); await loeseAufgabe(p);
     await p.waitForSelector('#weiter'); await p.click('#weiter');
   }
+  await p.waitForSelector('#nochmal', { timeout: 8000 });
+  await p.click('#heim'); await p.waitForSelector('#mission');
+}
+
+// English Basics: bildbasiert genug, dass ein Kind, das noch nicht liest,
+// die Aufgabe trotzdem loesen kann - Bild und Hoer-Knopf muessen wirklich da sein.
+{
+  await bannerWeg(p);
+  await p.click('[data-fach="englisch"]');
+  let sahBild = false, sahBildwahl = false, sahHoerKnopf = false;
+  for (let i = 0; i < 14 && !(await p.$('#nochmal')); i++) {
+    await p.waitForSelector('.task');
+    if (await p.$('.aufgabenbild')) sahBild = true;
+    if (await p.$('.choices.bildwahl')) sahBildwahl = true;
+    if (await p.$('#hoerZweisprachig')) sahHoerKnopf = true;
+    await loeseAufgabe(p);
+    await p.waitForSelector('#weiter');
+    await p.click('#weiter');
+  }
+  if (!sahBild) throw new Error('English Basics: keine einzige Aufgabe zeigte ein Bild');
+  if (!sahBildwahl) throw new Error('English Basics: das Bild-Puzzle (Wort -> passendes Bild) kam nicht vor');
+  if (!sahHoerKnopf) throw new Error('English Basics: der zweisprachige Hoer-Knopf kam nicht vor');
+  console.log('English Basics: Bild, Bild-Puzzle und zweisprachiger Hoer-Knopf gesehen ✅');
+  await p.screenshot({ path: `${S}/18-englisch.png`, fullPage: true });
+  await p.waitForSelector('#nochmal', { timeout: 8000 });
+  await p.click('#heim'); await p.waitForSelector('#mission');
+}
+
+// Strandfunde: Muschel, Hai-Zahn, Sepiaschulp und Co. muessen wirklich als
+// Bild zu sehen sein, nicht nur als Name.
+{
+  await bannerWeg(p);
+  await p.click('[data-ziel="strandfunde"]');
+  let sahBild = false;
+  for (let i = 0; i < 14 && !(await p.$('#nochmal')); i++) {
+    await p.waitForSelector('.task');
+    if (await p.$('.aufgabenbild')) sahBild = true;
+    await loeseAufgabe(p);
+    await p.waitForSelector('#weiter');
+    await p.click('#weiter');
+  }
+  if (!sahBild) throw new Error('Strandfunde: keine einzige Aufgabe zeigte ein Bild');
+  console.log('Strandfunde: Fund als Bild gesehen ✅');
+  await p.screenshot({ path: `${S}/19-strandfunde.png`, fullPage: true });
   await p.waitForSelector('#nochmal', { timeout: 8000 });
   await p.click('#heim'); await p.waitForSelector('#mission');
 }

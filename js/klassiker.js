@@ -4,12 +4,37 @@
    mehr; wer nicht weiterkommt, bekommt Schritt für Schritt einen Anstoß.
    Zu jeder Aufgabe gehört ihre Herkunft – Rätsel haben eine Geschichte. */
 
+/* Türme von Hanoi sind räumlich schwer vorzustellen, ohne sie zu sehen -
+   das war der gemeldete Grund für Verwirrung. Ein Bild der Ausgangsstellung
+   (n Scheiben der Größe nach auf dem linken Stab) hilft schneller als jeder
+   Text. Als Funktion, weil dieselbe Aufgabe auch prozedural mit wechselnder
+   Scheibenzahl erzeugt wird (siehe knacknuss_familien.js) - da muss das
+   Bild zur jeweils gezogenen Zahl passen. */
+export function hanoiBild(n) {
+  const breite = 160, boden = 85, stabOben = 18;
+  const staebeX = [34, 80, 126];
+  const scheibenFarben = ['#e07856','#f0b429','#4dbd8f','#4a90d9','#c85fa8','#7a8b99','#b5651d','#5fb0c8','#9b6bd8'];
+  const scheibenHoehe = 11, maxBreite = 50, minBreite = 16;
+  const scheiben = Array.from({ length: n }, (_, i) => {
+    // i=0 ist die groesste (unten), i=n-1 die kleinste (oben)
+    const breiteScheibe = maxBreite - (maxBreite - minBreite) * (i / Math.max(1, n - 1));
+    const y = boden - 6 - scheibenHoehe * (n - i);
+    return `<rect x="${staebeX[0] - breiteScheibe/2}" y="${y}" width="${breiteScheibe}" height="${scheibenHoehe - 1}" rx="5" fill="${scheibenFarben[i % scheibenFarben.length]}"/>`;
+  }).join('\n      ');
+  return `<svg viewBox="0 0 ${breite} 100" xmlns="http://www.w3.org/2000/svg">
+      <rect x="10" y="${boden}" width="140" height="6" rx="2" fill="#8a6a4a"/>
+      ${staebeX.map(x => `<rect x="${x-3}" y="${stabOben}" width="6" height="${boden - stabOben}" fill="#8a6a4a"/>`).join('\n      ')}
+      ${scheiben}
+    </svg>`;
+}
+
 /* ------------------------------ Knacknüsse ------------------------------ */
 export const KNACKNUESSE = [
   { id:'wolf', frage:'Ein Bauer will Wolf, Ziege und Kohlkopf über einen Fluss bringen.\nIm Boot ist nur Platz für ihn und eine Sache.\nAllein gelassen frisst der Wolf die Ziege, die Ziege den Kohl.\nWas nimmt er als Erstes mit?',
     optionen:['die Ziege','den Wolf','den Kohlkopf','egal, welches'], antwort:'die Ziege',
     tipps:['Überlege, welche zwei am Ufer nicht allein bleiben dürfen.',
            'Wolf und Kohl vertragen sich – die Ziege ist bei beiden das Problem.'],
+    loesung:'Nimmt er zuerst den Wolf oder den Kohl mit, bleiben Ziege und der jeweils andere allein zurück – und einer frisst den anderen. Nur die Ziege lässt sich gefahrlos zuerst mitnehmen, weil weder Wolf noch Kohl ihr etwas anhaben.',
     quelle:'Aufgabensammlung von Alkuin, um 800 n. Chr.', stufe:1 },
 
   { id:'gauss', frage:'Zähle alle Zahlen von 1 bis 100 zusammen.\nEs geht in wenigen Sekunden – ohne hundert Additionen.',
@@ -17,6 +42,7 @@ export const KNACKNUESSE = [
     tipps:['Schreibe die Reihe zweimal untereinander – einmal vorwärts, einmal rückwärts.',
            '1+100 = 101, 2+99 = 101 … Wie viele solcher Paare gibt es?',
            '50 Paare zu je 101.'],
+    loesung:'Schreibt man die Reihe 1 bis 100 einmal vorwärts und einmal rückwärts darunter, ergibt jedes Paar (1+100, 2+99, 3+98 …) genau 101. Es gibt 100 solcher Paare, zusammen also 10100 – das ist die Summe aber doppelt gezählt, also 10100 geteilt durch 2 gleich 5050.',
     quelle:'Der Überlieferung nach löste der junge Carl Friedrich Gauß diese Schulaufgabe um 1785 in Sekunden.', stufe:2 },
 
   { id:'muetzen', frage:'Drei Kinder stehen hintereinander und tragen Mützen: 2 rote und 3 blaue sind im Spiel.\nJedes sieht nur die Mützen vor sich. Das hinterste sieht zwei Mützen und sagt: „Ich weiß es nicht.“\nDas mittlere sieht eine Mütze und sagt: „Ich weiß es auch nicht.“\nDa sagt das vorderste, das gar nichts sieht: „Dann weiß ich, welche ich trage.“\nWelche Farbe hat seine Mütze?',
@@ -24,6 +50,7 @@ export const KNACKNUESSE = [
     tipps:['Was hätte das hinterste Kind gesehen, wenn es sofort Bescheid gewusst hätte?',
            'Wüsste es sofort, hätte es zweimal Rot gesehen – also sind vorn nicht zwei rote Mützen.',
            'Das mittlere Kind weiß das auch. Hätte es vorn Rot gesehen, wüsste es nun seine eigene Farbe.'],
+    loesung:'Hätte das hinterste Kind zwei rote Mützen gesehen, wüsste es sofort, dass seine eigene blau ist – tut es aber nicht, also sind vorn nicht beide Mützen rot. Das mittlere Kind weiß das auch: Sähe es vorn Rot, müsste seine eigene blau sein – weiß es aber auch nicht, also ist vorn nicht Rot. Das vorderste Kind schließt daraus: Es trägt selbst Blau.',
     quelle:'Klassiker der Logikrätsel, verbreitet seit dem 19. Jahrhundert.', stufe:4 },
 
   { id:'hanoi', frage:'Türme von Hanoi: 3 Scheiben liegen der Größe nach auf einem Stab.\nDu darfst immer nur eine Scheibe umlegen und nie eine größere auf eine kleinere.\nWie viele Züge brauchst du mindestens, um alle auf einen anderen Stab zu bringen?',
@@ -31,36 +58,43 @@ export const KNACKNUESSE = [
     tipps:['Probiere es zuerst mit 1 Scheibe (1 Zug) und mit 2 Scheiben (3 Züge).',
            'Bei jeder weiteren Scheibe verdoppelt sich die Zahl und eins kommt dazu.',
            '1, 3, 7, 15 … die Formel ist 2 hoch n minus 1.'],
+    loesung:'Mit 1 Scheibe braucht man 1 Zug, mit 2 Scheiben 3 Züge. Mit jeder weiteren Scheibe verdoppelt sich die Zahl der nötigen Züge, und einer kommt dazu: 1, 3, 7, 15 … Bei 3 Scheiben sind das genau 7 Züge.',
+    bild: hanoiBild(3),
     quelle:'Édouard Lucas, 1883 – als Spiel „Tour de Hanoï“ verkauft.', stufe:3 },
 
   { id:'brueder', frage:'„Brüder und Schwestern habe ich keine, aber der Vater dieses Mannes ist der Sohn meines Vaters.“\nWer ist der Mann auf dem Bild?',
     optionen:['mein Sohn','ich selbst','mein Vater','mein Neffe'], antwort:'mein Sohn',
     tipps:['Löse den Satz von hinten auf: „der Sohn meines Vaters“ – wer ist das, wenn ich keine Geschwister habe?',
            'Der Sohn meines Vaters bin ich. Also: Der Vater dieses Mannes bin ich.'],
+    loesung:'Wer keine Geschwister hat, ist selbst „der Sohn meines Vaters“. Der Satz sagt also: Der Vater dieses Mannes bin ich – der Mann auf dem Bild ist also mein eigener Sohn.',
     quelle:'Englisches Volksrätsel, seit dem 19. Jahrhundert überliefert.', stufe:3 },
 
   { id:'schnecke', frage:'Eine Schnecke sitzt in einem 10 m tiefen Brunnen.\nAm Tag kriecht sie 3 m hoch, in der Nacht rutscht sie 2 m zurück.\nAn welchem Tag ist sie oben?',
     antwort:'8',
     tipps:['Pro Tag und Nacht kommt sie 1 m voran – aber achte auf den letzten Tag.',
            'Am Ende von Tag 7 ist sie bei 7 m. Was passiert an Tag 8?'],
+    loesung:'Jeden Tag und jede Nacht kommt die Schnecke netto 1 Meter voran – nach 7 Tagen steht sie bei 7 m. Am 8. Tag klettert sie aber gleich 3 Meter am Stück und erreicht damit die 10 m, bevor sie nachts wieder zurückrutschen könnte.',
     quelle:'Rechenbuchklassiker, u. a. bei Adam Ries im 16. Jahrhundert.', stufe:2 },
 
   { id:'muenzen', frage:'Du hast 8 gleich aussehende Münzen. Eine ist leichter als die anderen.\nDu hast eine Balkenwaage. Wie oft musst du mindestens wiegen, um die falsche sicher zu finden?',
     antwort:'2',
     tipps:['Teile nicht in zwei Hälften, sondern in drei Gruppen.',
            'Lege 3 gegen 3. Zwei Ausgänge: gleich schwer – oder eine Seite steigt.'],
+    loesung:'Teilt man die 8 Münzen in drei Gruppen (3, 3 und 2) statt in zwei Hälften, zeigt das erste Wiegen (3 gegen 3), in welcher kleinen Gruppe die leichte Münze steckt. Diese kleine Gruppe lässt sich mit einem zweiten Wiegen sicher auflösen.',
     quelle:'Wiegeprobleme dieser Art kursierten in den 1940er-Jahren in ganz Europa.', stufe:4 },
 
   { id:'send', frage:'Buchstabenrechnen: Jeder Buchstabe steht für eine Ziffer.\n  SEND\n+ MORE\n= MONEY\nWelche Ziffer ist M?',
     optionen:['1','0','9','8'], antwort:'1',
     tipps:['MONEY hat eine Stelle mehr als SEND und MORE.',
            'Zwei vierstellige Zahlen ergeben höchstens knapp 20000.'],
+    loesung:'MONEY hat fünf Stellen, SEND und MORE nur vier – zwei vierstellige Zahlen ergeben zusammen aber höchstens knapp 20000. Für die neue, führende Stelle bleibt deshalb nur die Ziffer 1 übrig.',
     quelle:'Henry Dudeney, 1924 – die berühmteste Rechenaufgabe mit Buchstaben.', stufe:4 },
 
   { id:'kerzen', frage:'In einem Zimmer brennen 7 Kerzen. Ein Windstoß löscht 2 davon,\nspäter löscht er noch eine dritte. Die Fenster werden geschlossen.\nWie viele Kerzen sind am nächsten Morgen noch da?',
     optionen:['3','4','7','0'], antwort:'3',
     tipps:['Die brennenden Kerzen brennen die Nacht über ab.',
            'Nur was gelöscht wurde, bleibt übrig.'],
+    loesung:'Nur die drei ausgepusteten Kerzen bleiben als Kerzen übrig – die restlichen vier brennen einfach weiter, bis sie am nächsten Morgen komplett heruntergebrannt und aufgebraucht sind.',
     quelle:'Altes Scherzrätsel, in vielen Sprachen überliefert.', stufe:2 },
 
   { id:'bruecken', frage:'In Königsberg lagen 7 Brücken über den Fluss.\nDie Frage der Bürger: Kann man einen Spaziergang machen,\nbei dem man jede Brücke genau einmal überquert?',
@@ -68,12 +102,14 @@ export const KNACKNUESSE = [
     antwort:'Nein, das ist unmöglich',
     tipps:['Zähle, wie viele Brücken an jedem Ufer zusammenkommen.',
            'Wer ein Ufer betritt, muss es auch wieder verlassen – dafür braucht es Brücken in Paaren.'],
+    loesung:'Für einen Rundgang, der jede Brücke genau einmal nutzt, dürfen höchstens an zwei Stellen (Start und Ziel) ungerade viele Brücken zusammenkommen. In Königsberg hatten aber alle vier Ufer und Inseln eine ungerade Anzahl Brücken – deshalb ist ein solcher Spaziergang unmöglich.',
     quelle:'Leonhard Euler bewies 1736, dass es unmöglich ist – die Geburtsstunde der Graphentheorie.', stufe:4 },
 
   { id:'fibonacci', frage:'Ein Kaninchenpaar bekommt ab dem zweiten Monat jeden Monat ein neues Paar,\nund jedes neue Paar tut ab seinem zweiten Monat dasselbe.\nDie Paare pro Monat: 1, 1, 2, 3, 5, 8, ?\nWie geht es weiter?',
     antwort:'13',
     tipps:['Schau dir immer zwei benachbarte Zahlen an.',
            'Jede Zahl ist die Summe der beiden davor.'],
+    loesung:'Jede neue Zahl in der Reihe ist die Summe der beiden Zahlen davor. Aus 5 und 8 wird also 5+8=13.',
     quelle:'Leonardo Fibonacci, „Liber Abaci“, 1202.', stufe:2 },
 
   { id:'zwei_tueren', frage:'Zwei Türen, zwei Wächter. Eine Tür führt in die Freiheit, die andere nicht.\nEin Wächter lügt immer, einer sagt immer die Wahrheit – du weißt nicht, wer wer ist.\nDu darfst EINE Frage stellen. Welche?',
@@ -82,6 +118,7 @@ export const KNACKNUESSE = [
     antwort:'„Welche Tür würde der andere mir zeigen?“ – dann die andere nehmen',
     tipps:['Suche eine Frage, deren Antwort bei beiden Wächtern gleich ausfällt.',
            'Wenn die Frage über den jeweils anderen geht, wird aus Wahrheit Lüge und aus Lüge Wahrheit.'],
+    loesung:'Fragst du „Welche Tür würde der andere mir zeigen?“, bekommst du bei beiden Wächtern dieselbe falsche Antwort: Der Lügner zeigt auf die Tür, die der Wahrheitssager richtig als falsch nennen würde, und der Wahrheitssager verrät ehrlich, was der Lügner fälschlich behaupten würde. So oder so zeigt die Antwort auf die falsche Tür – du nimmst also einfach die andere.',
     quelle:'Bekannt geworden durch Raymond Smullyan und den Film „Die Reise ins Labyrinth“ (1986).', stufe:5 },
 
   { id:'nim', frage:'Nim-Spiel: 12 Streichhölzer liegen auf dem Tisch.\nAbwechselnd nimmt jeder 1, 2 oder 3 Hölzer. Wer das letzte nimmt, gewinnt.\nDu darfst anfangen. Wie viele nimmst du?',
@@ -90,6 +127,7 @@ export const KNACKNUESSE = [
     tipps:['Wie viele Hölzer möchtest du deinem Gegner hinterlassen, damit er nicht gewinnen kann?',
            'Günstig sind Vielfache von 4 – denn was er nimmt, ergänzt du auf 4.',
            '12 ist bereits ein Vielfaches von 4 – wer hier ziehen muss, ist im Nachteil.'],
+    loesung:'Wer bei einem Vielfachen von 4 ziehen muss, verliert bei richtigem Gegenspiel: Was er auch nimmt (1, 2 oder 3), der Gegner ergänzt auf 4, und das nächste Vielfache von 4 bleibt übrig. 12 ist bereits ein Vielfaches von 4 – der erste Zieher ist also im Nachteil, egal was er nimmt.',
     quelle:'Charles Bouton beschrieb die Gewinnstrategie 1901 mathematisch vollständig.', stufe:5 },
 
   { id:'ziegen', frage:'Drei Türen: hinter einer ein Auto, hinter zweien eine Ziege.\nDu wählst Tür 1. Der Moderator, der weiß, wo das Auto steht, öffnet Tür 3 – eine Ziege.\nEr fragt: Willst du wechseln?',
@@ -97,65 +135,76 @@ export const KNACKNUESSE = [
     antwort:'Ja, wechseln – die Gewinnchance steigt auf 2/3',
     tipps:['Wie hoch war die Chance, gleich beim ersten Griff richtig zu liegen?',
            'Die 1/3 deiner ersten Wahl ändert sich nicht. Die restlichen 2/3 stecken nun in einer einzigen Tür.'],
+    loesung:'Bei der ersten Wahl liegt man nur mit 1/3 Wahrscheinlichkeit richtig, und diese 1/3 ändert sich durch das Öffnen einer Ziegentür nicht. Die übrigen 2/3 Wahrscheinlichkeit, dass das Auto woanders steckt, sammeln sich jetzt komplett in der einen verbliebenen Tür – Wechseln verdoppelt also die Gewinnchance.',
     quelle:'1975 von Steve Selvin beschrieben, 1990 durch Marilyn vos Savant weltberühmt – und heftig bestritten.', stufe:5 },
 
   { id:'zebra', frage:'In fünf Häusern wohnen fünf Nachbarn mit fünf Getränken.\nDer Norweger wohnt im ersten Haus. Der in der Mitte trinkt Milch.\nWer trinkt Milch?',
     optionen:['der Bewohner des dritten Hauses','der Norweger','der Bewohner des ersten Hauses','das ist offen'],
     antwort:'der Bewohner des dritten Hauses',
     tipps:['„In der Mitte“ von fünf Häusern – das wievielte ist das?'],
+    loesung:'Bei fünf Häusern in einer Reihe liegt das mittlere Haus genau an dritter Stelle. Der Bewohner dieses dritten Hauses ist es also, der laut Aufgabe Milch trinkt.',
     quelle:'Aus dem „Zebrarätsel“, erstmals 1962 veröffentlicht. Es wird oft Einstein zugeschrieben – dafür gibt es keinen Beleg.', stufe:2 },
 
   { id:'handschlag', frage:'Auf einer Feier sind 10 Menschen. Jeder gibt jedem genau einmal die Hand.\nWie viele Handschläge sind das insgesamt?',
     antwort:'45',
     tipps:['Jeder gibt 9 anderen die Hand – das wären 90.',
            'Aber jeder Handschlag wurde dabei doppelt gezählt.'],
+    loesung:'Jede der 10 Personen gibt 9 anderen die Hand, das ergäbe 10 mal 9 gleich 90 – aber jeder Handschlag wurde dabei zweimal gezählt, einmal von jeder beteiligten Person aus. 90 geteilt durch 2 ergibt 45.',
     quelle:'Standardaufgabe der Kombinatorik, seit dem 18. Jahrhundert in Lehrbüchern.', stufe:3 },
 
   { id:'wasser', frage:'Du hast einen 3-Liter- und einen 5-Liter-Krug, sonst nichts.\nWie misst du genau 4 Liter ab?\nWie oft musst du dafür mindestens umfüllen oder füllen? (Anzahl der Schritte)',
     antwort:'6',
     tipps:['Fülle den 5er, gieße daraus den 3er voll – was bleibt im 5er?',
            '5 füllen, 3 abfüllen (2 bleiben), 3er leeren, die 2 hinüber, 5er füllen, 3er auffüllen – der 5er hat dann 4.'],
+    loesung:'5-Liter-Krug füllen, davon den 3er auffüllen (2 bleiben im 5er), 3er leeren, die 2 Liter in den 3er umfüllen, 5er wieder ganz füllen, damit den 3er auf 3 Liter auffüllen – im 5er bleiben dann genau 4 Liter übrig. Das sind 6 Schritte.',
     quelle:'Bekannt aus dem 16. Jahrhundert, weltberühmt durch den Film „Stirb langsam 3“ (1995).', stufe:4 },
 
   { id:'uhr', frage:'Wie oft überholt der Minutenzeiger den Stundenzeiger zwischen 12 Uhr mittags und 12 Uhr nachts?',
     optionen:['11','12','10','24'], antwort:'11',
     tipps:['Man könnte 12 vermuten – aber prüfe, wann es das erste Mal passiert.',
            'Kurz nach 1, kurz nach 2 … aber zwischen 11 und 12 fällt eines aus.'],
+    loesung:'Der Minutenzeiger ist zwölfmal schneller als der Stundenzeiger, überholt ihn aber nicht zwölfmal in 12 Stunden: Die Begegnung um Punkt 12 Uhr fällt mit dem Start zusammen und zählt nicht doppelt. Deshalb sind es nur 11 Überholungen.',
     quelle:'Klassische Uhrenaufgabe, u. a. bei Sam Loyd um 1900.', stufe:5 },
 
   { id:'seil', frage:'Zwei Schnüre brennen jeweils genau 60 Minuten ab – aber ungleichmäßig.\nWie misst du damit 45 Minuten?\nWie viele Enden zündest du zu Beginn an?',
     optionen:['3','2','1','4'], antwort:'3',
     tipps:['Zündest du eine Schnur an beiden Enden an, ist sie nach 30 Minuten weg.',
            'Erste Schnur an beiden Enden, zweite nur an einem – das sind 3 Enden.'],
+    loesung:'Zündet man eine Schnur an beiden Enden zugleich an, ist sie nach 30 statt 60 Minuten komplett abgebrannt, weil sich die Flamme in der Mitte trifft. Zündet man die erste Schnur an beiden Enden und gleichzeitig die zweite nur an einem Ende an, ist nach 30 Minuten die erste fertig – jetzt zündet man das zweite Ende der zweiten Schnur an, sodass ihr letztes Stück in weiteren 15 Minuten von beiden Seiten abbrennt. 30+15 ergibt 45 Minuten, mit insgesamt 3 angezündeten Enden.',
     quelle:'Verbreitet in Einstellungstests seit den 1950er-Jahren.', stufe:5 },
 
   { id:'muehle', frage:'Ein Müller nimmt für jeden Sack Mehl, den er mahlt, ein Zehntel als Lohn.\nEin Bauer will nach dem Mahlen genau 9 Sack behalten.\nWie viele Sack Korn muss er bringen?',
     antwort:'10',
     tipps:['Vom Gebrachten bleibt ihm neun Zehntel.',
            'Neun Zehntel von wie viel ergibt 9?'],
+    loesung:'Dem Bauern bleiben neun Zehntel dessen, was er zur Mühle bringt. Neun Zehntel von 10 Sack Korn ergeben genau die gewünschten 9 Sack Mehl.',
     quelle:'Aus alten deutschen Rechenbüchern, 17. Jahrhundert.', stufe:3 },
 
   { id:'vier_farben', frage:'Wie viele Farben braucht man höchstens, um jede Landkarte so zu färben,\ndass keine zwei benachbarten Länder dieselbe Farbe haben?',
     optionen:['4','3','5','6'], antwort:'4',
     tipps:['Probiere es an einer Karte mit vielen Ländern – kommst du je über vier hinaus?'],
+    loesung:'So verschachtelt man eine Landkarte auch mit Ländergrenzen zeichnet – vier verschiedene Farben reichen immer aus, damit keine zwei direkt benachbarten Länder gleich gefärbt sind. Mehr als vier braucht keine noch so komplizierte Karte.',
     quelle:'1852 vermutet, erst 1976 von Appel und Haken bewiesen – der erste große Beweis mit Computerhilfe.', stufe:3 },
 
   { id:'monat', frage:'Ein Seerosenblatt verdoppelt seine Fläche jeden Tag.\nNach 30 Tagen ist der Teich ganz bedeckt.\nAn welchem Tag war er halb bedeckt?',
     antwort:'29',
     tipps:['Gehe vom Ende her rückwärts.',
            'Wenn es sich täglich verdoppelt: Was war am Tag davor?'],
+    loesung:'Verdoppelt sich die bedeckte Fläche jeden Tag und ist der Teich am Tag 30 vollständig bedeckt, muss er am Tag davor – Tag 29 – erst halb bedeckt gewesen sein, denn eine weitere Verdopplung macht daraus die volle Fläche.',
     quelle:'Klassisches Beispiel für exponentielles Wachstum, seit den 1970er-Jahren in Schulbüchern.', stufe:3 },
 
   { id:'zug', frage:'Zwei Züge fahren aufeinander zu: einer 60 km/h, einer 40 km/h, Abstand 100 km.\nEine Fliege fliegt mit 80 km/h zwischen ihnen hin und her, bis sie sich treffen.\nWie viele Kilometer legt die Fliege zurück?',
     antwort:'80',
     tipps:['Frage nicht nach dem Hin und Her – frage nach der Zeit.',
            'Die Züge nähern sich mit 100 km/h, brauchen also 1 Stunde.'],
+    loesung:'Statt dem Zickzack-Weg der Fliege nachzurechnen, reicht die Zeit bis zum Treffen der Züge: Sie nähern sich mit zusammen 100 km/h bei 100 km Abstand, treffen sich also nach genau 1 Stunde. In dieser Stunde fliegt die Fliege ununterbrochen mit 80 km/h – das ergibt 80 km.',
     quelle:'Der Mathematiker John von Neumann soll die Aufgabe in Sekunden gelöst haben – durch Aufsummieren der unendlichen Reihe.', stufe:4 },
 
   { id:'socken', frage:'In einer dunklen Schublade liegen 10 schwarze und 10 blaue Socken.\nWie viele musst du herausnehmen, um sicher ein gleichfarbiges Paar zu haben?',
     optionen:['3','2','11','10'], antwort:'3',
     tipps:['Denke an den ungünstigsten Fall.',
            'Zwei Socken können verschiedenfarbig sein – die dritte muss zu einer passen.'],
+    loesung:'Im ungünstigsten Fall sind die ersten beiden gezogenen Socken verschiedenfarbig – eine schwarz, eine blau. Die dritte Socke muss dann zwangsläufig zu einer der beiden schon gezogenen passen.',
     quelle:'Schubfachprinzip, formuliert von Dirichlet um 1834.', stufe:2 },
   /* --- Weitere Klassiker, damit sich nichts wiederholt --- */
 
@@ -163,52 +212,62 @@ export const KNACKNUESSE = [
     optionen:['5 Cent','10 Cent','1 Cent','11 Cent'], antwort:'5 Cent',
     tipps:['10 Cent ist die Antwort, die sich sofort aufdrängt – prüfe sie nach.',
            'Wären es 10 Cent, kostete die Flasche 1,10 € – zusammen 1,20 €. Zu viel.'],
+    loesung:'10 Cent wirkt richtig, stimmt aber nicht: Dann würde die Flasche 1,10 € kosten (1 € mehr als der Korken), zusammen wären das 1,20 € – zu viel. Der Korken muss 5 Cent kosten, die Flasche 1,05 € (1 € mehr) – zusammen genau 1,10 €.',
     quelle:'Aus dem „Cognitive Reflection Test“ von Shane Frederick (2005); nur ein Bruchteil der Befragten antwortet richtig.', stufe:3 },
 
   { id:'maschinen', frage:'5 Maschinen brauchen 5 Minuten, um 5 Teile herzustellen.\nWie lange brauchen 100 Maschinen für 100 Teile?',
     optionen:['5 Minuten','100 Minuten','20 Minuten','1 Minute'], antwort:'5 Minuten',
     tipps:['Wie lange braucht EINE Maschine für EIN Teil?','Jede Maschine braucht 5 Minuten pro Teil – unabhängig davon, wie viele es sind.'],
+    loesung:'Jede einzelne Maschine braucht 5 Minuten für ein Teil, egal wie viele Maschinen gleichzeitig arbeiten. 100 Maschinen stellen deshalb gleichzeitig 100 Teile her, ebenfalls in 5 Minuten.',
     quelle:'Ebenfalls aus dem Cognitive Reflection Test, Shane Frederick 2005.', stufe:3 },
 
   { id:'ziegelstein', frage:'Ein Ziegelstein wiegt ein Kilo und einen halben Ziegelstein.\nWie schwer ist der ganze Ziegelstein?',
     antwort:'2', tipps:['Ein halber Stein wiegt also genau ein Kilo.'],
+    loesung:'Wenn ein Ziegelstein „1 Kilo und einen halben Ziegelstein“ wiegt, dann wiegt die fehlende Hälfte des Steins genau 1 Kilo. Ein ganzer Stein besteht aus zwei solchen Hälften, wiegt also 2 Kilo.',
     quelle:'Altes Wiegerätsel, in Rechenbüchern des 19. Jahrhunderts belegt.', stufe:3 },
 
   { id:'mose', frage:'Wie viele Tiere jeder Art nahm Mose mit auf die Arche?',
     optionen:['Keine – die Arche war Noah','Zwei','Sieben','Ein Paar von jeder Art'],
     antwort:'Keine – die Arche war Noah',
     tipps:['Lies die Frage noch einmal ganz genau. Wer baute die Arche?'],
+    loesung:'Die Geschichte von der Arche erzählt von Noah, nicht von Mose – die Frage baut also auf einer falschen Voraussetzung auf, die man beim schnellen Lesen leicht überliest.',
     quelle:'Die „Mose-Illusion“, 1981 von Erickson und Mattson beschrieben: Wir überlesen den Fehler, weil der Satz vertraut klingt.', stufe:2 },
 
   { id:'chirurg', frage:'Ein Vater und sein Sohn haben einen Unfall. Der Vater stirbt.\nDer Junge kommt in die Klinik. Die Chirurgin sagt: „Ich kann ihn nicht operieren – er ist mein Sohn.“\nWie ist das möglich?',
     optionen:['Die Chirurgin ist seine Mutter','Der Junge hat zwei Väter','Die Chirurgin verwechselt ihn','Es war ein Irrtum im Krankenhaus'],
     antwort:'Die Chirurgin ist seine Mutter',
     tipps:['Die Auflösung ist ganz alltäglich – man kommt nur oft nicht darauf.'],
+    loesung:'Die Chirurgin ist die Mutter des Jungen – ihr Satz „er ist mein Sohn“ stimmt ganz wörtlich. Die Aufgabe wirkt nur deshalb rätselhaft, weil man beim Wort „Chirurg“ automatisch an einen Mann denkt.',
     quelle:'Seit den 1970er-Jahren als Prüfstein für unbewusste Rollenannahmen verwendet.', stufe:2 },
 
   { id:'quadrate', frage:'Wie viele Quadrate siehst du in einem Gitter aus 3 × 3 Feldern?\n(Auch die größeren zählen!)',
     antwort:'14', tipps:['Zähle zuerst die kleinen Felder: 9.','Dann die 2×2-Quadrate: 4. Und das ganz große: 1.'],
+    loesung:'In einem 3×3-Gitter gibt es 9 kleine 1×1-Quadrate, dazu 4 mittlere 2×2-Quadrate (an verschiedenen Positionen) und 1 großes 3×3-Quadrat. Zusammen macht das 9+4+1=14.',
     quelle:'Zählrätsel dieser Art füllten die Rätselspalten des frühen 20. Jahrhunderts.', stufe:3 },
 
   { id:'muenzrolle', frage:'Eine Münze rollt einmal um eine gleich große, feststehende Münze herum.\nWie oft dreht sie sich dabei um sich selbst?',
     optionen:['2-mal','1-mal','3-mal','einen halben Umlauf'], antwort:'2-mal',
     tipps:['Der Umfang ist gleich – trotzdem stimmt „1-mal“ nicht.',
            'Zur Drehung entlang der Kante kommt die Drehung durch das Herumwandern hinzu.'],
+    loesung:'Beim Herumrollen kommen zwei Drehungen zusammen: die Drehung durchs Abrollen entlang der Kante (das allein wäre 1 Umdrehung, wie auf einer geraden Linie) und eine zusätzliche Drehung durchs Herumwandern um die feststehende Münze. Beide zusammen ergeben 2 volle Umdrehungen.',
     quelle:'Das Münzrotationsparadox. 1982 stand in einer US-Prüfung die falsche Antwort als richtig – drei Schüler bewiesen das Gegenteil.', stufe:5 },
 
   { id:'kamele', frage:'Ein Vater vererbt 17 Kamele: die Hälfte dem Ältesten, ein Drittel dem Mittleren, ein Neuntel dem Jüngsten.\n17 lässt sich nicht teilen. Ein Nachbar bringt sein eigenes Kamel dazu.\nWie viele bekommt der Älteste?',
     antwort:'9', tipps:['Mit 18 Kamelen lässt sich alles glatt teilen.',
                         'Die Hälfte von 18 ist 9. Und am Ende bleibt ein Kamel übrig – das des Nachbarn.'],
+    loesung:'Mit dem geliehenen Kamel des Nachbarn sind es 18 statt 17 Kamele – eine Zahl, die sich glatt durch 2, 3 und 9 teilen lässt. Der Älteste bekommt die Hälfte von 18, also 9 Kamele. Am Ende bleibt sogar ein Kamel übrig, das der Nachbar zurückbekommt.',
     quelle:'Alte orientalische Erbschaftsaufgabe, seit dem Mittelalter überliefert.', stufe:4 },
 
   { id:'seilschnitte', frage:'Du willst ein Seil in 5 gleich lange Stücke schneiden.\nWie viele Schnitte brauchst du?',
     antwort:'4', tipps:['Zeichne es auf. Beim ersten Schnitt hast du 2 Stücke.'],
+    loesung:'Jeder Schnitt trennt genau ein Stück mehr ab: Nach dem ersten Schnitt hat man 2 Stücke, nach dem zweiten 3. Für 5 Stücke braucht man deshalb nur 4 Schnitte.',
     quelle:'Klassische Denkfalle aus dem Handwerksunterricht.', stufe:1 },
 
   { id:'bruecke_nacht', frage:'Vier Menschen müssen nachts über eine wackelige Brücke.\nSie haben eine Lampe, es dürfen höchstens zwei gleichzeitig hinüber, und die Lampe muss zurückgebracht werden.\nSie brauchen 1, 2, 5 und 10 Minuten. Wie schnell schaffen es alle?',
     optionen:['17 Minuten','19 Minuten','21 Minuten','25 Minuten'], antwort:'17 Minuten',
     tipps:['Der Schnellste muss nicht jedes Mal zurücklaufen.',
            'Schicke die beiden Langsamen gemeinsam – dann kosten sie nur einmal 10 Minuten.'],
+    loesung:'Am schnellsten geht es, wenn die beiden Langsamsten gemeinsam über die Brücke gehen: 1+2 hinüber (2 Min.), 1 bringt die Lampe zurück (1 Min.), 5+10 gehen gemeinsam hinüber (10 Min.), 2 bringt die Lampe zurück (2 Min.), 1+2 gehen ein letztes Mal gemeinsam hinüber (2 Min.). Zusammen: 2+1+10+2+2=17 Minuten.',
     quelle:'„Bridge and Torch“, seit den 1990er-Jahren ein Klassiker in Einstellungsgesprächen.', stufe:5 },
 
   { id:'moench', frage:'Ein Mönch steigt am Morgen einen Berg hinauf und am nächsten Morgen denselben Weg hinab –\njeweils zwischen 6 und 18 Uhr, mal schneller, mal langsamer.\nGibt es einen Ort, an dem er an beiden Tagen zur selben Uhrzeit war?',
@@ -216,22 +275,26 @@ export const KNACKNUESSE = [
     antwort:'Ja, immer',
     tipps:['Stell dir vor, zwei Mönche starten am selben Tag – einer unten, einer oben.',
            'Sie müssen sich unterwegs begegnen. Dieser Begegnungspunkt ist der gesuchte Ort.'],
+    loesung:'Stellt man sich vor, ein zweiter Mönch würde am selben Tag gleichzeitig von unten nach oben laufen, während der Mönch von oben nach unten geht, müssten sich beide auf dem gemeinsamen Weg irgendwo begegnen – egal, wie unterschiedlich schnell jeder unterwegs ist. Genau dieser Begegnungspunkt ist der Ort, an dem der echte Mönch an beiden Tagen zur selben Uhrzeit war.',
     quelle:'Von dem Psychologen Karl Duncker 1945 beschrieben – ein Musterbeispiel für den plötzlichen Einfall.', stufe:5 },
 
   { id:'geburtstage', frage:'Wie viele Geburtstage hat ein durchschnittlicher Mensch?',
     optionen:['1','ungefähr 75','365','2'], antwort:'1',
     tipps:['Geburtstag ist der Tag, an dem man geboren wurde – nicht seine Feier.'],
+    loesung:'Der Geburtstag ist der eine Tag, an dem man geboren wurde – den hat jeder Mensch nur ein einziges Mal. Gemeint ist hier das Geburtsdatum selbst, nicht die jährliche Feier.',
     quelle:'Ein Scherzrätsel, das seit Generationen dieselbe Falle stellt.', stufe:1 },
 
   { id:'wasserlilie2', frage:'In einem Wettrennen überholst du die zweite Person.\nAn welcher Stelle liegst du jetzt?',
     optionen:['an zweiter Stelle','an erster Stelle','an dritter Stelle','das ist offen'],
     antwort:'an zweiter Stelle',
     tipps:['Du übernimmst den Platz dessen, den du überholst.'],
+    loesung:'Überholt man die Person auf Platz 2, übernimmt man genau deren Platz – man rückt also auf Platz 2 vor, nicht auf Platz 1 (dafür müsste man ja die Person auf Platz 1 überholen).',
     quelle:'Standardfrage in Einstellungstests seit den 1950er-Jahren.', stufe:2 },
 
   { id:'streichholz_römisch', frage:'Mit Streichhölzern liegt da: XI + I = X\nDie Gleichung stimmt nicht.\nWie viele Hölzer musst du mindestens umlegen, damit sie stimmt?',
     antwort:'1', tipps:['Du darfst auch das Pluszeichen anfassen.',
                         'Aus XI + I = X wird X + I = XI, wenn ein Holz wandert.'],
+    loesung:'Verschiebt man ein Holz von der linken XI zur rechten Seite, wird aus XI + I = X die wahre Gleichung X + I = XI – zehn plus eins ist tatsächlich elf.',
     quelle:'Streichholzrätsel gehörten seit den 1920er-Jahren zum festen Bestand jeder Rätselspalte.', stufe:3 },
 
   { id:'aufzug', frage:'Ein Mann wohnt im 10. Stock. Morgens fährt er mit dem Aufzug ganz nach unten.\nAbends fährt er nur bis zum 7. Stock und geht den Rest zu Fuß – außer wenn es regnet.\nWarum?',
@@ -239,11 +302,13 @@ export const KNACKNUESSE = [
               'Der Aufzug ist abends defekt','Er will Sport treiben','Im 8. Stock wohnt ein Freund'],
     antwort:'Er ist zu klein und erreicht nur die Taste 7 – bei Regen hat er einen Schirm',
     tipps:['Warum spielt ausgerechnet Regen eine Rolle?','Was hat man bei Regen dabei, das länger ist als ein Arm?'],
+    loesung:'Der Mann ist zu klein, um im Aufzug eine höhere Taste als die 7 zu drücken – den Rest bis zum 10. Stock geht er zu Fuß. Nur wenn er bei Regen einen Schirm dabei hat, reicht der, um auch die höhere Taste zu erreichen.',
     quelle:'Berühmtestes Beispiel für „laterales Denken“, verbreitet durch Edward de Bono in den 1960er-Jahren.', stufe:4 },
 
   { id:'schwimmbad', frage:'Zwei Wasserhähne füllen ein Becken: einer allein in 6 Stunden, der andere allein in 3 Stunden.\nWie lange dauert es, wenn beide gleichzeitig laufen?',
     antwort:'2', tipps:['Rechne mit Anteilen pro Stunde, nicht mit Stunden.',
                         'Der eine schafft 1/6 pro Stunde, der andere 1/3 – zusammen 1/2.'],
+    loesung:'Der eine Wasserhahn füllt in einer Stunde 1/6 des Beckens, der andere 1/3 – zusammen 1/6 plus 2/6 gleich 3/6, also die Hälfte des Beckens pro Stunde. Für das ganze Becken brauchen sie dann 2 Stunden.',
     quelle:'Aufgabentyp aus den Rechenbüchern der Antike, u. a. bei Heron von Alexandria.', stufe:4 },
 
   { id:'achilles', frage:'Achilles läuft zehnmal so schnell wie eine Schildkröte, die 100 Meter Vorsprung hat.\nZenon behauptete: Er holt sie nie ein, denn wenn er ihren Startpunkt erreicht, ist sie schon weiter.\nWas stimmt daran nicht?',
@@ -252,6 +317,7 @@ export const KNACKNUESSE = [
     antwort:'Unendlich viele Abschnitte können zusammen eine endliche Strecke ergeben',
     tipps:['Die Abschnitte werden immer kürzer – summiere sie einmal auf.',
            '100 + 10 + 1 + 0,1 … ergibt keinen unendlichen Wert, sondern etwa 111,1 Meter.'],
+    loesung:'Die immer kürzeren Teilstrecken (100 + 10 + 1 + 0,1 + …) addieren sich nicht ins Unendliche, sondern nähern sich einer festen, endlichen Zahl von etwa 111,1 Metern – genau dort holt Achilles die Schildkröte tatsächlich ein.',
     quelle:'Zenon von Elea, um 450 v. Chr. Erst die Analysis des 17. Jahrhunderts löste den Knoten sauber auf.', stufe:5 },
 
   { id:'barbier', frage:'Ein Barbier rasiert genau die Männer im Dorf, die sich nicht selbst rasieren.\nRasiert er sich selbst?',
@@ -260,40 +326,47 @@ export const KNACKNUESSE = [
     antwort:'Beides führt zum Widerspruch – die Regel kann nicht gelten',
     tipps:['Nimm zuerst an, er rasiert sich selbst. Was folgt aus der Regel?',
            'Und nun das Gegenteil. Beides kann nicht sein.'],
+    loesung:'Rasiert der Barbier sich selbst, verstößt er gegen seine eigene Regel, weil er nur die rasiert, die sich nicht selbst rasieren. Rasiert er sich nicht selbst, müsste er es laut derselben Regel aber tun. Beides widerspricht sich – eine solche Regel kann für ihn selbst also gar nicht gelten.',
     quelle:'Bertrand Russells Paradox (1901), hier in der Barbier-Fassung – es erschütterte die Grundlagen der Mathematik.', stufe:5 },
 
   { id:'hotel', frage:'Ein Hotel hat unendlich viele Zimmer, alle belegt. Ein neuer Gast kommt.\nKann er untergebracht werden?',
     optionen:['Ja – jeder zieht ein Zimmer weiter','Nein, es ist ja voll','Nur wenn jemand auszieht','Nur bei geraden Zimmernummern'],
     antwort:'Ja – jeder zieht ein Zimmer weiter',
     tipps:['Was passiert, wenn der Gast aus Zimmer 1 in Zimmer 2 zieht, der aus 2 in 3 und so weiter?'],
+    loesung:'Zieht jeder Gast von Zimmer n in Zimmer n+1 um, wird Zimmer 1 frei – obwohl vorher alle unendlich vielen Zimmer belegt waren. In einem unendlichen Hotel passt also immer noch ein Gast mehr hinein.',
     quelle:'David Hilberts Hotel, um 1924 als Gedankenspiel über das Unendliche vorgestellt.', stufe:5 },
 
   { id:'buch_wurm', frage:'Drei Bände stehen der Reihe nach im Regal, jeder Buchblock 4 cm dick, jeder Deckel 2 mm.\nEin Wurm frisst sich von der ersten Seite des ersten Bandes bis zur letzten Seite des dritten.\nWie viele Zentimeter frisst er (Deckel mitgerechnet)?',
     optionen:['4,8 cm','12,8 cm','8,4 cm','12 cm'], antwort:'4,8 cm',
     tipps:['Stell die Bücher gedanklich wirklich ins Regal und schau, wo Seite 1 von Band 1 liegt.',
            'Im Regal zeigt die erste Seite von Band 1 nach rechts – zum zweiten Band hin.'],
+    loesung:'Im Regal zeigt Seite 1 von Band 1 nach rechts zum Nachbarband, die letzte Seite von Band 3 nach links. Der Wurm frisst sich deshalb nur durch den hinteren Deckel von Band 1 (2 mm), den kompletten Band 2 mit beiden Deckeln (4,4 cm) und den vorderen Deckel von Band 3 (2 mm): 0,2+4,4+0,2 ergibt 4,8 cm.',
     quelle:'Von Sam Loyd um 1900 populär gemacht; die naheliegende Antwort ist fast immer falsch.', stufe:5 },
 
   { id:'wieviele_katzen', frage:'In einem Zimmer sitzen 4 Katzen in den vier Ecken.\nJeder Katze gegenüber sitzen 3 Katzen. Auf jedem Katzenschwanz sitzt eine Katze.\nWie viele Katzen sind im Zimmer?',
     optionen:['4','8','12','16'], antwort:'4',
     tipps:['Auf wessen Schwanz sitzt eine Katze am ehesten?','Jede Katze sitzt auf ihrem eigenen Schwanz.'],
+    loesung:'Jede der vier Katzen sitzt in ihrer eigenen Ecke, jeder gegenüber sitzen die drei anderen, und jede Katze sitzt ganz natürlich auf ihrem eigenen Schwanz. Im Zimmer sind also nur die 4 Katzen, keine weiteren.',
     quelle:'Altes Volksrätsel, in vielen Sprachen überliefert.', stufe:2 },
 
   { id:'zwei_vaeter', frage:'Zwei Väter und zwei Söhne gehen angeln. Jeder fängt genau einen Fisch.\nZusammen sind es aber nur drei Fische. Wie geht das?',
     optionen:['Es sind Großvater, Vater und Sohn','Einer hat gemogelt','Ein Fisch ist entkommen','Zwei teilen sich einen'],
     antwort:'Es sind Großvater, Vater und Sohn',
     tipps:['Kann eine Person gleichzeitig Vater und Sohn sein?'],
+    loesung:'Sind es Großvater, Vater und Sohn, gibt es zwei Väter (Großvater und Vater) und zwei Söhne (Vater und Sohn) – der Vater in der Mitte zählt dabei doppelt. Drei Personen fangen also drei Fische, obwohl „zwei Väter und zwei Söhne“ beteiligt sind.',
     quelle:'Familienrätsel, seit dem 19. Jahrhundert in Sammlungen abgedruckt.', stufe:2 },
 
   { id:'kerze_dunkel', frage:'Du kommst in einen dunklen Raum. Du hast ein Streichholz, eine Kerze, einen Ofen und eine Petroleumlampe.\nWas zündest du zuerst an?',
     optionen:['das Streichholz','die Kerze','den Ofen','die Lampe'], antwort:'das Streichholz',
     tipps:['Womit zündet man überhaupt etwas an?'],
+    loesung:'Ohne Feuer lässt sich nichts anzünden – deshalb muss zuerst das Streichholz brennen, bevor man damit Kerze, Ofen oder Lampe entzünden kann.',
     quelle:'Scherzfrage, die vor allem prüft, ob man die Frage wirklich liest.', stufe:1 },
 
   { id:'teilen_kuchen', frage:'Wie teilst du eine runde Torte mit nur 3 geraden Schnitten in 8 gleich große Stücke?',
     optionen:['Zweimal durch die Mitte, dann waagerecht durch','Drei Schnitte sternförmig','Das geht nicht','Erst halbieren, dann vierteln'],
     antwort:'Zweimal durch die Mitte, dann waagerecht durch',
     tipps:['Eine Torte ist nicht flach – sie hat auch eine Höhe.'],
+    loesung:'Eine Torte ist nicht flach, sondern hat auch eine Höhe: Zwei senkrechte Schnitte durch die Mitte teilen sie in 4 gleiche Stücke, ein dritter waagerechter Schnitt auf halber Höhe verdoppelt das auf 8 Stücke.',
     quelle:'Klassische Aufgabe zum räumlichen Denken.', stufe:3 }
 ];
 

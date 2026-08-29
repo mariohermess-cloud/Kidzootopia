@@ -152,11 +152,26 @@ for (const f of FAMILIEN) {
 console.log(`${geprueft} erzeugte Knacknüsse unabhängig nachgerechnet.`);
 
 /* ---------- 3. Vollständigkeit der handverlesenen Klassiker ---------- */
+/* loesung ist die eigenstaendige Erklaerung, die nach dem Antworten gezeigt
+   wird - anders als quelle (nur Herkunft) und anders als der letzte Tipp
+   (der ausserhalb der vorherigen Tipps oft unverstaendlich ist). Gemeldeter
+   Missstand: bei "Tuerme von Hanoi" gab es gar keine Erklaerung, nur die
+   Jahreszahl der Erfindung - ein Kind, das falsch antwortete, erfuhr nie,
+   warum die Loesung 7 ist. */
 for (const k of KNACKNUESSE) {
   if (!k.quelle) fehler.push(`${k.id}: keine Herkunftsangabe`);
   if (!k.tipps?.length) fehler.push(`${k.id}: keine Tipps`);
   if (k.optionen && !k.optionen.includes(k.antwort)) fehler.push(`${k.id}: Antwort fehlt in den Optionen`);
+  if (!k.loesung || k.loesung.length < 30) fehler.push(`${k.id}: keine (oder zu knappe) eigenständige Lösungserklärung`);
+  /* Die Lösung darf nicht nur die Herkunftsangabe sein - das waere dieselbe
+     Verwechslung, die den Missstand ueberhaupt verursacht hat. */
+  if (k.loesung && k.loesung === k.quelle) fehler.push(`${k.id}: Lösung ist identisch mit der Herkunftsangabe`);
 }
+
+/* Türme von Hanoi ist räumlich schwer vorstellbar - dafür gibt es jetzt ein
+   Bild der Ausgangsstellung (3 Scheiben auf einem Stab). */
+const hanoi = KNACKNUESSE.find(k => k.id === 'hanoi');
+if (!hanoi?.bild || !hanoi.bild.includes('<svg')) fehler.push('hanoi: kein Bild der Turmaufstellung');
 
 /* ---------- 4. Über den Generator: alles vollständig? ---------- */
 for (let stufe = 1; stufe <= 5; stufe++) {
