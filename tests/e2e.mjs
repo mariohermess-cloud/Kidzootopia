@@ -458,7 +458,11 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   const fertigGeworden = () => p.$eval('#rennErgebnis', el => el.textContent.trim().length > 0).catch(() => false);
   await p.mouse.move(cx + radius, cy);
   await p.mouse.down();
-  for (let lauf = 0; lauf < 80 && !(await fertigGeworden()); lauf++) {
+  /* Zeitbudget statt fester Rundenzahl: der Kreisel hat Reibung, also darf
+     die Maus erst losgelassen werden, wenn das Rennen WIRKLICH fertig ist -
+     sonst dreht sich nichts mehr weiter und ein Timeout danach wartet ewig. */
+  const spielEnde = Date.now() + 25000;
+  while (!(await fertigGeworden()) && Date.now() < spielEnde) {
     const schritte = 16;
     for (let i = 1; i <= schritte; i++) {
       const a = (i / schritte) * 2 * Math.PI;
@@ -467,8 +471,7 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   }
   await p.mouse.up();
   if (!(await fertigGeworden()))
-    await p.waitForFunction(() => document.querySelector('#rennErgebnis')?.textContent.trim().length > 0,
-      { timeout: 5000 });
+    throw new Error('Renn-Modus: der Kreisel hat das Rennen auch nach 25 Sekunden Drehen nicht beendet');
   const rennText = await p.textContent('#rennErgebnis');
   console.log(`Renn-Modus: Kreisel angetrieben, Ergebnis gezeigt: „${rennText.trim()}" ✅`);
   await p.screenshot({ path: `${S}/16-rennen.png`, fullPage: true });

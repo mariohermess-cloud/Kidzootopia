@@ -444,6 +444,19 @@ verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
    Bildern statt mit Wörtern antwortet.
 
 
+25. **Tiererkennung: Insekten, die sich zum Verwechseln ähnlich sehen** 🐝
+   Ein einzelnes Emoji (🐝) reicht nicht aus, um Honigbiene, Hummel, Wespe, Schwebfliege,
+   Wildbiene und Hornisse auseinanderzuhalten – genau das war die gemeldete Schwierigkeit.
+   Die neuen Fragen bei Allgemeinwissen (Entdecker-Weg) beschreiben deshalb die wirklich
+   unterscheidenden Merkmale in Worten: Körperform, Fell, Flugverhalten, Lebensweise – so,
+   wie man ein Tier auch draußen ohne Nachschlagewerk erkennen würde. Bewusst sehr
+   unterschiedliche "Bienenverwandte" nebeneinander (die pelzige, langsame Hummel; die
+   glatte, tailleneingeschnürte Wespe; die harmlose, bienenfarbene Schwebfliege ohne
+   Stachel; die einzeln lebende Wildbiene; die zu Unrecht gefürchtete Hornisse), damit klar
+   wird: nicht alles Gestreifte ist dieselbe Biene. `tests/tiererkennung.mjs` prüft, dass
+   wirklich alle sechs Arten vorkommen und jede Aufgabe die Merkmale ausführlich erklärt.
+
+
 ---
 
 ## Auf dem Handy nutzen
@@ -496,7 +509,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 28 · Stand 29.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 29 · Stand 29.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.
@@ -587,6 +600,7 @@ npm run test:punkte       # Punkte: nie Abzug, Schweres lohnt mehr, Unbewertetes
 npm run test:rennen       # Renn-Modus: die Strecke geht nie rückwärts, kein falsches "verloren"
 npm run test:ueberraschung # Rätsel des Tages: für alle gleich, immer rein rechnerisch lösbar
 npm run test:englisch     # English Basics: bildbasiert, jede Vokabel deutsch ≠ englisch
+npm run test:tiererkennung # Tiererkennung: alle sechs Insektenarten kommen vor und sind erklärt
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```

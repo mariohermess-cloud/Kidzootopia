@@ -9,11 +9,16 @@
    Bei jeder Änderung: NUMMER hier hochzählen UND in sw.js (CACHE) gleichziehen.
    tests/version.mjs prüft, dass beide übereinstimmen. */
 
-export const NUMMER = 28;
+export const NUMMER = 29;
 export const STAND = '29.08.2026';
 
 /* Neueste zuerst. Kurz und in Alltagssprache – das lesen Eltern, nicht Entwickler. */
 export const VERLAUF = [
+  { nr: 29, stand: '29.08.2026', was: [
+    'Neue Tiererkennung bei Allgemeinwissen: Insekten, die sich zum Verwechseln ähnlich sehen',
+    'Honigbiene, Hummel, Wespe, Schwebfliege, Wildbiene und Hornisse – anhand echter Merkmale unterschieden, nicht nur an einem Bild',
+    'Jede Frage erklärt, woran man die Art draußen wirklich erkennt – Körperform, Fell, Flugverhalten, Lebensweise'
+  ]},
   { nr: 28, stand: '29.08.2026', was: [
     'Renn-Modus: ein Kreisel treibt das Rennen jetzt an, statt nur zuzusehen',
     'Mit dem Daumen andrehen – wie ein echter Kreisel läuft er nach und wird ohne Nachdrehen langsamer',

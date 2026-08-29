@@ -21,7 +21,8 @@
     "test:punkte": "node tests/punkte.mjs",
     "test:rennen": "node tests/rennen.mjs",
     "test:ueberraschung": "node tests/ueberraschung.mjs",
-    "test:englisch": "node tests/englisch.mjs"
+    "test:englisch": "node tests/englisch.mjs",
+    "test:tiererkennung": "node tests/tiererkennung.mjs"
   },
   "devDependencies": {
     "playwright": "^1.49.1"

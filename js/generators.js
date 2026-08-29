@@ -374,9 +374,36 @@ allgemein: (() => {
       'Nichts verraten und Erwachsene fragen', ['Adresse schicken','Foto schicken','Telefonnummer geben'],
       'Im Internet weiß man nie sicher, wer wirklich fragt. Persönliche Angaben gehören nicht in fremde Hände.']
   ];
+  /* Tiererkennung: Insekten, die sich zum Verwechseln ähnlich sehen. Ein
+     einzelnes Emoji (🐝) hilft dabei kaum - genau das war das Problem.
+     Stattdessen beschreibt jede Frage die wirklich unterscheidenden Merkmale
+     in Worten: Körperform, Fell, Flugverhalten, Lebensweise - so, wie man
+     ein Tier auch draußen ohne Nachschlagewerk erkennen würde. Bewusst
+     mehrere, sehr unterschiedliche "Bienenverwandte" nebeneinander, damit
+     klar wird: nicht alles Gestreifte ist dieselbe Biene. */
+  const TIERE = [
+    ['Dieses Insekt ist rundlich und dicht pelzig, oft schwarz-gelb oder mit oranger Spitze, und fliegt mit lautem Brummen eher langsam. Welches Insekt ist das?',
+      'Hummel', ['Honigbiene','Wespe','Schwebfliege'],
+      'Hummeln sind runder und viel pelziger als Honigbienen. Das laute Brummen kommt von ihrem kräftigen Flügelschlag, nicht von einem Warnruf.'],
+    ['Dieses Insekt hat einen glatten, glänzenden Körper mit einer deutlich eingeschnürten Taille und kräftigen schwarz-gelben Streifen. Es kann mehrmals stechen. Welches Insekt ist das?',
+      'Wespe', ['Honigbiene','Hummel','Marienkäfer'],
+      'Die schmale „Wespentaille" gibt es nur bei Wespen und Hornissen. Bienen und Hummeln sind pelziger und wirken rundlicher, ohne diese Einschnürung.'],
+    ['Dieses Insekt sieht aus wie eine kleine Biene, hat aber nur ein Flügelpaar statt zwei, kann in der Luft wie ein Hubschrauber stillstehen und sticht nicht. Welches Insekt ist das?',
+      'Schwebfliege', ['Honigbiene','Wespe','Hummel'],
+      'Schwebfliegen tarnen sich mit Bienen- oder Wespenfarben, um Fressfeinde abzuschrecken - sind aber harmlose Fliegen ohne Stachel.'],
+    ['Dieses Insekt lebt zu Tausenden in einem Volk zusammen, sammelt Nektar und Pollen für Honig und stirbt nach dem einzigen Stich, den es je setzen kann. Welches Insekt ist das?',
+      'Honigbiene', ['Hummel','Wespe','Schwebfliege'],
+      'Der Stachel der Honigbiene bleibt mit einem Widerhaken in der Haut stecken - beim Wegfliegen reißt ein Teil ihres Körpers ab. Hummeln und Wespen haben diesen Widerhaken nicht und überleben einen Stich.'],
+    ['Dieses Insekt lebt nicht in einem großen Volk, sondern meist ganz allein, baut sein Nest in hohlen Pflanzenstängeln oder kleinen Löchern und sticht nur in großer Not. Welches Insekt ist das?',
+      'Wildbiene', ['Honigbiene','Wespe','Hornisse'],
+      'Von den über 500 Wildbienenarten in Deutschland lebt die Mehrheit einzeln statt im Volk - ganz anders als die bekannte Honigbiene.'],
+    ['Dieses Insekt ist die größte heimische Faltenwespe, wirkt durch ihre Größe furchteinflößend, ist Menschen gegenüber aber eher scheu, und ihr Stich ist für die meisten Menschen nicht gefährlicher als ein Wespenstich. Welches Insekt ist das?',
+      'Hornisse', ['Wespe','Hummel','Honigbiene'],
+      'Der Mythos „7 Hornissenstiche töten ein Pferd" ist längst widerlegt. Hornissen sind sogar friedlicher als gewöhnliche Wespen und stechen nur, wenn ihr Nest bedroht wird.']
+  ];
   const q = arr => { const [f,ok,bad,erklaerung] = pick(arr); return { ...wahl(f, ok, bad, erklaerung), quelle: erklaerung }; };
   return {
-    entdecken(){ return q(FAKT.map(([f,o,b,e])=>['🔎 '+f,o,b,e])); },
+    entdecken(){ return q([...FAKT, ...TIERE].map(([f,o,b,e])=>['🔎 '+f,o,b,e])); },
     erzaehlen(){ return q(STORY); },
     knobeln(){ return q(SCHAETZ); },
     team(){ return q(ALLTAG); }
