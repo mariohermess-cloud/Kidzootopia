@@ -11,7 +11,8 @@
    Ein Kind, das fluessig liest und rot sieht, hoert auf zu lesen. */
 
 import { gipfel, zuordnen, betonteSilbe, hervorgehoben, betonungPruefen,
-         zusammenfassung, glaetten, inDezibel, MINDEST_TAL_DB, SCHRITT_STANDARD } from '../js/aussprache.js';
+         zusammenfassung, glaetten, inDezibel, MINDEST_TAL_DB, SCHRITT_STANDARD,
+         schaetzungAktualisieren, naechsterPollAbstand } from '../js/aussprache.js';
 import { silben } from '../js/silben.js';
 
 const SCHRITT = 25;
@@ -95,6 +96,35 @@ const schnellGrob = sprich(schnellPlan, { schritt: 25 });
 pruefe(gipfel(schnellGrob, 25).length < 8,
   `Gegenprobe: dieselbe schnelle Sprache verschmilzt bei grober 25ms-Abtastung ` +
   `sichtbar (${gipfel(schnellGrob, 25).length} statt 8) - zeigt, dass die feinere Abtastung wirklich der Unterschied ist`);
+
+/* ------------------------------------------------- Anpassung der Abfragerate
+   Folgeauftrag: die Live-Markierung soll ihre Abfragerate an das wirklich
+   gemessene Lesetempo anpassen, statt fest zu sein - schnelles Lesen soll
+   öfter abgefragt werden, langsames Lesen seltener (spart Akku, ohne dass
+   sich für ein langsam lesendes Kind je etwas ändert). */
+
+let schaetzungSchnell = 350;
+for (const dt of [90, 95, 100, 90, 105]) schaetzungSchnell = schaetzungAktualisieren(schaetzungSchnell, dt);
+pruefe(schaetzungSchnell < 200,
+  `nach mehreren schnellen Silben (~90-105ms Abstand) sinkt die Schätzung deutlich (${Math.round(schaetzungSchnell)}ms)`);
+pruefe(naechsterPollAbstand(schaetzungSchnell) < 90,
+  `schnelles Lesen ergibt einen Abfrage-Abstand unter dem alten festen Wert von 90ms (${Math.round(naechsterPollAbstand(schaetzungSchnell))}ms)`);
+
+let schaetzungLangsam = 350;
+for (const dt of [600, 650, 580, 620]) schaetzungLangsam = schaetzungAktualisieren(schaetzungLangsam, dt);
+pruefe(schaetzungLangsam > 400,
+  `nach mehreren langsamen Silben (~600ms Abstand) steigt die Schätzung deutlich (${Math.round(schaetzungLangsam)}ms)`);
+pruefe(naechsterPollAbstand(schaetzungLangsam) > 90,
+  `langsames Lesen ergibt einen Abfrage-Abstand über dem alten festen Wert von 90ms (${Math.round(naechsterPollAbstand(schaetzungLangsam))}ms)`);
+
+pruefe(naechsterPollAbstand(1) >= 35, `auch bei absurd kurzer Schätzung wird die Untergrenze nicht unterschritten (${naechsterPollAbstand(1)}ms)`);
+pruefe(naechsterPollAbstand(100000) <= 220, `auch bei absurd langer Schätzung wird die Obergrenze nicht überschritten (${naechsterPollAbstand(100000)}ms)`);
+
+/* Gegenprobe: ohne die Anpassung (fester alter Wert 90ms) wäre der
+   Abfrage-Abstand für schnelles UND langsames Lesen identisch - erst der
+   Unterschied oben zeigt, dass wirklich angepasst wird, nicht nur gerechnet. */
+pruefe(naechsterPollAbstand(schaetzungSchnell) !== naechsterPollAbstand(schaetzungLangsam),
+  'Gegenprobe: schnelles und langsames Lesen ergeben tatsächlich unterschiedliche Abfrage-Abstände');
 
 /* --------------------------------------------------------------- Zuordnung */
 

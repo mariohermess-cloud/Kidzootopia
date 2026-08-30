@@ -9,11 +9,15 @@
    Bei jeder Änderung: NUMMER hier hochzählen UND in sw.js (CACHE) gleichziehen.
    tests/version.mjs prüft, dass beide übereinstimmen. */
 
-export const NUMMER = 34;
+export const NUMMER = 35;
 export const STAND = '30.08.2026';
 
 /* Neueste zuerst. Kurz und in Alltagssprache – das lesen Eltern, nicht Entwickler. */
 export const VERLAUF = [
+  { nr: 35, stand: '30.08.2026', was: [
+    'Vorlesen: die Markierung fragt jetzt so oft nach, wie es das gemessene Lesetempo wirklich braucht',
+    'Schnelles Lesen wird öfter abgefragt, damit die Markierung nicht zurückfällt – langsames Lesen seltener, das spart Akku'
+  ]},
   { nr: 34, stand: '30.08.2026', was: [
     'Vorlesen: die Markierung lief bei schnellem, flüssigem Lesen der Stimme hinterher',
     'Das Mikrofon tastet jetzt viel feiner ab (10 statt 25 Millisekunden) – auch schnell gesprochene Silben werden einzeln erkannt statt zu verschmelzen',

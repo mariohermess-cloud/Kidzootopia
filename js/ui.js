@@ -884,9 +884,22 @@ function lesepult(p, a, bereich, fertig) {
     const felder = [...bereich.querySelectorAll('[data-sil]')];
     const wieVieleSilben = felder.length;
 
-    const uhr = setInterval(() => {
+    /* Wie schnell die Markierung nachschaut, richtet sich nach dem tatsächlich
+       gemessenen Lesetempo (Aussprache.naechsterPollAbstand) statt fest zu
+       sein: ein langsam lesendes Kind muss nicht alle 90ms abgefragt werden,
+       ein schnell lesendes Kind schon, sonst hinkt die Markierung sichtbar
+       hinterher. Deshalb setTimeout statt setInterval - der Abstand ändert
+       sich von Aufruf zu Aufruf. */
+    let laeuftNoch = true;
+    let letzteWo = -1;
+    let letzterWechsel = beginn;
+    let silbenSchaetzungMs = 350; // Startannahme, bis die erste Silbe erkannt ist
+
+    const schleife = () => {
+      if (!laeuftNoch) return;
+      const jetzt = Date.now();
       bereich.querySelector('#leseUhr').textContent =
-        ((Date.now() - beginn) / 1000).toFixed(1).replace('.', ',') + ' s';
+        ((jetzt - beginn) / 1000).toFixed(1).replace('.', ',') + ' s';
 
       /* Mitlesen: Die App zählt in der laufenden Aufnahme die Silbengipfel und
          hebt hervor, wo sie das Kind vermutet. Erkannt wird dabei nichts – sie
@@ -896,17 +909,25 @@ function lesepult(p, a, bereich, fertig) {
       const wo = Math.min(bisher, wieVieleSilben) - 1;
       felder.forEach((f, i) => f.classList.toggle('jetzt', i === wo));
       if (wo >= 0 && felder[wo]) felder[wo].scrollIntoView({ block:'nearest', behavior:'smooth' });
-      /* War 220ms: bei schnellem Lesen kann in dieser Zeit schon die nächste
-         Silbe vorbei sein, bevor die Markierung nachzieht - sie hinkt dann
-         sichtbar hinterher. 90ms holt sie näher an die tatsächliche Stimme. */
-    }, 90);
+
+      if (wo !== letzteWo && wo >= 0) {
+        if (letzteWo >= 0) {
+          silbenSchaetzungMs = Aussprache.schaetzungAktualisieren(silbenSchaetzungMs, jetzt - letzterWechsel);
+        }
+        letzterWechsel = jetzt;
+        letzteWo = wo;
+      }
+
+      setTimeout(schleife, Aussprache.naechsterPollAbstand(silbenSchaetzungMs));
+    };
+    setTimeout(schleife, 90);
 
     knopf.disabled = false;
     knopf.textContent = '✓ Fertig gelesen';
     knopf.classList.add('danger');
     zeigeHinweis('🔴 Läuft. Lies laut und in deinem Tempo – niemand hört zu außer dir.');
     knopf.onclick = () => {
-      clearInterval(uhr);
+      laeuftNoch = false;
       auf.stopp();
       felder.forEach(f => f.classList.remove('jetzt'));
       fertig(auf.huellkurve, { schrittMs: SCHRITT_MS });

@@ -152,7 +152,9 @@ stellt eine Etappe höher.
    * **Die Markierung folgt auch schnellem Lesen.** Das Mikrofon tastet alle 10 statt vorher
      25 Millisekunden ab – bei flüssig-schnellem Lesen liegen Silbenspitzen sonst so dicht
      beieinander, dass sie zu einer einzigen verschmelzen und die Markierung sichtbar
-     hinterherhinkt.
+     hinterherhinkt. Wie oft die Markierung selbst nachschaut, passt sich außerdem dem
+     gemessenen Lesetempo an: schnelles Lesen wird öfter abgefragt, langsames seltener –
+     kein fester Wert, der für das eine Kind zu träge und fürs andere unnötig oft ist.
 
      | Maß | Was es bedeutet |
      |---|---|
@@ -557,7 +559,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 34 · Stand 30.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 35 · Stand 30.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.
