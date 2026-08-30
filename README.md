@@ -149,6 +149,10 @@ stellt eine Etappe höher.
      Lautstärke-Hüllkurve: wann wurde gesprochen, wann war Stille. Keine Worterkennung, keine
      Aufnahme, nichts verlässt das Gerät. Daraus ergeben sich die drei Bestandteile von
      Leseflüssigkeit (Rasinski; NAEP Oral Reading Fluency Scale 1995):
+   * **Die Markierung folgt auch schnellem Lesen.** Das Mikrofon tastet alle 10 statt vorher
+     25 Millisekunden ab – bei flüssig-schnellem Lesen liegen Silbenspitzen sonst so dicht
+     beieinander, dass sie zu einer einzigen verschmelzen und die Markierung sichtbar
+     hinterherhinkt.
 
      | Maß | Was es bedeutet |
      |---|---|
@@ -553,7 +557,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 33 · Stand 29.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 34 · Stand 30.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.

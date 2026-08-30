@@ -14,6 +14,7 @@ import { NUMMER, STAND, VERLAUF } from './version.js';
 import { textInSilben } from './silben.js';
 import * as Lesen from './lesen.js';
 import * as Aussprache from './aussprache.js';
+import { SCHRITT_STANDARD as SCHRITT_MS } from './aussprache.js';
 import * as Punkte from './punkte.js';
 import * as Skizze from './skizze.js';
 import * as Zahl from './zahlfeld.js';
@@ -727,7 +728,9 @@ function schmierblatt(a, host) {
    kann mitwandern, und das Mikrofon misst mit – aber nur die Lautstärke.
    Es wird nichts erkannt, nichts gespeichert, nichts verschickt. */
 
-const SCHRITT_MS = 25;
+/* SCHRITT_MS (wie oft das Mikrofon abgetastet wird) kommt aus aussprache.js -
+   dieselbe Zahl, mit der auch die Silben-Zuordnung rechnet. Nur eine Stelle
+   dafür, statt zwei Konstanten im Gleichschritt zu halten. */
 
 /* Setzt den Text mit Silbenfaerbung. Zwei Feinheiten, die beim ersten Versuch
    falsch waren und im Bildschirmfoto sofort auffielen:
@@ -893,7 +896,10 @@ function lesepult(p, a, bereich, fertig) {
       const wo = Math.min(bisher, wieVieleSilben) - 1;
       felder.forEach((f, i) => f.classList.toggle('jetzt', i === wo));
       if (wo >= 0 && felder[wo]) felder[wo].scrollIntoView({ block:'nearest', behavior:'smooth' });
-    }, 220);
+      /* War 220ms: bei schnellem Lesen kann in dieser Zeit schon die nächste
+         Silbe vorbei sein, bevor die Markierung nachzieht - sie hinkt dann
+         sichtbar hinterher. 90ms holt sie näher an die tatsächliche Stimme. */
+    }, 90);
 
     knopf.disabled = false;
     knopf.textContent = '✓ Fertig gelesen';

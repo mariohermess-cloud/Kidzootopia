@@ -44,7 +44,13 @@
    und aussagekräftig – "du betonst Ver-STE-hen richtig" ist eine echte
    Rückmeldung. */
 
-const SCHRITT_STANDARD = 25;   // ms je Messwert, wie im Lesepult
+/* War 25ms: bei schnellem, flüssigem Lesen liegen Silbenspitzen und die kurze
+   Pause dazwischen manchmal nur 15-20ms auseinander. Bei 25ms Abtastung
+   verschwindet eine so kurze Pause fast immer im Glätten, und mehrere Silben
+   verschmelzen zu einer einzigen - siehe tests/aussprache.mjs, Abschnitt
+   "schnelles Lesen". Exportiert, damit js/ui.js (das Mikrofon abtastet) und
+   der Test dieselbe Zahl verwenden, statt sie zweimal zu pflegen. */
+export const SCHRITT_STANDARD = 10;   // ms je Messwert, wie im Lesepult
 
 /* ---------------------------------------------------------------------------
    Schritt 1: Silbenkerne (Gipfel) in der Lautstärkekurve finden
