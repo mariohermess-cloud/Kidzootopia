@@ -273,14 +273,32 @@ export const wortZahl = text =>
    die Silbentrennung muss eindeutig sein - Zweifelsfaelle gehoeren nicht in
    eine Uebung, bei der das Kind eine Zahl nennen soll.
    -------------------------------------------------------------------------- */
+/* Beide Listen wurden deutlich erweitert (vorher 26 bzw. 22 Wörter) - bei so
+   wenigen Wörtern kam bei zufälliger Auswahl ständig dasselbe Wort wieder.
+   Jedes neue Wort steht bereits handgeprüft in tests/silben.mjs (PROBEN),
+   damit keine falsch getrennte Ergänzung dazukommt. */
 export const UEBWOERTER = {
   1: ['Nase','Blume','Hase','Vogel','Sonne','Katze','Baum','Haus','Hund','Ball',
       'Kinder','Wolke','Garten','Regen','Wagen','Fenster','Mutter','Bruder',
-      'Apfel','Banane','Tomate','Melone','Schule','Tafel','Stuhl','Tisch'],
+      'Apfel','Banane','Tomate','Melone','Schule','Tafel','Stuhl','Tisch',
+      'Kater','Ofen','Besen','Wiese','Winter','Butter','Wasser','Zimmer',
+      'Hammer','Karte','Ampel','Finger','Onkel','Mantel','Nadel','Meister',
+      'Muster','Bücher','Kuchen','Sachen','Zucker','Decke','Brücke','Jacke',
+      'Tasche','Flasche','Auge','Eule','Eimer','Mauer','Feuer','Biene',
+      'Ziege','Kamera','Telefon','Papier','Musik','Kühe','Städte','Wörter',
+      'Vögel','Mäuse','Bäume','Häuser'],
   2: ['Schmetterling','Sonnenblume','Regenbogen','Taschenlampe','Kinderzimmer',
       'Marienkäfer','Erdbeere','Kartoffel','Schokolade','Krokodil','Elefant',
       'Giraffe','Feuerwehr','Bilderbuch','Apfelbaum','Klassenzimmer','Frühling',
-      'Schwester','Geschichte','Fahrrad','Turnhalle','Winterjacke'],
+      'Schwester','Geschichte','Fahrrad','Turnhalle','Winterjacke',
+      'Haustür','Schulhaus','Sommerferien','Zitrone','Computer','Kalender',
+      'Familie','Ferien','schreiben','laufen','springen','schwimmen',
+      'klettern','zeichnen','rechnen','denken','fragen','antworten',
+      'arbeiten','warten','verstehen','bekommen','gelesen','erzählen',
+      'besuchen','gefunden','vergessen','entdecken','zerbrechen','ankommen',
+      'aufstehen','ausgehen','mitnehmen','nachdenken','unterwegs','zusammen',
+      'Mädchen','Häuschen','Bächlein','freundlich','glücklich','Zeugnis',
+      'langsam','essbar'],
   3: ['Verabredung','Überraschung','Freundschaft','Zusammenhang','Aufmerksamkeit',
       'Beobachtung','Entscheidung','Werkzeugkasten','Naturkatastrophe',
       'Jahreszeiten','Mannschaftssport','Gerechtigkeit','Verantwortung'],

@@ -246,7 +246,8 @@ stellt eine Etappe höher.
    Silben zählen („Wie viele hat *Schmetterling*?"), das Wort mit genau drei Silben finden,
    durcheinandergewürfelte Silben in die richtige Reihenfolge bringen, und die fehlende Silbe
    ergänzen (`Son-___-blu-me`). Die falschen Antworten sind echte Silben aus anderen Wörtern –
-   damit muss man wirklich hinsehen.
+   damit muss man wirklich hinsehen. Der Wortvorrat ist deutlich gewachsen (über 130 statt
+   knapp 50 Wörter), damit bei zufälliger Auswahl nicht ständig dasselbe Wort wiederkommt.
 
 13. **Rückmeldungen, die zur Antwort passen** 💬 – *auf Wunsch vorgelesen*
    Statt „Gut gemacht!" sagt die App, was tatsächlich der Fall war: *„Die Ziffern sind
@@ -414,6 +415,12 @@ verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
    Drehgeschwindigkeit (Grad pro Sekunde) den Schwung – langsames Drehen bringt spürbar
    wenig voran, schnelles Drehen deutlich mehr. Ein Kreisel eben, kein Schalter.
 
+   **Dritter Nachtrag:** Das Ergebnis sagte bisher nur „schneller" oder „knapp hinter
+   deinem besten Rennen" – ohne Zahlen sah man nicht, WIE viel besser oder schlechter man
+   war. Jetzt stehen die wirklichen Punktestände selbst mit da (z. B. „69 statt 53 Punkte,
+   +16"). Beim allerersten Rennen gibt es noch keinen Geist zum Vergleichen – dann zählt
+   nur die eigene erspielte Punktzahl, ohne einen erfundenen Vergleich gegen 0.
+
 22. **Neues Lernziel: Gesund essen** 🥕
    Warum regelmäßig Wasser trinken, warum Frühstück, warum bunte Vielfalt auf dem Teller,
    warum Zähneputzen nach Süßem – bewusst **ohne** Kalorien, Diätregeln oder als „schlecht"
@@ -435,6 +442,10 @@ verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
    Grundsatz mit einem einzigen Rätsel beliebig oft ausnutzen. `tests/ueberraschung.mjs`
    prüft unter anderem, dass wirklich für alle Geräte am selben Tag dasselbe Rätsel
    herauskommt und jedes erzeugte Rätsel rein rechnerisch (ohne Rätselraten) lösbar ist.
+
+   **Nachtrag:** Nach einer falschen Antwort blieb die falsche Zahl im Feld stehen – beim
+   nächsten Versuch hängte sich die neue Eingabe nur hinten an, statt die alte zu ersetzen.
+   Das Feld wird jetzt nach einer falschen Antwort automatisch geleert.
 
 
 24. **Englisch komplett neu: für Kinder, die noch nicht lesen können** 🖼️🔊
@@ -559,7 +570,7 @@ npm start            # startet einen Webserver auf http://localhost:8765
 Eine PWA lädt aus dem eigenen Zwischenspeicher – nach einer Änderung kann auf einem Gerät
 deshalb tagelang die alte Fassung liegen, ohne dass man es merkt. Die App macht das sichtbar:
 
-* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 35 · Stand 30.08.2026“ –
+* **Unten auf dem Startbildschirm** steht klein „Kidzootopia · Version 36 · Stand 30.08.2026“ –
   auch dann, wenn noch kein Profil angelegt ist.
 * **Eltern → Fassung dieser App** zeigt dieselbe Nummer groß, dazu was in dieser Fassung neu
   ist, alle früheren Fassungen zum Aufklappen und den Knopf **🔄 Nach Aktualisierung suchen**.

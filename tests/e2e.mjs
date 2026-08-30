@@ -790,6 +790,15 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
     const mod = await import('/js/ueberraschung.js');
     return mod.raetselFuer().antwort;
   });
+  // Erst absichtlich falsch tippen: das alte Feld darf danach nicht stehen
+  // bleiben, sonst haengt sich die richtige Antwort nur hinten an.
+  await p.fill('#raetselEingabe', '999999');
+  await p.click('#raetselPruefen');
+  await p.waitForFunction(() => /Noch nicht ganz/.test(
+    document.querySelector('#raetselRueckmeldung')?.textContent || ''), { timeout: 5000 });
+  const nachFalsch = await p.inputValue('#raetselEingabe');
+  if (nachFalsch !== '') throw new Error(`Feld nach falscher Antwort nicht geleert (steht noch: "${nachFalsch}")`);
+  console.log('Überraschungsrätsel: falsche Antwort leert das Feld für den nächsten Versuch ✅');
   await p.fill('#raetselEingabe', antwort);
   await p.click('#raetselPruefen');
   await p.waitForFunction(() => {

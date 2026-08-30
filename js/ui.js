@@ -427,7 +427,7 @@ function rennenStarten(p, sess, geist) {
       fertig = true;
       kreisel.classList.add('fertig');
       if (ergebnis) {
-        const erg = Rennen.rennErgebnis(eigenEnde.punkte, geistEnde.punkte);
+        const erg = Rennen.rennErgebnis(eigenEnde.punkte, geistEnde.punkte, !geist.spur);
         ergebnis.textContent = (erg.gewonnen ? '🏆 ' : '') + erg.text;
       }
       return;
@@ -1573,6 +1573,11 @@ function screenUeberraschung(p) {
     } else {
       rueckmeldung.textContent = 'Noch nicht ganz – versuch es gern nochmal.';
       Avatar.reagiere('falsch');
+      /* Sonst blieb die falsche Zahl stehen, und Eintippen der richtigen
+         Antwort haengte sich nur hinten an - das Kind musste erst von Hand
+         loeschen, bevor es neu tippen konnte. */
+      eingabe.value = '';
+      eingabe.focus();
     }
   };
   view().querySelector('#raetselPruefen').onclick = pruefen;
