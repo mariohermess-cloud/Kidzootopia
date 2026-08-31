@@ -79,6 +79,21 @@ pruefe(!/verloren|schlecht|leider/i.test(rennErgebnis(20, 30).text),
   'unter dem Geisterrennen wird nichts als Niederlage schöngeredet oder abgewertet');
 pruefe(typeof rennErgebnis(0, 0).text === 'string', 'auch 0 gegen 0 stürzt nicht ab');
 
+/* Folgeauftrag: am Ende soll man die wirklichen Punktestände sehen, nicht nur
+   "schneller" oder "langsamer" - sonst sieht man nicht, WIE viel besser man
+   war als beim letzten Mal. */
+pruefe(/69/.test(rennErgebnis(69, 53).text) && /53/.test(rennErgebnis(69, 53).text),
+  `beide Punktestände stehen im Ergebnistext (${rennErgebnis(69, 53).text})`);
+pruefe(rennErgebnis(50, 30).differenz === 20, 'die Differenz wird mitgeliefert (50 - 30 = 20)');
+pruefe(/40/.test(rennErgebnis(40, 40).text), 'auch beim Gleichstand steht die Punktzahl selbst da (40)');
+
+/* Erstes Rennen: es gibt noch keinen echten Geist zum Vergleichen (0 wäre
+   ein erfundener Gegner) - dann zählt nur die eigene erspielte Punktzahl. */
+const erst = rennErgebnis(42, 0, true);
+pruefe(erst.gewonnen === false, 'erstes Rennen gilt nicht als "Sieg" gegen einen nicht existierenden Geist');
+pruefe(/42/.test(erst.text), `die erspielte Punktzahl steht trotzdem da (${erst.text})`);
+pruefe(!/0 statt|statt 0/.test(erst.text), 'kein erfundener Vergleich gegen 0 beim ersten Rennen');
+
 console.log(fehler === 0
   ? '\nRenn-Modus fährt nur vorwärts und behauptet nichts Falsches ✅'
   : `\n${fehler} Problem(e) ❌`);

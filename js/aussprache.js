@@ -44,7 +44,39 @@
    und aussagekräftig – "du betonst Ver-STE-hen richtig" ist eine echte
    Rückmeldung. */
 
-const SCHRITT_STANDARD = 25;   // ms je Messwert, wie im Lesepult
+/* War 25ms: bei schnellem, flüssigem Lesen liegen Silbenspitzen und die kurze
+   Pause dazwischen manchmal nur 15-20ms auseinander. Bei 25ms Abtastung
+   verschwindet eine so kurze Pause fast immer im Glätten, und mehrere Silben
+   verschmelzen zu einer einzigen - siehe tests/aussprache.mjs, Abschnitt
+   "schnelles Lesen". Exportiert, damit js/ui.js (das Mikrofon abtastet) und
+   der Test dieselbe Zahl verwenden, statt sie zweimal zu pflegen. */
+export const SCHRITT_STANDARD = 10;   // ms je Messwert, wie im Lesepult
+
+/* ---------------------------------------------------------------------------
+   Wie oft die Live-Markierung im Lesepult nachschaut, ob eine neue Silbe
+   erkannt wurde. Ein Kind, das langsam liest, braucht dafür nicht alle 90ms
+   abgefragt zu werden - das kostet nur Akku, ohne dass sich je etwas ändert.
+   Ein Kind, das schnell liest, braucht es öfter, sonst hinkt die Markierung
+   sichtbar hinterher (siehe SCHRITT_STANDARD oben). Deshalb passt sich der
+   Abstand an das tatsächlich gemessene Lesetempo an, statt fest zu sein. */
+
+const POLL_MIN_MS = 35;   // schneller hat auch bei sehr flottem Lesen keinen Sinn
+const POLL_MAX_MS = 220;  // der alte feste Wert - Obergrenze für sehr langsames Lesen
+const POLL_TEILER = 4;    // vier Abfragen pro erwarteter Silbe, damit keine übersprungen wird
+
+/* Gleitender Mittelwert der Zeit zwischen zwei erkannten Silben. Neue Messungen
+   zählen stärker als alte, damit ein Tempowechsel beim Lesen (schneller Satz,
+   dann eine Verschnaufpause) zügig übernommen wird, ohne bei jedem einzelnen
+   Ausreißer gleich hin- und herzuspringen. */
+export function schaetzungAktualisieren(bisherigeSchaetzungMs, gemesseneMs, glaettung = 0.4) {
+  return bisherigeSchaetzungMs * (1 - glaettung) + gemesseneMs * glaettung;
+}
+
+/* Aus der geschätzten Silbendauer den nächsten Abfrage-Abstand ableiten,
+   nach oben und unten gedeckelt. */
+export function naechsterPollAbstand(silbenSchaetzungMs) {
+  return Math.max(POLL_MIN_MS, Math.min(POLL_MAX_MS, silbenSchaetzungMs / POLL_TEILER));
+}
 
 /* ---------------------------------------------------------------------------
    Schritt 1: Silbenkerne (Gipfel) in der Lautstärkekurve finden

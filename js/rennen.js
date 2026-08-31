@@ -49,11 +49,24 @@ export function prozentAuf(punkte, ziel) {
 
 /* Ergebnis am Ende: hat man das eigene Geisterrennen eingeholt oder geschlagen?
    Absichtlich ohne "leider" oder "verloren" - unter dem Geist zu bleiben ist
-   der Normalfall und kein Versagen, siehe punkte.js / rundenBlick(). */
-export function rennErgebnis(eigenePunkte, geistPunkteAmEnde) {
+   der Normalfall und kein Versagen, siehe punkte.js / rundenBlick().
+
+   Die reine Aussage "schneller" oder "langsamer" reichte nicht - ohne Zahlen
+   sieht man nicht, WIE viel besser oder schlechter man war. Deshalb stehen
+   jetzt die Punktestände selbst mit da, nicht nur das Urteil darüber. Beim
+   allerersten Rennen gibt es noch keinen Geist zum Vergleichen - dann zählt
+   nur, was erspielt wurde, ohne einen erfundenen Vergleich gegen 0. */
+export function rennErgebnis(eigenePunkte, geistPunkteAmEnde, istErstesRennen = false) {
+  if (istErstesRennen)
+    return { gewonnen: false, gleich: false,
+      text: `${eigenePunkte} Punkte erspielt – das ist ab jetzt dein Geisterrennen zum Messen! 🏁` };
+  const differenz = eigenePunkte - geistPunkteAmEnde;
   if (eigenePunkte > geistPunkteAmEnde)
-    return { gewonnen: true, text: 'Du warst schneller als dein bisheriges bestes Rennen! 🏁' };
+    return { gewonnen: true, differenz,
+      text: `Du warst schneller als dein bisheriges bestes Rennen! 🏁 (${eigenePunkte} statt ${geistPunkteAmEnde} Punkte, +${differenz})` };
   if (eigenePunkte === geistPunkteAmEnde && geistPunkteAmEnde > 0)
-    return { gewonnen: false, gleich: true, text: 'Genau gleichauf mit deinem besten Rennen.' };
-  return { gewonnen: false, gleich: false, text: 'Diesmal knapp hinter deinem besten Rennen – nächstes Mal!' };
+    return { gewonnen: false, gleich: true, differenz: 0,
+      text: `Genau gleichauf mit deinem besten Rennen. (${eigenePunkte} Punkte, wie beim letzten Mal)` };
+  return { gewonnen: false, gleich: false, differenz,
+    text: `Diesmal knapp hinter deinem besten Rennen – nächstes Mal! (${eigenePunkte} statt ${geistPunkteAmEnde} Punkte)` };
 }

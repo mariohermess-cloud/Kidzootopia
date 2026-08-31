@@ -9,11 +9,25 @@
    Bei jeder Änderung: NUMMER hier hochzählen UND in sw.js (CACHE) gleichziehen.
    tests/version.mjs prüft, dass beide übereinstimmen. */
 
-export const NUMMER = 33;
-export const STAND = '29.08.2026';
+export const NUMMER = 36;
+export const STAND = '30.08.2026';
 
 /* Neueste zuerst. Kurz und in Alltagssprache – das lesen Eltern, nicht Entwickler. */
 export const VERLAUF = [
+  { nr: 36, stand: '30.08.2026', was: [
+    'Silben hören & bauen: viel mehr Wörter im Topf – vorher kam bei wenigen Wörtern ständig dasselbe wieder',
+    'Renn-Modus: das Ergebnis zeigt jetzt die wirklichen Punktestände, nicht nur „schneller" oder „langsamer" – so sieht man, wie viel besser man war',
+    'Überraschungsrätsel: eine falsche Antwort leert jetzt das Feld – vorher blieb die falsche Zahl stehen und die neue hängte sich nur hinten an'
+  ]},
+  { nr: 35, stand: '30.08.2026', was: [
+    'Vorlesen: die Markierung fragt jetzt so oft nach, wie es das gemessene Lesetempo wirklich braucht',
+    'Schnelles Lesen wird öfter abgefragt, damit die Markierung nicht zurückfällt – langsames Lesen seltener, das spart Akku'
+  ]},
+  { nr: 34, stand: '30.08.2026', was: [
+    'Vorlesen: die Markierung lief bei schnellem, flüssigem Lesen der Stimme hinterher',
+    'Das Mikrofon tastet jetzt viel feiner ab (10 statt 25 Millisekunden) – auch schnell gesprochene Silben werden einzeln erkannt statt zu verschmelzen',
+    'Die Markierung selbst folgt außerdem schneller nach, statt sichtbar nachzuhinken'
+  ]},
   { nr: 33, stand: '29.08.2026', was: [
     'Renn-Kreisel behoben: Drehen fühlte sich wie an-oder-aus an, egal wie schnell oder langsam gedreht wurde',
     'Jetzt bestimmt die wirkliche Drehgeschwindigkeit das Tempo – langsam drehen bringt wenig voran, schnell drehen deutlich mehr'

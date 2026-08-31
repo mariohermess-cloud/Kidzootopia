@@ -11,7 +11,8 @@
    Ein Kind, das fluessig liest und rot sieht, hoert auf zu lesen. */
 
 import { gipfel, zuordnen, betonteSilbe, hervorgehoben, betonungPruefen,
-         zusammenfassung, glaetten, inDezibel, MINDEST_TAL_DB } from '../js/aussprache.js';
+         zusammenfassung, glaetten, inDezibel, MINDEST_TAL_DB, SCHRITT_STANDARD,
+         schaetzungAktualisieren, naechsterPollAbstand } from '../js/aussprache.js';
 import { silben } from '../js/silben.js';
 
 const SCHRITT = 25;
@@ -22,16 +23,19 @@ const pruefe = (bedingung, text) => {
 };
 
 /* Baut eine Aufnahme aus Silben. Jede Silbe ist ein Lautstaerke-Berg;
-   dazwischen faellt es ab. So sieht echte Sprache in der Huellkurve aus. */
-function sprich(silbenPlan, { rauschen = 0.01 } = {}) {
+   dazwischen faellt es ab. So sieht echte Sprache in der Huellkurve aus.
+   schritt ist die Abtastrate - fuer die meisten Tests hier egal (der Bau-
+   plan skaliert mit), aber fuer "schnelles Lesen" unten entscheidend: eine
+   kurze Pause kann bei grober Abtastung ganz verschwinden. */
+function sprich(silbenPlan, { rauschen = 0.01, schritt = SCHRITT } = {}) {
   const kurve = [];
   const dazu = (ms, wert) => {
-    for (let i = 0; i < Math.round(ms / SCHRITT); i++) kurve.push(wert);
+    for (let i = 0; i < Math.round(ms / schritt); i++) kurve.push(wert);
   };
   dazu(200, rauschen);                                  // Stille am Anfang
   silbenPlan.forEach((s, i) => {
     if (i > 0) dazu(s.pauseMs ?? 40, rauschen + 0.004); // Tal zwischen den Silben
-    const n = Math.max(3, Math.round((s.dauerMs ?? 200) / SCHRITT));
+    const n = Math.max(3, Math.round((s.dauerMs ?? 200) / schritt));
     /* Ein Berg: leise - laut - leise. Der Gipfel liegt in der Mitte. */
     for (let k = 0; k < n; k++) {
       const anteil = Math.sin((k + 0.5) / n * Math.PI);   // 0 → 1 → 0
@@ -70,6 +74,57 @@ const leise = sprich([{ laut: 0.08 }, { laut: 0.08 }, { laut: 0.08 }], { rausche
 const laut  = sprich([{ laut: 0.9 },  { laut: 0.9 },  { laut: 0.9 }],  { rauschen: 0.05 });
 pruefe(gipfel(leise, SCHRITT).length === 3, `leise gesprochen: 3 Silben (${gipfel(leise,SCHRITT).length})`);
 pruefe(gipfel(laut, SCHRITT).length === 3,  `laut gesprochen: 3 Silben (${gipfel(laut,SCHRITT).length})`);
+
+/* --------------------------------------------------------- Schnelles Lesen
+   Gemeldeter Missstand: die Live-Markierung lief bei schnellem, fluessigem
+   Lesen nicht synchron zur Stimme - sie fiel immer weiter zurueck. Ursache
+   war die Abtastrate: bei 25ms Schritten verschwindet die kurze Pause
+   zwischen schnell gesprochenen Silben oft komplett im Glaetten, mehrere
+   Silben verschmelzen dann zu einer einzigen. js/ui.js verwendet deshalb
+   jetzt SCHRITT_STANDARD (10ms) statt 25ms - hier wird das mit genau der
+   Zahl geprueft, die auch im Mikrofon-Code steckt. */
+const schnellPlan = Array.from({ length: 8 }, () => ({ dauerMs: 100, pauseMs: 15 }));
+const schnellFein = sprich(schnellPlan, { schritt: SCHRITT_STANDARD });
+pruefe(gipfel(schnellFein, SCHRITT_STANDARD).length === 8,
+  `schnelles Lesen (100ms je Silbe, 15ms Pause) bei ${SCHRITT_STANDARD}ms Abtastung: ` +
+  `alle 8 Silben gefunden (${gipfel(schnellFein, SCHRITT_STANDARD).length})`);
+
+/* Gegenprobe: genau derselbe Ton, aber mit der alten, groben 25ms-Abtastung
+   gemessen, verschmilzt zu einer Handvoll Silben - das war der Fehler, und
+   so lässt er sich von einer echten Verbesserung unterscheiden. */
+const schnellGrob = sprich(schnellPlan, { schritt: 25 });
+pruefe(gipfel(schnellGrob, 25).length < 8,
+  `Gegenprobe: dieselbe schnelle Sprache verschmilzt bei grober 25ms-Abtastung ` +
+  `sichtbar (${gipfel(schnellGrob, 25).length} statt 8) - zeigt, dass die feinere Abtastung wirklich der Unterschied ist`);
+
+/* ------------------------------------------------- Anpassung der Abfragerate
+   Folgeauftrag: die Live-Markierung soll ihre Abfragerate an das wirklich
+   gemessene Lesetempo anpassen, statt fest zu sein - schnelles Lesen soll
+   öfter abgefragt werden, langsames Lesen seltener (spart Akku, ohne dass
+   sich für ein langsam lesendes Kind je etwas ändert). */
+
+let schaetzungSchnell = 350;
+for (const dt of [90, 95, 100, 90, 105]) schaetzungSchnell = schaetzungAktualisieren(schaetzungSchnell, dt);
+pruefe(schaetzungSchnell < 200,
+  `nach mehreren schnellen Silben (~90-105ms Abstand) sinkt die Schätzung deutlich (${Math.round(schaetzungSchnell)}ms)`);
+pruefe(naechsterPollAbstand(schaetzungSchnell) < 90,
+  `schnelles Lesen ergibt einen Abfrage-Abstand unter dem alten festen Wert von 90ms (${Math.round(naechsterPollAbstand(schaetzungSchnell))}ms)`);
+
+let schaetzungLangsam = 350;
+for (const dt of [600, 650, 580, 620]) schaetzungLangsam = schaetzungAktualisieren(schaetzungLangsam, dt);
+pruefe(schaetzungLangsam > 400,
+  `nach mehreren langsamen Silben (~600ms Abstand) steigt die Schätzung deutlich (${Math.round(schaetzungLangsam)}ms)`);
+pruefe(naechsterPollAbstand(schaetzungLangsam) > 90,
+  `langsames Lesen ergibt einen Abfrage-Abstand über dem alten festen Wert von 90ms (${Math.round(naechsterPollAbstand(schaetzungLangsam))}ms)`);
+
+pruefe(naechsterPollAbstand(1) >= 35, `auch bei absurd kurzer Schätzung wird die Untergrenze nicht unterschritten (${naechsterPollAbstand(1)}ms)`);
+pruefe(naechsterPollAbstand(100000) <= 220, `auch bei absurd langer Schätzung wird die Obergrenze nicht überschritten (${naechsterPollAbstand(100000)}ms)`);
+
+/* Gegenprobe: ohne die Anpassung (fester alter Wert 90ms) wäre der
+   Abfrage-Abstand für schnelles UND langsames Lesen identisch - erst der
+   Unterschied oben zeigt, dass wirklich angepasst wird, nicht nur gerechnet. */
+pruefe(naechsterPollAbstand(schaetzungSchnell) !== naechsterPollAbstand(schaetzungLangsam),
+  'Gegenprobe: schnelles und langsames Lesen ergeben tatsächlich unterschiedliche Abfrage-Abstände');
 
 /* --------------------------------------------------------------- Zuordnung */
 
