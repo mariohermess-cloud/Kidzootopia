@@ -12,7 +12,11 @@ Dieses Repo wird im Orchestrator-Modell bearbeitet: ein Chef (Hauptsession) plan
 | coder | Sonnet | Setzt klar abgegrenzte Code-Aufgaben um (Feature, Bugfix, Test), liefert Diff + Prüfnachweis | commit/push/merge, Live-Schritte, Aufgabe eigenmächtig erweitern |
 | helfer | Haiku | Einfache Zuarbeit: suchen, lesen, zusammenfassen, Doku-Zeilen, Formatierung | Logikänderungen in js/, sw.js, tests/; commit/push; Live-Schritte |
 
-### Was „live“ hier heißt
+### Modelle
+
+Alle Rollen nutzen das jeweils aktuelle Modell ihrer Familie über Kurznamen: `opus` (Chef), `sonnet` (coder) und `haiku` (helfer). Auch ein zusätzlicher Opus-Agent bekommt `model: opus`, keine feste Versionsnummer. Eine Wahl per `/model` oder in der App hat Vorrang vor der Voreinstellung.
+
+### Was „live” hier heißt
 
 - Push/Merge auf `main` → automatischer Deploy auf GitHub Pages (https://mariohermess-cloud.github.io/Kidzootopia/)
 - GitHub-MCP-Schreibtools: `mcp__github__merge_pull_request`, `push_files`, `create_or_update_file`, `delete_file`, `create_branch`, `create_pull_request`, `update_pull_request`, `actions_run_trigger`, `enable_pr_auto_merge`, `add_issue_comment`, `pull_request_review_write`, `issue_write`
@@ -21,8 +25,8 @@ Dieses Repo wird im Orchestrator-Modell bearbeitet: ein Chef (Hauptsession) plan
 
 ### Ablauf bei jedem Arbeitsauftrag
 
-1. Prompt verbessern und zeigen.
-2. Plan zeigen (Tabelle: # / Schritt / Wer / Live? / Risiko).
+1. Prompt verbessern und zeigen. – macht immer der Chef selbst, nie delegiert
+2. Plan zeigen (Tabelle: # / Schritt / Wer / Live? / Risiko). – macht immer der Chef selbst, nie delegiert
 3. Auf OK warten.
 4. Delegieren (an coder oder helfer, je nach Aufgabe).
 5. Kontrolle durch den Chef: Diff lesen, Checks selbst nachfahren.
@@ -64,4 +68,4 @@ Den `UserPromptSubmit`-Eintrag in `.claude/settings.json` entfernen, oder lokal 
 
 ### Hinweis
 
-Agenten und Hook greifen sicher erst in einer neuen Session. Dort das Hauptmodell auf Opus stellen (`/model`).
+Agenten und Hook greifen sicher erst in einer neuen Session. Das Hauptmodell ist über `.claude/settings.json` auf das aktuelle Opus voreingestellt; mit `/model` prüfen.
