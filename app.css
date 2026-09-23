@@ -421,3 +421,16 @@ canvas.mini{width:100%;height:auto;aspect-ratio:1;background:var(--bg);
 .rueckblick-item{padding:10px 0;border-top:1px solid var(--line)}
 .rueckblick-item:first-child{border-top:none}
 .rueckblick-frage{font-weight:700}
+
+/* Eigene Texte: Zuschnitt-Werkzeug (js/ui.js). Griffe groß genug für den
+   Daumen (mind. 32px), touch-action:none verhindert, dass das Ziehen des
+   Rahmens gleichzeitig die Seite scrollt. */
+#zuschnittHuelle{touch-action:none}
+.zuschnitt-griff{touch-action:none;cursor:grab;border:3px solid var(--card)}
+#zuschnittRahmen{touch-action:none;cursor:move}
+
+/* Von der Texterkennung als unsicher gemeldete Wörter: deutlich gelb, mit
+   dunkler Schrift - unabhängig vom Hell-/Dunkelmodus gut lesbar. */
+mark.unsicheres-wort, .lesetext mark{
+  background:#ffe066; color:#221d3a; border-radius:4px; padding:0 2px;
+}

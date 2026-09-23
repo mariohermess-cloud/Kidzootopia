@@ -659,6 +659,37 @@ Zusätzlich gibt es Export und Import als Datei für ein Backup am Rechner.
 
 ---
 
+## Eigene Texte fotografieren
+
+*Eltern → 📸 Eigene Texte* macht aus einer Schulbuchseite oder einem Arbeitsblatt einen
+Lesetext fürs Vorlesen üben – mit denselben Silbenfarben, demselben Lesefenster und derselben
+Mikrofonmessung wie bei den übrigen Texten.
+
+**Ablauf:** Quelle wählen (📷 fotografieren, 🖼️ Bild auswählen oder 📋 Text einfügen/eintippen –
+auf iPhone/iPad geht Letzteres auch über „Live Text“ in der Fotos-App, ganz ohne Foto hier) →
+den Bereich zuschneiden (bei zwei Spalten: erst die eine, mit „➕ Weiteren Bereich aus demselben
+Bild“ danach die andere – der zweite Text wird angehängt) → die Texterkennung läuft, danach
+prüft ein Erwachsener den Text.
+
+**Datenschutz:** Das Foto verlässt nie das Gerät und wird nirgends gespeichert – weder auf einem
+Server noch im Speicher der App. Gespeichert wird ausschließlich der von Ihnen geprüfte Text.
+Die Erkennung selbst läuft vollständig auf dem Gerät (Tesseract.js, Apache-2.0); ein Sprachmodell
+von rund 9 MB wird dafür **einmalig** geladen und danach offline zwischengespeichert (eigener,
+dauerhafter Speicherbereich im Service Worker – der wird beim „Offline-Speicher leeren“ bewusst
+nicht mit gelöscht, sonst müssten die 9 MB nach jeder neuen Fassung erneut geladen werden).
+
+**Prüfschritt:** Wörter, die sich die Texterkennung nicht sicher war, erscheinen gelb hinterlegt
+– bitte kurz nachsehen und im Textfeld berichtigen. Ein falsch erkanntes Wort ist für ein Kind
+mit Leseschwäche besonders verwirrend, deshalb liest hier immer erst ein Erwachsener mit.
+Danach: Titel, Abschnittslänge (1–3 Sätze) und eine Vorschau der fertigen Abschnitte in
+Silbendarstellung.
+
+Beim Kind erscheint unter *Lernen → 📸 Meine Texte* die Liste der gespeicherten Texte. Vor jedem
+Abschnitt gibt es „🔊 Erst anhören“ (das Kind hört gut zu – das ist eine Stärke, die genutzt
+wird), danach wird wie beim normalen Lautlesen bis zu dreimal derselbe Abschnitt geübt.
+
+---
+
 ## Tests
 
 ```bash
@@ -680,6 +711,8 @@ npm run test:englisch     # English Basics: bildbasiert, jede Vokabel deutsch �
 npm run test:tiererkennung # Tiererkennung: alle sechs Insektenarten kommen vor und sind erklärt
 npm run test:strandfunde  # Strandfunde: jedes Bild gehört eindeutig zu genau einem Fund
 npm run test:lesehilfe    # Lesehilfe bei LRS: Einstellungen, Migration, Silbierung ohne Textverlust
+npm run test:texterkennung # Textaufbereitung für OCR: bereinigen, unsichere Wörter, Abschnitte
+npm run test:eigenetexte # Eigene Texte: Speichern, Löschen, Obergrenze, Migration, Umzugs-Code
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
@@ -709,6 +742,8 @@ js/ueberraschung.js   Überraschungsrätsel des Tages: aus dem Kalendertag berec
 js/silben.js          Deutsche Silbentrennung – Grundlage der Silbenfärbung
 js/lesen.js           Lesetexte und Auswertung der Leseflüssigkeit (Tempo, Pausen, Betonung)
 js/lesehilfe.js       Lesehilfe bei Legasthenie/LRS: Einstellungen, CSS-Variablen, Zeilenfenster
+js/texterkennung.js   Texterkennung (OCR) auf dem Gerät – Tesseract.js, nie ein Server
+js/textaufbereitung.js Aus OCR-Rohtext einen Silben-Lesetext machen: bereinigen, Abschnitte
 js/version.js         Fassung, Datum und Änderungsverlauf – die einzige Stelle dafür
 js/kunstanalyse.js    Fachliche Zeichnungsauswertung: Feinmotorik, Entwicklungsstufe,
                       Menschzeichnung (Goodenough/Harris), Kreativität (Torrance)

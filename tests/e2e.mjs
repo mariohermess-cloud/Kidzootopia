@@ -882,6 +882,131 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   console.log('Teaser zeigt danach korrekt "heute schon gelöst" ✅');
 }
 
+// Eigene Texte (Text einfügen, ohne OCR): Eltern-Bereich -> prüfen -> speichern,
+// danach beim Kind unter "Meine Texte" lesen.
+{
+  await bannerWeg(p);
+  await p.click('.nav-btn[data-route="eltern"]');
+  await p.waitForSelector('#zuEigenerText');
+  await p.click('#zuEigenerText');
+  await p.waitForSelector('#neuerText');
+  await p.click('#neuerText');
+  await p.waitForSelector('#eingabeText');
+  await p.click('#eingabeText');
+  await p.waitForSelector('#textEinfuegen');
+  const EINFUEGE_TEXT = 'Die Katze schläft auf dem warmen Sofa. Draußen regnet es leise.';
+  await p.fill('#textEinfuegen', EINFUEGE_TEXT);
+  await p.click('#textUebernehmen');
+  await p.waitForSelector('#pruefText');
+  await p.screenshot({ path: `${S}/et-3-pruefen.png`, fullPage: true });
+  const pruefWert = await p.inputValue('#pruefText');
+  if (!pruefWert.includes('Katze')) throw new Error('Eingefügter Text landet nicht im Prüffeld: ' + pruefWert);
+  const abschnitte = await p.$$eval('#abschnittVorschau .lesetext', els => els.length);
+  if (abschnitte < 1) throw new Error('Keine Abschnittsvorschau nach dem Einfügen');
+  await p.click('#textSpeichern');
+  await p.waitForSelector('[data-loeschen]');
+  console.log('Eigene Texte: Text eingefügt, geprüft und gespeichert ✅');
+
+  // Beim Kind: "Meine Texte" auf der Lernen-Seite, Text auswählen, ersten
+  // Abschnitt ohne Mikrofon lesen, weiter zum nächsten Abschnitt.
+  await p.click('.nav-btn[data-route="lernen"]');
+  await p.waitForSelector('#meineTexte');
+  await p.click('#meineTexte');
+  await p.waitForSelector('[data-text]');
+  await p.click('[data-text]');
+  await p.waitForSelector('#leseStart');
+  const kindSilben = await p.$$eval('#leseText .sil', els => els.length);
+  if (kindSilben < 3) throw new Error('Eigener Text ist im Lesepult kaum in Silben zerlegt');
+  await p.screenshot({ path: `${S}/et-4-lesepult.png`, fullPage: true });
+  await p.click('#ersAnhoeren');           // darf nicht abstürzen, auch ohne Sprachausgabe im Test
+  await p.click('#leseOhne');
+  await p.waitForSelector('#mtWeiter');
+  await p.click('#mtWeiter');              // Durchgang 2 von 3
+  await p.waitForSelector('#leseStart');
+  await p.click('#leseOhne');
+  await p.waitForSelector('#mtWeiter');
+  await p.click('#mtWeiter');              // Durchgang 3 von 3
+  await p.waitForSelector('#leseStart');
+  await p.click('#leseOhne');
+  await p.waitForSelector('#mtWeiter');
+  const weiterText = await p.textContent('#mtWeiter');
+  await p.click('#mtWeiter');              // weiter zum nächsten Abschnitt oder fertig
+  console.log(`Meine Texte: drei Durchgänge gelesen, danach "${weiterText.trim()}" ✅`);
+  await p.waitForSelector('#leseStart, [data-text]', { timeout: 6000 });
+  await p.click('.nav-btn[data-route="lernen"]').catch(() => {});
+  await p.waitForSelector('#mission');
+}
+
+// Eigene Texte mit echter Texterkennung (OCR): ein im Test erzeugtes Bild mit
+// einem deutschen Satz in großer Schrift hochladen, zuschneiden, erkennen
+// lassen und prüfen, dass (a) der Satz bis auf höchstens 2 Zeichen erkannt
+// wurde und (b) dabei ausschließlich localhost angefragt wurde - die
+// Texterkennung läuft vollständig auf dem Gerät (siehe js/texterkennung.js).
+{
+  const OCR_SATZ = 'Der Hund spielt froh im Garten';
+  const bildBase64 = await p.evaluate(satz => {
+    const c = document.createElement('canvas');
+    c.width = 900; c.height = 220;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.fillStyle = '#000000'; ctx.font = 'bold 54px sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(satz, 20, c.height / 2);
+    return c.toDataURL('image/png').split(',')[1];
+  }, OCR_SATZ);
+
+  await p.click('.nav-btn[data-route="eltern"]');
+  await p.waitForSelector('#zuEigenerText');
+  await p.click('#zuEigenerText');
+  await p.waitForSelector('#neuerText');
+  await p.click('#neuerText');
+  await p.waitForSelector('#eingabeDatei', { state: 'attached' });
+  await p.setInputFiles('#eingabeDatei', {
+    name: 'testsatz.png', mimeType: 'image/png', buffer: Buffer.from(bildBase64, 'base64')
+  });
+  await p.waitForSelector('#zuschnittWeiter', { timeout: 8000 });
+  await p.screenshot({ path: `${S}/et-1-zuschnitt.png`, fullPage: true });
+
+  // Nur externe Netzwerkanfragen zählen als Verstoß - localhost (der eigene
+  // Testserver) liefert die Vendor-Dateien der Texterkennung.
+  const fremdeAnfragen = [];
+  const beobachten = req => {
+    try {
+      const url = new URL(req.url());
+      if (url.hostname !== 'localhost' && url.hostname !== '127.0.0.1') fremdeAnfragen.push(req.url());
+    } catch {}
+  };
+  p.on('request', beobachten);
+  await p.click('#zuschnittWeiter');       // ganzes Bild übernehmen (Standard-Zuschnitt)
+  await p.waitForSelector('#pruefText', { timeout: 90000 });
+  p.off('request', beobachten);
+  await p.screenshot({ path: `${S}/et-2-erkennung.png`, fullPage: true });
+
+  if (fremdeAnfragen.length)
+    throw new Error('Texterkennung hat externe Adressen angefragt: ' + fremdeAnfragen.join(', '));
+  console.log('Texterkennung: ausschließlich localhost angefragt (Bild verlässt das Gerät nicht) ✅');
+
+  const erkannterText = (await p.inputValue('#pruefText')).replace(/\s+/g, ' ').trim();
+  const levenshtein = (a, b) => {
+    const m = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+    for (let j = 0; j <= b.length; j++) m[0][j] = j;
+    for (let i = 1; i <= a.length; i++)
+      for (let j = 1; j <= b.length; j++)
+        m[i][j] = a[i-1] === b[j-1] ? m[i-1][j-1]
+          : 1 + Math.min(m[i-1][j], m[i][j-1], m[i-1][j-1]);
+    return m[a.length][b.length];
+  };
+  const abstand = levenshtein(erkannterText.toLowerCase(), OCR_SATZ.toLowerCase());
+  console.log(`Texterkennung: erwartet "${OCR_SATZ}", erkannt "${erkannterText}" (Abstand ${abstand})`);
+  if (abstand > 2) throw new Error(`OCR-Ergebnis weicht zu stark ab (Abstand ${abstand}): "${erkannterText}"`);
+  console.log('Texterkennung: Satz bis auf höchstens 2 Zeichen erkannt ✅');
+
+  await p.click('#pruefenAbbrechen');
+  await p.waitForSelector('#neuerText');
+  await p.click('.nav-btn[data-route="lernen"]');
+  await p.waitForSelector('#mission');
+}
+
 // Notausgang gegen die festgebissene alte Fassung: Offline-Speicher leeren.
 // Entscheidend ist die Zusicherung im Text daneben – der Fortschritt muss das ueberleben.
 await p.click('.nav-btn[data-route="eltern"]');
