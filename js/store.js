@@ -4,6 +4,7 @@
 import { punkteFuer } from './punkte.js';
 import { TALENTE, WEGE, ZIELE, ABZEICHEN, ETAPPEN } from './data.js';
 import { auswerten } from './talenttest.js';
+import { LRS_VOREINSTELLUNG, normalisiere as lesehilfeNormalisieren } from './lesehilfe.js';
 
 const KEY = 'kidzootopia.v1';
 const heute = () => new Date().toISOString().slice(0,10);
@@ -109,10 +110,14 @@ function migriere(p) {
   p.stats.letzterTag      ??= null;
   p.stats.tage            ??= {};
   p.ueberraschung ||= { letzte: null, serie: 0, serieBest: 0 };
+  /* Lesehilfe bei Legasthenie/LRS – pro Profil einstellbar (siehe js/lesehilfe.js).
+     Ganz alte Profile kannten das Feld noch gar nicht, deshalb normalisiert
+     werden statt nur ??= – so ergänzen sich auch fehlende Einzelfelder. */
+  p.lesehilfe = lesehilfeNormalisieren(p.lesehilfe);
   return p;
 }
 
-export function neuesProfil({ name, avatar, klasse, etappe }) {
+export function neuesProfil({ name, avatar, klasse, etappe, lrs }) {
   const stufe = Number(etappe) || 1;
   const p = migriere({
     id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
@@ -121,10 +126,26 @@ export function neuesProfil({ name, avatar, klasse, etappe }) {
     klasse: Number(klasse) || [3, 6, 9, 12, 13][stufe - 1],
     erstellt: heute(), testGemacht: false, testDatum: null
   });
+  /* Wurde beim Anlegen "Mein Kind tut sich mit dem Lesen schwer" angehakt,
+     startet die Lesehilfe direkt mit der LRS-Voreinstellung, und Vorlesen
+     wird gleich mit eingeschaltet – beides lässt sich im Eltern-Bereich
+     jederzeit wieder ändern. */
+  if (lrs) {
+    p.lesehilfe = { ...LRS_VOREINSTELLUNG };
+    p.vorlesen = true;
+  }
   db.profile.push(p);
   db.aktiv = p.id;
   speichern();
   return p;
+}
+
+/* Lesehilfe-Einstellungen ändern (Eltern-Bereich) – nur die übergebenen
+   Felder werden angepasst, der Rest bleibt wie er war. */
+export function setzeLesehilfe(profil, teil) {
+  profil.lesehilfe = lesehilfeNormalisieren({ ...profil.lesehilfe, ...teil });
+  speichern();
+  return profil.lesehilfe;
 }
 
 export function loescheProfil(id) {

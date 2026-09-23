@@ -210,6 +210,22 @@ stellt eine Etappe höher.
      **keine Diagnose**: Eine Lese-Rechtschreib-Schwäche erkennt man nicht an einer Tonaufnahme.
      Beides steht so auch im Eltern-Bereich.
 
+   **Lesehilfe bei Legasthenie/LRS** 📖 – *pro Kind einstellbar, im Eltern-Bereich*
+   Ein Kind, das stockend liest, Wörter auslässt oder mit ähnlich aussehenden/klingenden
+   Wörtern vertauscht, braucht vor allem eins: einen leichter lesbaren Text, nicht eine andere
+   Schrift. Belegt wirkt vor allem zusätzlicher **Buchstabenabstand** (Zorzi u. a. 2012, PNAS –
+   verbessert Lesetempo und -genauigkeit bei Legasthenie messbar). Dazu kommen größere Schrift,
+   mehr Wort- und Zeilenabstand, die **Silbenmethode** (abwechselnd blau/rot gefärbte Silben mit
+   Silbenbögen, wie in der Grundschulfibel) und ein **Lesefenster**, das beim Vorlesen üben nur
+   die gerade gelesene Zeile zeigt, während der Rest zurücktritt. Auf Wunsch werden auch
+   Aufgabentexte und Auswahl-Antworten silbenweise eingefärbt. Bewusst **nicht** enthalten: eine
+   eigene „Legasthenie-Schrift" wie OpenDyslexic – dafür zeigen Studien keinen Vorteil, und es
+   müsste zusätzlich etwas nachgeladen werden. Beim Anlegen eines Kindes lässt sich die Lesehilfe
+   direkt mit einer sinnvollen Voreinstellung einschalten; im Eltern-Bereich steht dieselbe
+   Einstellung mit einer Live-Vorschau, jederzeit änderbar. **Wichtig:** Die App ersetzt keine
+   LRS-Diagnostik oder -Förderung – bei Verdacht hilft die schulische Beratungsstelle oder eine
+   Fachdiagnostik weiter.
+
 10. **Schmierblatt an jeder Aufgabe** 📝 – *die Nebenrechnung zum Mitmalen*
    „Zeichne eine Skizze" ist die älteste und robusteste Problemlöse-Strategie überhaupt – bei
    Polya ein eigener Schritt, in der Grundschule der übliche Weg von der Sprache zur Rechnung.
@@ -663,6 +679,7 @@ npm run test:ueberraschung # Rätsel des Tages: für alle gleich, immer rein rec
 npm run test:englisch     # English Basics: bildbasiert, jede Vokabel deutsch ≠ englisch
 npm run test:tiererkennung # Tiererkennung: alle sechs Insektenarten kommen vor und sind erklärt
 npm run test:strandfunde  # Strandfunde: jedes Bild gehört eindeutig zu genau einem Fund
+npm run test:lesehilfe    # Lesehilfe bei LRS: Einstellungen, Migration, Silbierung ohne Textverlust
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
@@ -691,6 +708,7 @@ js/rennen.js          Renn-Modus: Zeit-Punkte-Kurve der Runde, Geisterrennen geg
 js/ueberraschung.js   Überraschungsrätsel des Tages: aus dem Kalendertag berechnet, für alle gleich
 js/silben.js          Deutsche Silbentrennung – Grundlage der Silbenfärbung
 js/lesen.js           Lesetexte und Auswertung der Leseflüssigkeit (Tempo, Pausen, Betonung)
+js/lesehilfe.js       Lesehilfe bei Legasthenie/LRS: Einstellungen, CSS-Variablen, Zeilenfenster
 js/version.js         Fassung, Datum und Änderungsverlauf – die einzige Stelle dafür
 js/kunstanalyse.js    Fachliche Zeichnungsauswertung: Feinmotorik, Entwicklungsstufe,
                       Menschzeichnung (Goodenough/Harris), Kreativität (Torrance)

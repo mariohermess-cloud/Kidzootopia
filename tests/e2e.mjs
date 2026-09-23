@@ -281,6 +281,54 @@ for (const [r,f] of [['talente','7-talente'],['wege','8-wege'],['eltern','9-elte
   console.log('Fassung im Eltern-Bereich sichtbar: Version ' + NUMMER + ' ✅');
 }
 
+// Lesehilfe bei Legasthenie/LRS: im Eltern-Bereich einschalten, Live-Vorschau
+// und Silbenfärbung in einer echten Aufgabe prüfen.
+{
+  // Erst die Schriftgröße OHNE Lesehilfe messen - Vergleichswert für unten.
+  await p.click('.nav-btn[data-route="lernen"]');
+  await p.waitForSelector('#mission');
+  await p.click('[data-fach="deutsch"]');
+  await p.waitForSelector('.task');
+  const taskGroesseOhne = await p.$eval('.task', el => parseFloat(getComputedStyle(el).fontSize));
+  await p.click('#raus');
+  await p.waitForSelector('#mission');
+
+  await p.click('.nav-btn[data-route="eltern"]');
+  await p.waitForSelector('#lhSchalter');
+  await p.click('#lhSchalter');                          // schaltet die LRS-Voreinstellung ein
+  await p.waitForSelector('body.lh-an');
+  await p.waitForSelector('#lhBoegen');
+  const vorschauSilben = await p.$$eval('.card:has(#lhSchalter) .lesetext .sil', els => els.length);
+  if (vorschauSilben < 3) throw new Error('Live-Vorschau der Lesehilfe zeigt keine Silben');
+  await p.screenshot({ path: `${S}/lh-1-eltern.png`, fullPage: true });
+  /* Ausschnitt NUR der Vorschau (nicht die ganze Eltern-Seite) - der Chef
+     wollte gezielt sehen, wie die Vorschau selbst aussieht. */
+  const vorschauKasten = await p.$('.card:has(#lhSchalter) .lesetext');
+  await vorschauKasten.screenshot({ path: `${S}/lh-4-vorschau.png` });
+  console.log(`Lesehilfe: Live-Vorschau zeigt ${vorschauSilben} eingefärbte Silben ✅`);
+
+  await p.click('.nav-btn[data-route="lernen"]');
+  await p.waitForSelector('#mission');
+  await p.click('[data-fach="deutsch"]');
+  await p.waitForSelector('.task');
+  const aufgabenSilben = await p.$$eval('.task .sil', els => els.length);
+  if (aufgabenSilben < 1) throw new Error('Aufgabentext ist trotz eingeschalteter Lesehilfe nicht in Silben gefärbt');
+  const angezeigterText = (await p.textContent('.task')).trim();
+  await p.screenshot({ path: `${S}/lh-2-aufgabe.png`, fullPage: true });
+  console.log(`Lesehilfe: Aufgabentext in ${aufgabenSilben} Silben gefärbt, Text erhalten: "${angezeigterText.slice(0, 40)}…" ✅`);
+
+  /* Schriftgröße "groß" (LRS-Voreinstellung: groesse:2) muss GRÖSSER sein
+     als vorher, nicht kleiner - jede Fläche hat ihre eigene Grundgröße
+     (siehe app.css), --lese-groesse multipliziert darauf statt auf 1em. */
+  const taskGroesseMit = await p.$eval('.task', el => parseFloat(getComputedStyle(el).fontSize));
+  if (!(taskGroesseMit > taskGroesseOhne))
+    throw new Error(`Schrift wird mit Lesehilfe "groß" nicht größer: ${taskGroesseOhne}px -> ${taskGroesseMit}px`);
+  console.log(`Lesehilfe: .task-Schrift wächst mit "groß" (${taskGroesseOhne}px -> ${taskGroesseMit}px) ✅`);
+
+  await p.click('#raus');
+  await p.waitForSelector('#mission');
+}
+
 // Erwachsenen-Etappe: höhere Ziele müssen erscheinen und lösbar sein
 await p.click('.nav-btn[data-route="eltern"]');
 await p.waitForSelector('#etappeWahl');
@@ -408,6 +456,19 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   const frage = await p.textContent('.task');
   if (!/Silbe/i.test(frage)) throw new Error('Silbenaufgabe sieht falsch aus: ' + frage);
   console.log('Silbenaufgabe erscheint ✅');
+  /* Lesehilfe ist seit dem Block oben eingeschaltet (aufgabenSilben: true) -
+     der Aufgabentext wird also über silbenHtml() gerendert. Manche Fragen
+     dieses Ziels enthalten einen echten Zeilenumbruch ("…Schule\nWie viele
+     Silben…"); silbenHtml() darf den nicht zu einem Leerzeichen verschmelzen
+     (siehe .task{white-space:pre-wrap}). Exakter, NICHT normalisierter
+     Vergleich mit dem tatsächlichen Aufgabentext. */
+  const rohesFrage = await p.evaluate(() => window.__aufgabe?.frage || null);
+  if (rohesFrage?.includes('\n')) {
+    const genauerText = await p.$eval('.task', el => el.textContent);
+    if (genauerText !== rohesFrage)
+      throw new Error(`Zeilenumbruch geht bei der Silbenfärbung verloren: "${JSON.stringify(rohesFrage)}" -> "${JSON.stringify(genauerText)}"`);
+    console.log('Lesehilfe: Zeilenumbruch im Aufgabentext bleibt exakt erhalten ✅');
+  }
   await loeseAufgabe(p);
   await p.waitForSelector('#weiter');
   /* Zu jeder bewerteten Antwort muss ein Kommentar erscheinen. */
@@ -715,6 +776,13 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   if (!beiseite) throw new Error('Begleiter tritt beim Vorlesen nicht zur Seite');
   await p.screenshot({ path: `${S}/10-lesepult.png`, fullPage: true });
   if (silbenGesamt < 20) throw new Error('Lesetext zu wenig zerlegt');
+  /* Lesehilfe ist von oben noch eingeschaltet: Lesefenster-Knöpfe da,
+     Silben blau/rot mit Bögen (siehe .lh-fenster/.lh-blaurot/.lh-boegen). */
+  if (!(await p.$('#leseZeileZurueck')) || !(await p.$('#leseZeileVor')))
+    throw new Error('Lesefenster-Knöpfe fehlen trotz eingeschalteter Lesehilfe');
+  await p.click('#leseZeileVor');
+  await p.screenshot({ path: `${S}/lh-3-lesepult.png`, fullPage: true });
+  console.log('Lesehilfe: Lesefenster-Knöpfe im Lesepult vorhanden ✅');
   /* Die Faerbung darf keinen Buchstaben verlieren. */
   const originale = await p.evaluate(async () => {
     const L = await import('./js/lesen.js');

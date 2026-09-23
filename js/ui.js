@@ -23,6 +23,7 @@ import { pruefe } from './generators.js';
 import { radar } from './chart.js';
 import * as Rennen from './rennen.js';
 import * as Ueberraschung from './ueberraschung.js';
+import * as Lesehilfe from './lesehilfe.js';
 
 const view = () => document.getElementById('view');
 export const esc = s => String(s).replace(/[&<>"']/g, c =>
@@ -43,12 +44,26 @@ export function zeige(neu, daten) {
   const chrome = !!p && !['start','test','session'].includes(neu);
   nav.hidden = !chrome; top.hidden = !p || neu === 'start';
   if (p) kopfzeile(p);
+  lesehilfeAnwenden(p);
   if (p && neu !== 'start') { Avatar.aufbauen(p.avatar); Avatar.umschauen(); }
   else Avatar.verstecken();
   window.scrollTo(0,0);
   ({ start:screenStart, lernen:screenLernen, talente:screenTalente, wege:screenWege,
      eltern:screenEltern, test:screenTest, session:screenSession, profile:screenProfile,
      galerie:screenGalerie, ueberraschung:screenUeberraschung }[neu] || screenLernen)(p, daten);
+}
+
+/* Lesehilfe bei Legasthenie/LRS auf das aktive Profil anwenden: CSS-Variablen
+   am Wurzelelement, Body-Klassen (siehe app.css und js/lesehilfe.js). Ohne
+   Profil oder mit ausgeschalteter Lesehilfe: alle Klassen wieder weg – sonst
+   bliebe beim Profilwechsel die Einstellung des vorigen Kindes hängen. */
+const LH_KLASSEN_ALLE = ['lh-an', 'lh-blaurot', 'lh-boegen', 'lh-fenster'];
+function lesehilfeAnwenden(p) {
+  const wurzel = document.documentElement;
+  const vars = Lesehilfe.cssVariablen(p?.lesehilfe);
+  Object.entries(vars).forEach(([k, v]) => wurzel.style.setProperty(k, v));
+  const gewuenscht = new Set(p ? Lesehilfe.klassen(p.lesehilfe) : []);
+  LH_KLASSEN_ALLE.forEach(k => document.body.classList.toggle(k, gewuenscht.has(k)));
 }
 
 function kopfzeile(p) {
@@ -96,6 +111,13 @@ function screenStart() {
         ${AVATARE.map((a,i)=>`<button class="avatar-btn ${i===0?'sel':''}" data-av="${a}"
           style="${i===0?'border-color:var(--brand)':''}">${a}</button>`).join('')}
       </div>
+      <label class="row" style="align-items:flex-start;gap:10px;margin-bottom:14px">
+        <input type="checkbox" id="nLrs" style="width:22px;height:22px;margin-top:2px">
+        <span>📖 Mein Kind tut sich mit dem Lesen schwer (Legasthenie / LRS) – Lesehilfe einschalten</span>
+      </label>
+      <p class="muted small" style="margin-top:-8px">Schaltet größere Schrift, mehr Buchstaben-
+        und Zeilenabstand, farbig abwechselnde Silben und ein Lesefenster ein – alles lässt sich
+        später im Eltern-Bereich einzeln anpassen oder wieder ausschalten.</p>
       <button class="btn" id="nAnlegen">Profil anlegen</button>
     </div>
     ${umgebung().standalone ? '' : installHtml()}
@@ -161,7 +183,8 @@ function screenStart() {
   view().querySelector('#nAnlegen').onclick = () => {
     const name = view().querySelector('#nName').value;
     if (!name.trim()) { view().querySelector('#nName').focus(); return; }
-    S.neuesProfil({ name, avatar: gewaehlt, etappe: view().querySelector('#nEtappe').value });
+    S.neuesProfil({ name, avatar: gewaehlt, etappe: view().querySelector('#nEtappe').value,
+      lrs: view().querySelector('#nLrs').checked });
     zeige('test');
   };
 }
@@ -171,7 +194,8 @@ function screenProfile() {
     <div class="card">
       ${S.alleProfile().map(p => `<div class="row spread" style="padding:10px 0;border-bottom:1px solid var(--line)">
         <div class="row"><span style="font-size:26px">${p.avatar}</span>
-          <div><b>${esc(p.name)}</b><div class="muted small">${S.etappeVon(p).emoji} ${S.etappeVon(p).name} · ${p.stats.aufgabenGesamt} Aufgaben</div></div></div>
+          <div><b>${esc(p.name)}</b><div class="muted small">${S.etappeVon(p).emoji} ${S.etappeVon(p).name} · ${p.stats.aufgabenGesamt} Aufgaben
+            ${p.lesehilfe?.an ? ' · <span class="pill grey">📖 Lesehilfe</span>' : ''}</div></div></div>
         <div class="row">
           <button class="btn small ghost" data-use="${p.id}">wählen</button>
           <button class="btn small danger" data-del="${p.id}">löschen</button>
@@ -291,6 +315,93 @@ function leseProfilKarte(p) {
 }
 
 
+
+/* Lesehilfe bei Legasthenie/LRS: Hauptschalter, Einzel-Einstellungen und eine
+   Live-Vorschau. Die Vorschau braucht keine eigene Verkabelung – sie steckt
+   im ganz normalen Textfluss und übernimmt deshalb automatisch dieselben
+   Body-Klassen und CSS-Variablen, die lesehilfeAnwenden() gerade gesetzt hat. */
+const LH_SATZ = 'Die Sonnenblume wächst im Garten.';
+
+function lhSegment(feld, optionen, aktuell) {
+  return `<div class="row wrap" style="margin-bottom:12px">${optionen.map(([wert, text]) =>
+    `<button class="btn small ${wert === aktuell ? '' : 'ghost'}" data-lh-feld="${feld}" data-lh-wert="${wert}"
+       style="flex:1;min-width:90px">${esc(text)}</button>`).join('')}</div>`;
+}
+
+function lesehilfeKarte(p) {
+  const lh = Lesehilfe.normalisiere(p.lesehilfe);
+  return `
+    <div class="card">
+      <h3>📖 Lesehilfe (Legasthenie / LRS)</h3>
+      <p class="muted small">Für Kinder, die stockend lesen, Wörter auslassen oder mit ähnlich
+        aussehenden Wörtern vertauschen: größere Schrift, mehr Abstand zwischen Buchstaben und
+        Wörtern (das hilft nach Studien am meisten), mehr Zeilenabstand, abwechselnd blau/rot
+        gefärbte Silben mit Silbenbögen wie in der Fibel, und ein Lesefenster, das beim Vorlesen
+        nur die gerade gelesene Zeile zeigt.</p>
+      <button class="btn ${lh.an ? '' : 'ghost'}" id="lhSchalter">
+        ${lh.an ? '📖 Lesehilfe ist an' : '📕 Lesehilfe einschalten'}</button>
+      ${lh.an ? `
+        <div style="margin-top:16px">
+          <p class="small" style="font-weight:700;margin-bottom:6px">Schriftgröße</p>
+          ${lhSegment('groesse', [[1,'normal'],[2,'groß'],[3,'sehr groß']], lh.groesse)}
+          <p class="small" style="font-weight:700;margin-bottom:6px">Abstand zwischen Buchstaben &amp; Wörtern</p>
+          ${lhSegment('abstand', [[0,'normal'],[1,'weit'],[2,'sehr weit']], lh.abstand)}
+          <p class="small" style="font-weight:700;margin-bottom:6px">Zeilenabstand</p>
+          ${lhSegment('zeile', [[1,'normal'],[2,'weit']], lh.zeile)}
+          <p class="small" style="font-weight:700;margin-bottom:6px">Silbenfarben</p>
+          ${lhSegment('farben', [['wechsel','Tinte/Marke (wie bisher)'],['blaurot','Blau/Rot']], lh.farben)}
+          <label class="row" style="margin-bottom:10px">
+            <input type="checkbox" id="lhBoegen" ${lh.boegen ? 'checked' : ''} style="width:22px;height:22px">
+            <span>Silbenbögen unter jeder Silbe</span>
+          </label>
+          <label class="row" style="margin-bottom:10px">
+            <input type="checkbox" id="lhFenster" ${lh.fenster ? 'checked' : ''} style="width:22px;height:22px">
+            <span>Lesefenster beim Vorlesen üben (nur die aktuelle Zeile hervorheben)</span>
+          </label>
+          <label class="row" style="margin-bottom:4px">
+            <input type="checkbox" id="lhAufgabenSilben" ${lh.aufgabenSilben ? 'checked' : ''} style="width:22px;height:22px">
+            <span>Auch Aufgabentexte in Silben einfärben</span>
+          </label>
+          <p class="small" style="font-weight:700;margin:16px 0 6px">Live-Vorschau</p>
+          <div class="lesetext" style="font-weight:700">${silbenHtml(LH_SATZ)}</div>
+        </div>` : ''}
+      <p class="small muted" style="margin-top:12px">
+        Die App ersetzt keine LRS-Diagnostik oder -Förderung – bei Verdacht auf eine
+        Lese-Rechtschreib-Schwäche hilft die schulische Beratungsstelle oder eine Fachdiagnostik
+        weiter. Diese Einstellungen machen Texte nur leichter lesbar.</p>
+    </div>`;
+}
+
+function lesehilfeVerdrahten(p) {
+  const schalter = view().querySelector('#lhSchalter');
+  if (!schalter) return;
+  schalter.onclick = () => {
+    const lh = Lesehilfe.normalisiere(p.lesehilfe);
+    /* Beim Einschalten die LRS-Voreinstellung übernehmen, falls die Lesehilfe
+       noch nie eingeschaltet oder angepasst wurde (Standardwerte). */
+    const nochNieAngepasst = JSON.stringify({ ...lh, an: true }) ===
+      JSON.stringify({ ...Lesehilfe.STANDARD, an: true });
+    S.setzeLesehilfe(p, lh.an ? { an: false }
+      : (nochNieAngepasst ? Lesehilfe.LRS_VOREINSTELLUNG : { an: true }));
+    zeige('eltern');
+  };
+  view().querySelectorAll('[data-lh-feld]').forEach(b => b.onclick = () => {
+    const feld = b.dataset.lhFeld;
+    let wert = b.dataset.lhWert;
+    if (feld !== 'farben') wert = Number(wert);
+    S.setzeLesehilfe(p, { [feld]: wert });
+    zeige('eltern');
+  });
+  view().querySelector('#lhBoegen')?.addEventListener('change', e => {
+    S.setzeLesehilfe(p, { boegen: e.target.checked }); zeige('eltern');
+  });
+  view().querySelector('#lhFenster')?.addEventListener('change', e => {
+    S.setzeLesehilfe(p, { fenster: e.target.checked }); zeige('eltern');
+  });
+  view().querySelector('#lhAufgabenSilben')?.addEventListener('change', e => {
+    S.setzeLesehilfe(p, { aufgabenSilben: e.target.checked }); zeige('eltern');
+  });
+}
 
 /* Wo greift das Kind zum Schmierblatt? Kein Gütesiegel in beide Richtungen –
    viel Malen ist nicht besser als wenig, es zeigt nur den Zugang. */
@@ -740,7 +851,7 @@ function schmierblatt(a, host) {
      mehr die Silbe, sondern den Zufall.
    Ausserdem wird jedes Wort zusammengehalten, damit keine Silbe allein am
    Zeilenende haengt. */
-function silbenHtml(text) {
+export function silbenHtml(text) {
   const stuecke = textInSilben(text);
   let html = '', wort = '', n = 0, nummer = 0;
   const wortSchliessen = () => {
@@ -750,14 +861,23 @@ function silbenHtml(text) {
   for (const s of stuecke) {
     if (s.typ === 'silbe') {
       /* Jede Silbe bekommt eine laufende Nummer. Damit lässt sie sich während
-         des Lesens einzeln hervorheben und danach einzeln einfärben. */
-      wort += `<span class="sil s${n++ % 2}" data-sil="${nummer++}">${esc(s.text)}</span>`;
+         des Lesens einzeln hervorheben und danach einzeln einfärben.
+         Ein Silbenbogen (Lesehilfe) ergibt nur Sinn, wenn die "Silbe" auch
+         wirklich einen Buchstaben enthält - sonst bekämen ein Notenzeichen
+         oder eine einzelne Ziffer in einer Zahlenantwort einen Bogen, der
+         nichts silbisch trennt (Klasse "nobogen" verhindert das in app.css). */
+      const hatBuchstabe = /\p{L}/u.test(s.text);
+      wort += `<span class="sil s${n++ % 2}${hatBuchstabe ? '' : ' nobogen'}" data-sil="${nummer++}">${esc(s.text)}</span>`;
       continue;
     }
     /* Wortende heisst nur: Farbwechsel von vorn. Geschlossen wird erst beim
        Leerzeichen - sonst faellt ein Punkt allein auf die naechste Zeile. */
     if (s.typ === 'wortende') { n = 0; continue; }
-    if (/^\s+$/.test(s.text)) { wortSchliessen(); html += ' '; continue; }
+    /* Leerraum unveraendert uebernehmen (auch Zeilenumbrueche!) - sonst geht
+       z. B. bei "…Silben: Schu-le\nWie viele…" der Zeilenumbruch verloren
+       und aus zwei Zeilen wird eine, die sich seltsam liest. esc() macht
+       daraus kein HTML-Sonderzeichen, ein "\n" bleibt ein echtes "\n". */
+    if (/^\s+$/.test(s.text)) { wortSchliessen(); html += esc(s.text); continue; }
     /* Satzzeichen gehoeren an das Wort daneben, nie auf eine eigene Zeile. */
     wort += `<span class="zei">${esc(s.text)}</span>`;
   }
@@ -830,6 +950,7 @@ function aufnahme() {
 
 function lesepult(p, a, bereich, fertig) {
   const text = a.lesetext;
+  const fensterAn = !!(p.lesehilfe?.an && p.lesehilfe?.fenster);
   bereich.innerHTML = `
     <div class="lesepult">
       <div class="row spread small muted" style="margin-bottom:8px">
@@ -837,6 +958,10 @@ function lesepult(p, a, bereich, fertig) {
         <span id="leseUhr">0,0 s</span>
       </div>
       <div id="leseText" class="lesetext">${silbenHtml(text)}</div>
+      ${fensterAn ? `<div class="lesefenster-nav">
+        <button class="btn ghost small" id="leseZeileZurueck">⬆︎ Zeile zurück</button>
+        <button class="btn ghost small" id="leseZeileVor">Nächste Zeile ⬇︎</button>
+      </div>` : ''}
       <div id="pegel" class="pegel"><i></i></div>
       <div id="leseHinweis" class="small muted" style="margin-top:10px"></div>
       <div class="row wrap" style="margin-top:12px">
@@ -851,7 +976,49 @@ function lesepult(p, a, bereich, fertig) {
   const zeigeHinweis = t => bereich.querySelector('#leseHinweis').innerHTML = t;
   const balken = bereich.querySelector('#pegel').firstElementChild;
 
+  /* Lesefenster: nur die Zeile mit der aktuellen Silbe ist klar zu lesen
+     (siehe .lh-fenster in app.css), der Rest tritt zurück. Zeilen werden aus
+     den tatsächlichen offsetTop-Werten der Wörter gebildet – bei einer
+     Größenänderung (Drehen des Geräts, andere Schriftgröße) neu berechnet. */
+  let woerterZeilen = [];
+  const zeilenNeuBerechnen = () => {
+    if (!fensterAn) return;
+    const woerter = [...bereich.querySelectorAll('#leseText .wort')];
+    const tops = woerter.map(w => w.offsetTop);
+    const zeilen = Lesehilfe.zeilenGruppieren(tops);
+    woerterZeilen = woerter.map((w, i) => ({ el: w, zeile: zeilen[i] }));
+  };
+  let aktiveZeile = 0;
+  const zeileZeigen = z => {
+    if (!fensterAn) return;
+    aktiveZeile = Math.max(0, z);
+    woerterZeilen.forEach(w => w.el.classList.toggle('zeile-aktiv', w.zeile === aktiveZeile));
+  };
+  /* Robust abmelden: Wird der Lesepult-Bereich verlassen (✕ Beenden, ein
+     Mikrofon-Fehler, Navigation) OHNE dass einer der bekannten Ausgänge
+     unten durchlaufen wird, bliebe sonst ein Resize-Listener für immer
+     angemeldet. Der Listener meldet sich deshalb selbst ab, sobald der
+     Lesetext nicht mehr im Dokument hängt. */
+  const zeilenNeuBerechnenSicher = () => {
+    if (!bereich.isConnected) { window.removeEventListener('resize', zeilenNeuBerechnenSicher); return; }
+    zeilenNeuBerechnen();
+  };
+  if (fensterAn) {
+    zeilenNeuBerechnen();
+    zeileZeigen(0);
+    window.addEventListener('resize', zeilenNeuBerechnenSicher);
+    /* Antippen einer Zeile setzt das Fenster dorthin – auch ohne Mikrofon. */
+    bereich.querySelector('#leseText').addEventListener('click', e => {
+      const wort = e.target.closest('.wort');
+      const treffer = woerterZeilen.find(w => w.el === wort);
+      if (treffer) zeileZeigen(treffer.zeile);
+    });
+    bereich.querySelector('#leseZeileZurueck').onclick = () => zeileZeigen(aktiveZeile - 1);
+    bereich.querySelector('#leseZeileVor').onclick = () => zeileZeigen(aktiveZeile + 1);
+  }
+
   bereich.querySelector('#leseOhne').onclick = () => {
+    window.removeEventListener('resize', zeilenNeuBerechnenSicher);
     /* Ohne Mikrofon zählt nur, dass gelesen wurde – keine Messung, keine Zahlen. */
     fertig(null, { ohneMikro: true });
   };
@@ -909,6 +1076,11 @@ function lesepult(p, a, bereich, fertig) {
       const wo = Math.min(bisher, wieVieleSilben) - 1;
       felder.forEach((f, i) => f.classList.toggle('jetzt', i === wo));
       if (wo >= 0 && felder[wo]) felder[wo].scrollIntoView({ block:'nearest', behavior:'smooth' });
+      if (fensterAn && wo >= 0 && felder[wo]) {
+        const wort = felder[wo].closest('.wort');
+        const treffer = woerterZeilen.find(w => w.el === wort);
+        if (treffer) zeileZeigen(treffer.zeile);
+      }
 
       if (wo !== letzteWo && wo >= 0) {
         if (letzteWo >= 0) {
@@ -930,6 +1102,7 @@ function lesepult(p, a, bereich, fertig) {
       laeuftNoch = false;
       auf.stopp();
       felder.forEach(f => f.classList.remove('jetzt'));
+      window.removeEventListener('resize', zeilenNeuBerechnenSicher);
       fertig(auf.huellkurve, { schrittMs: SCHRITT_MS });
     };
   };
@@ -1636,6 +1809,11 @@ function screenSession(p, opts = {}) {
     const punkte = Array.from({length: sess.laenge}, (_,i) =>
       `<i class="${status[i] || (i===sess.index?'now':'')}"></i>`).join('');
     const hatHoertext = !!a.hoertext;
+    /* Lesehilfe: Aufgabentext (und Auswahl-Antworten aus Wörtern) silbenweise
+       einfärben, wenn im Eltern-Bereich eingeschaltet. Vorgelesen wird immer
+       der unveränderte Originaltext (vorleseText() unten). */
+    const lhSilben = !!(p.lesehilfe?.an && p.lesehilfe?.aufgabenSilben);
+    const textAnzeige = t => (lhSilben && /\p{L}/u.test(String(t))) ? silbenHtml(String(t)) : esc(t);
     view().innerHTML = `
       <div class="row spread" style="margin-bottom:10px">
         <button class="btn quiet small" id="raus">✕ Beenden</button>
@@ -1654,7 +1832,7 @@ function screenSession(p, opts = {}) {
           ${kannVorlesen() ? '<button class="btn small ghost" id="lies" title="Vorlesen">🔊</button>' : ''}
         </div>
         ${a.bild ? `<div class="aufgabenbild">${a.bild}</div>` : ''}
-        <p class="task pop">${esc(a.frage)}</p>
+        <p class="task pop">${textAnzeige(a.frage)}</p>
         ${a.zweisprachig ? `<button class="btn small ghost" id="hoerZweisprachig" style="margin:-4px auto 10px;display:flex">
           🔊 ${esc(a.zweisprachig.de)} → ${esc(a.zweisprachig.en)}</button>` : ''}
         <div id="antwortbereich"></div>
@@ -1664,6 +1842,7 @@ function screenSession(p, opts = {}) {
       </div>
       <p class="muted small center">${esc(a.wegInfo.hinweis)}</p>`;
     view().querySelector('#raus').onclick = () => { stopp(); zeige('lernen'); };
+    window.__aufgabe = a;   // erleichtert automatisches Testen (z. B. Textgleichheit bei Silbenfärbung)
 
     /* Vorlesen */
     const vorleseText = () => [a.hoertext, a.frage,
@@ -1692,7 +1871,7 @@ function screenSession(p, opts = {}) {
 
     if (a.typ === 'choice') {
       bereich.innerHTML = `<div class="choices${a.bildwahl ? ' bildwahl' : ''}">${a.optionen.map(o =>
-        `<button class="choice" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
+        `<button class="choice" data-o="${esc(o)}">${textAnzeige(o)}</button>`).join('')}</div>`;
       if (ergebnis === null) bereich.querySelectorAll('[data-o]').forEach(b =>
         b.onclick = () => auswerten(a, b.dataset.o));
       else bereich.querySelectorAll('[data-o]').forEach(b => {
@@ -2377,6 +2556,7 @@ function screenEltern(p) {
             ${e.emoji} ${e.name} (${e.kurz})</option>`).join('')}</select></label>
       <p class="small muted">Aktuell ${S.zieleFuerEtappe(p).length} Lernziele freigeschaltet.</p>
     </div>
+    ${lesehilfeKarte(p)}
     <div class="card">
       <h3>Vorlesen</h3>
       <p class="muted small">Für Leseanfänger und Kinder mit Leseschwäche: Die App liest jede Aufgabe
@@ -2425,6 +2605,7 @@ function screenEltern(p) {
   view().querySelector('#vorleseSchalter').onclick = () => {
     p.vorlesen = !p.vorlesen; S.speichern(); zeige('eltern');
   };
+  lesehilfeVerdrahten(p);
 
   /* Speicher-Status anzeigen und dauerhaften Speicher anfordern */
   (async () => {

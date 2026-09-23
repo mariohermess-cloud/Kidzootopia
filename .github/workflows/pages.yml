@@ -34,6 +34,7 @@ jobs:
       - run: node tests/kommentar.mjs
       - run: node tests/aussprache.mjs
       - run: node tests/punkte.mjs
+      - run: node tests/lesehilfe.mjs
 
   deploy:
     needs: test
