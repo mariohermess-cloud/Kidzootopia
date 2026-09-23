@@ -9,11 +9,22 @@
    Bei jeder Änderung: NUMMER hier hochzählen UND in sw.js (CACHE) gleichziehen.
    tests/version.mjs prüft, dass beide übereinstimmen. */
 
-export const NUMMER = 36;
-export const STAND = '30.08.2026';
+export const NUMMER = 38;
+export const STAND = '23.09.2026';
 
 /* Neueste zuerst. Kurz und in Alltagssprache – das lesen Eltern, nicht Entwickler. */
 export const VERLAUF = [
+  { nr: 38, stand: '23.09.2026', was: [
+    'Neu: Eigene Texte aus der Schule fotografieren oder eintippen – ganz ohne Internet, das Foto bleibt auf dem Gerät',
+    'Ein Erwachsener schneidet den Bereich zu, prüft unsicher erkannte Wörter (gelb markiert) und teilt den Text in Lese-Abschnitte',
+    'Das Kind übt diese eigenen Texte unter „Meine Texte" genauso wie die übrigen Lesetexte – mit Silbenfarben, Lesefenster und Mikrofonmessung'
+  ]},
+  { nr: 37, stand: '23.09.2026', was: [
+    'Neu: Lesehilfe bei Legasthenie/LRS – pro Kind einstellbar im Eltern-Bereich',
+    'Größere Schrift, mehr Abstand zwischen Buchstaben und Wörtern, mehr Zeilenabstand',
+    'Silben abwechselnd blau/rot mit Silbenbögen, dazu ein Lesefenster für die aktuelle Zeile beim Vorlesen üben',
+    'Beim Anlegen eines Kindes lässt sich die Lesehilfe direkt vorbelegen'
+  ]},
   { nr: 36, stand: '30.08.2026', was: [
     'Silben hören & bauen: viel mehr Wörter im Topf – vorher kam bei wenigen Wörtern ständig dasselbe wieder',
     'Renn-Modus: das Ergebnis zeigt jetzt die wirklichen Punktestände, nicht nur „schneller" oder „langsamer" – so sieht man, wie viel besser man war',

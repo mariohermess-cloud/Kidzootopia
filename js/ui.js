@@ -23,6 +23,9 @@ import { pruefe } from './generators.js';
 import { radar } from './chart.js';
 import * as Rennen from './rennen.js';
 import * as Ueberraschung from './ueberraschung.js';
+import * as Lesehilfe from './lesehilfe.js';
+import * as Texterkennung from './texterkennung.js';
+import * as Textaufbereitung from './textaufbereitung.js';
 
 const view = () => document.getElementById('view');
 export const esc = s => String(s).replace(/[&<>"']/g, c =>
@@ -35,6 +38,10 @@ let route = 'lernen';
 export const aktuelleRoute = () => route;
 
 export function zeige(neu, daten) {
+  /* Die Texterkennung haelt zwischen zwei Erkennungen einen Worker warm
+     (siehe js/texterkennung.js). Verlaesst die App den Eigene-Texte-Bereich,
+     lohnt sich das nicht mehr - der Worker wird freigegeben. */
+  if (route === 'eigenertext' && neu !== 'eigenertext') Texterkennung.beenden();
   route = neu;
   const p = S.aktiv();
   document.querySelectorAll('.nav-btn').forEach(b =>
@@ -43,12 +50,27 @@ export function zeige(neu, daten) {
   const chrome = !!p && !['start','test','session'].includes(neu);
   nav.hidden = !chrome; top.hidden = !p || neu === 'start';
   if (p) kopfzeile(p);
+  lesehilfeAnwenden(p);
   if (p && neu !== 'start') { Avatar.aufbauen(p.avatar); Avatar.umschauen(); }
   else Avatar.verstecken();
   window.scrollTo(0,0);
   ({ start:screenStart, lernen:screenLernen, talente:screenTalente, wege:screenWege,
      eltern:screenEltern, test:screenTest, session:screenSession, profile:screenProfile,
-     galerie:screenGalerie, ueberraschung:screenUeberraschung }[neu] || screenLernen)(p, daten);
+     galerie:screenGalerie, ueberraschung:screenUeberraschung, eigenertext:screenEigenerText,
+     meinetexte:screenMeineTexte }[neu] || screenLernen)(p, daten);
+}
+
+/* Lesehilfe bei Legasthenie/LRS auf das aktive Profil anwenden: CSS-Variablen
+   am Wurzelelement, Body-Klassen (siehe app.css und js/lesehilfe.js). Ohne
+   Profil oder mit ausgeschalteter Lesehilfe: alle Klassen wieder weg – sonst
+   bliebe beim Profilwechsel die Einstellung des vorigen Kindes hängen. */
+const LH_KLASSEN_ALLE = ['lh-an', 'lh-blaurot', 'lh-boegen', 'lh-fenster'];
+function lesehilfeAnwenden(p) {
+  const wurzel = document.documentElement;
+  const vars = Lesehilfe.cssVariablen(p?.lesehilfe);
+  Object.entries(vars).forEach(([k, v]) => wurzel.style.setProperty(k, v));
+  const gewuenscht = new Set(p ? Lesehilfe.klassen(p.lesehilfe) : []);
+  LH_KLASSEN_ALLE.forEach(k => document.body.classList.toggle(k, gewuenscht.has(k)));
 }
 
 function kopfzeile(p) {
@@ -96,6 +118,13 @@ function screenStart() {
         ${AVATARE.map((a,i)=>`<button class="avatar-btn ${i===0?'sel':''}" data-av="${a}"
           style="${i===0?'border-color:var(--brand)':''}">${a}</button>`).join('')}
       </div>
+      <label class="row" style="align-items:flex-start;gap:10px;margin-bottom:14px">
+        <input type="checkbox" id="nLrs" style="width:22px;height:22px;margin-top:2px">
+        <span>📖 Mein Kind tut sich mit dem Lesen schwer (Legasthenie / LRS) – Lesehilfe einschalten</span>
+      </label>
+      <p class="muted small" style="margin-top:-8px">Schaltet größere Schrift, mehr Buchstaben-
+        und Zeilenabstand, farbig abwechselnde Silben und ein Lesefenster ein – alles lässt sich
+        später im Eltern-Bereich einzeln anpassen oder wieder ausschalten.</p>
       <button class="btn" id="nAnlegen">Profil anlegen</button>
     </div>
     ${umgebung().standalone ? '' : installHtml()}
@@ -161,7 +190,8 @@ function screenStart() {
   view().querySelector('#nAnlegen').onclick = () => {
     const name = view().querySelector('#nName').value;
     if (!name.trim()) { view().querySelector('#nName').focus(); return; }
-    S.neuesProfil({ name, avatar: gewaehlt, etappe: view().querySelector('#nEtappe').value });
+    S.neuesProfil({ name, avatar: gewaehlt, etappe: view().querySelector('#nEtappe').value,
+      lrs: view().querySelector('#nLrs').checked });
     zeige('test');
   };
 }
@@ -171,7 +201,8 @@ function screenProfile() {
     <div class="card">
       ${S.alleProfile().map(p => `<div class="row spread" style="padding:10px 0;border-bottom:1px solid var(--line)">
         <div class="row"><span style="font-size:26px">${p.avatar}</span>
-          <div><b>${esc(p.name)}</b><div class="muted small">${S.etappeVon(p).emoji} ${S.etappeVon(p).name} · ${p.stats.aufgabenGesamt} Aufgaben</div></div></div>
+          <div><b>${esc(p.name)}</b><div class="muted small">${S.etappeVon(p).emoji} ${S.etappeVon(p).name} · ${p.stats.aufgabenGesamt} Aufgaben
+            ${p.lesehilfe?.an ? ' · <span class="pill grey">📖 Lesehilfe</span>' : ''}</div></div></div>
         <div class="row">
           <button class="btn small ghost" data-use="${p.id}">wählen</button>
           <button class="btn small danger" data-del="${p.id}">löschen</button>
@@ -291,6 +322,465 @@ function leseProfilKarte(p) {
 }
 
 
+
+/* Lesehilfe bei Legasthenie/LRS: Hauptschalter, Einzel-Einstellungen und eine
+   Live-Vorschau. Die Vorschau braucht keine eigene Verkabelung – sie steckt
+   im ganz normalen Textfluss und übernimmt deshalb automatisch dieselben
+   Body-Klassen und CSS-Variablen, die lesehilfeAnwenden() gerade gesetzt hat. */
+const LH_SATZ = 'Die Sonnenblume wächst im Garten.';
+
+function lhSegment(feld, optionen, aktuell) {
+  return `<div class="row wrap" style="margin-bottom:12px">${optionen.map(([wert, text]) =>
+    `<button class="btn small ${wert === aktuell ? '' : 'ghost'}" data-lh-feld="${feld}" data-lh-wert="${wert}"
+       style="flex:1;min-width:90px">${esc(text)}</button>`).join('')}</div>`;
+}
+
+function lesehilfeKarte(p) {
+  const lh = Lesehilfe.normalisiere(p.lesehilfe);
+  return `
+    <div class="card">
+      <h3>📖 Lesehilfe (Legasthenie / LRS)</h3>
+      <p class="muted small">Für Kinder, die stockend lesen, Wörter auslassen oder mit ähnlich
+        aussehenden Wörtern vertauschen: größere Schrift, mehr Abstand zwischen Buchstaben und
+        Wörtern (das hilft nach Studien am meisten), mehr Zeilenabstand, abwechselnd blau/rot
+        gefärbte Silben mit Silbenbögen wie in der Fibel, und ein Lesefenster, das beim Vorlesen
+        nur die gerade gelesene Zeile zeigt.</p>
+      <button class="btn ${lh.an ? '' : 'ghost'}" id="lhSchalter">
+        ${lh.an ? '📖 Lesehilfe ist an' : '📕 Lesehilfe einschalten'}</button>
+      ${lh.an ? `
+        <div style="margin-top:16px">
+          <p class="small" style="font-weight:700;margin-bottom:6px">Schriftgröße</p>
+          ${lhSegment('groesse', [[1,'normal'],[2,'groß'],[3,'sehr groß']], lh.groesse)}
+          <p class="small" style="font-weight:700;margin-bottom:6px">Abstand zwischen Buchstaben &amp; Wörtern</p>
+          ${lhSegment('abstand', [[0,'normal'],[1,'weit'],[2,'sehr weit']], lh.abstand)}
+          <p class="small" style="font-weight:700;margin-bottom:6px">Zeilenabstand</p>
+          ${lhSegment('zeile', [[1,'normal'],[2,'weit']], lh.zeile)}
+          <p class="small" style="font-weight:700;margin-bottom:6px">Silbenfarben</p>
+          ${lhSegment('farben', [['wechsel','Tinte/Marke (wie bisher)'],['blaurot','Blau/Rot']], lh.farben)}
+          <label class="row" style="margin-bottom:10px">
+            <input type="checkbox" id="lhBoegen" ${lh.boegen ? 'checked' : ''} style="width:22px;height:22px">
+            <span>Silbenbögen unter jeder Silbe</span>
+          </label>
+          <label class="row" style="margin-bottom:10px">
+            <input type="checkbox" id="lhFenster" ${lh.fenster ? 'checked' : ''} style="width:22px;height:22px">
+            <span>Lesefenster beim Vorlesen üben (nur die aktuelle Zeile hervorheben)</span>
+          </label>
+          <label class="row" style="margin-bottom:4px">
+            <input type="checkbox" id="lhAufgabenSilben" ${lh.aufgabenSilben ? 'checked' : ''} style="width:22px;height:22px">
+            <span>Auch Aufgabentexte in Silben einfärben</span>
+          </label>
+          <p class="small" style="font-weight:700;margin:16px 0 6px">Live-Vorschau</p>
+          <div class="lesetext" style="font-weight:700">${silbenHtml(LH_SATZ)}</div>
+        </div>` : ''}
+      <p class="small muted" style="margin-top:12px">
+        Die App ersetzt keine LRS-Diagnostik oder -Förderung – bei Verdacht auf eine
+        Lese-Rechtschreib-Schwäche hilft die schulische Beratungsstelle oder eine Fachdiagnostik
+        weiter. Diese Einstellungen machen Texte nur leichter lesbar.</p>
+    </div>`;
+}
+
+function lesehilfeVerdrahten(p) {
+  const schalter = view().querySelector('#lhSchalter');
+  if (!schalter) return;
+  schalter.onclick = () => {
+    const lh = Lesehilfe.normalisiere(p.lesehilfe);
+    /* Beim Einschalten die LRS-Voreinstellung übernehmen, falls die Lesehilfe
+       noch nie eingeschaltet oder angepasst wurde (Standardwerte). */
+    const nochNieAngepasst = JSON.stringify({ ...lh, an: true }) ===
+      JSON.stringify({ ...Lesehilfe.STANDARD, an: true });
+    S.setzeLesehilfe(p, lh.an ? { an: false }
+      : (nochNieAngepasst ? Lesehilfe.LRS_VOREINSTELLUNG : { an: true }));
+    zeige('eltern');
+  };
+  view().querySelectorAll('[data-lh-feld]').forEach(b => b.onclick = () => {
+    const feld = b.dataset.lhFeld;
+    let wert = b.dataset.lhWert;
+    if (feld !== 'farben') wert = Number(wert);
+    S.setzeLesehilfe(p, { [feld]: wert });
+    zeige('eltern');
+  });
+  view().querySelector('#lhBoegen')?.addEventListener('change', e => {
+    S.setzeLesehilfe(p, { boegen: e.target.checked }); zeige('eltern');
+  });
+  view().querySelector('#lhFenster')?.addEventListener('change', e => {
+    S.setzeLesehilfe(p, { fenster: e.target.checked }); zeige('eltern');
+  });
+  view().querySelector('#lhAufgabenSilben')?.addEventListener('change', e => {
+    S.setzeLesehilfe(p, { aufgabenSilben: e.target.checked }); zeige('eltern');
+  });
+}
+
+/* Teaser-Karte im Eltern-Bereich für "Eigene Texte" (Texte aus der Schule
+   fotografieren/eintippen). Der ganze Ablauf steckt in einer eigenen
+   Ansicht (Route 'eigenertext'), siehe screenEigenerText() weiter unten. */
+function eigeneTexteKarte(p) {
+  const texte = S.eigeneTexte(p);
+  return `
+    <div class="card">
+      <h3>📸 Eigene Texte</h3>
+      <p class="muted small">Eine Seite aus der Schule fotografieren, aus der Fotos-App einfügen
+        oder eintippen - danach übt ${esc(p.name)} genau damit vorzulesen, mit denselben
+        Silbenfarben und demselben Lesefenster wie bei den anderen Texten.</p>
+      <p class="small muted">🔒 Das Foto bleibt auf dem Gerät und wird nicht gespeichert -
+        gespeichert wird nur der von Ihnen geprüfte Text.</p>
+      <button class="btn" id="zuEigenerText">📸 Eigene Texte${texte.length ? ` (${texte.length})` : ''}</button>
+    </div>`;
+}
+
+/* ------------------------------ Eigene Texte (Eltern) ------------------------------
+   Ablauf: Quelle waehlen -> zuschneiden -> erkennen -> pruefen & abschnitteln -> speichern.
+   Jeder Schritt ersetzt view().innerHTML komplett und traegt seinen eigenen
+   veraenderlichen Zustand in `zustand` weiter - genau wie screenSession() das
+   fuer eine laufende Uebungsrunde macht, nur ohne den Umweg ueber zeige(). */
+
+function screenEigenerText(p) {
+  eigenerTextListeAnzeigen(p);
+}
+
+function eigenerTextListeAnzeigen(p) {
+  const texte = S.eigeneTexte(p);
+  view().innerHTML = `
+    <h1>📸 Eigene Texte</h1>
+    <div class="card">
+      <p class="muted small">Ein Text aus der Schule - fotografiert, aus der Fotos-App eingefügt
+        oder eingetippt. Sie prüfen ihn kurz, danach übt ${esc(p.name)} damit genauso wie mit
+        den übrigen Lesetexten: mit Silbenfarben, Lesefenster und Mikrofonmessung.</p>
+      <p class="small muted">🔒 Das Foto verlässt nie dieses Gerät und wird nicht gespeichert -
+        gespeichert wird nur der von Ihnen geprüfte Text.</p>
+      <button class="btn" id="neuerText">➕ Neuen Text hinzufügen</button>
+    </div>
+    ${texte.length ? `<div class="card">
+      <h3>Gespeicherte Texte (${texte.length})</h3>
+      ${texte.map(t => `
+        <div class="row spread" style="padding:10px 0;border-bottom:1px solid var(--line)">
+          <div><b>${esc(t.titel)}</b>
+            <div class="muted small">${t.abschnitte.length} Abschnitt${t.abschnitte.length===1?'':'e'} ·
+              erstellt ${esc(t.erstellt)}${t.gelesen ? ` · ${t.gelesen}× gelesen` : ''}</div></div>
+          <button class="btn small danger" data-loeschen="${t.id}">löschen</button>
+        </div>`).join('')}
+    </div>` : ''}
+    <button class="btn quiet" id="zurueckEltern">Zurück</button>`;
+  view().querySelector('#neuerText').onclick = () => eigenerTextAssistentStarten(p);
+  view().querySelector('#zurueckEltern').onclick = () => zeige('eltern');
+  view().querySelectorAll('[data-loeschen]').forEach(b => mitNachfrage(b, {
+    frage: 'Diesen Text wirklich löschen?', jaText: 'Ja, löschen',
+    dann: () => { S.eigenenTextLoeschen(p, b.dataset.loeschen); eigenerTextListeAnzeigen(p); }
+  }));
+}
+
+function eigenerTextAssistentStarten(p) {
+  /* textGesamt/woerterGesamt sammeln ueber mehrere Bereiche desselben Bildes
+     an ("Weiterer Bereich aus demselben Bild"), vollCanvas haelt dafuer das
+     unbeschnittene Foto vor. */
+  const zustand = { textGesamt: '', woerterGesamt: [], vollCanvas: null };
+  eigenerTextQuelleSchritt(p, zustand);
+}
+
+function eigenerTextQuelleSchritt(p, zustand) {
+  view().innerHTML = `
+    <h1>📸 Eigene Texte</h1>
+    <div class="card">
+      <h3>Woher kommt der Text?</h3>
+      <p class="muted small">Auf iPhone/iPad geht es auch ganz ohne Foto hier: In der
+        Fotos-App den Text mit „Live Text" markieren, kopieren - und unten einfügen.</p>
+      <label class="btn" style="display:block;text-align:center;margin-bottom:10px">
+        📷 Seite fotografieren
+        <input type="file" accept="image/*" capture="environment" id="eingabeKamera" hidden></label>
+      <label class="btn ghost" style="display:block;text-align:center;margin-bottom:10px">
+        🖼️ Bild auswählen
+        <input type="file" accept="image/*" id="eingabeDatei" hidden></label>
+      <button class="btn ghost" id="eingabeText" style="width:100%;margin-bottom:10px">📋 Text einfügen/eintippen</button>
+      <button class="btn quiet" id="assistentAbbrechen">Abbrechen</button>
+    </div>`;
+  view().querySelector('#assistentAbbrechen').onclick = () => eigenerTextListeAnzeigen(p);
+  view().querySelector('#eingabeText').onclick = () => eigenerTextEinfuegenSchritt(p, zustand);
+  const dateiGewaehlt = e => {
+    const datei = e.target.files?.[0];
+    if (datei) eigenerTextZuschnittLaden(p, zustand, datei);
+  };
+  view().querySelector('#eingabeKamera').addEventListener('change', dateiGewaehlt);
+  view().querySelector('#eingabeDatei').addEventListener('change', dateiGewaehlt);
+}
+
+function eigenerTextEinfuegenSchritt(p, zustand) {
+  view().innerHTML = `
+    <h1>📸 Eigene Texte</h1>
+    <div class="card">
+      <h3>Text einfügen oder eintippen</h3>
+      <textarea id="textEinfuegen" rows="10" placeholder="Text hier einfügen …"
+        style="width:100%;padding:10px;border-radius:12px;border:2px solid var(--line);
+               background:var(--bg);color:var(--ink);font:inherit"></textarea>
+      <button class="btn" id="textUebernehmen" style="margin-top:10px">Übernehmen</button>
+      <button class="btn quiet" id="textZurueck" style="margin-top:10px">Zurück</button>
+    </div>`;
+  view().querySelector('#textZurueck').onclick = () => eigenerTextQuelleSchritt(p, zustand);
+  view().querySelector('#textUebernehmen').onclick = () => {
+    const roh = view().querySelector('#textEinfuegen').value;
+    if (!roh.trim()) return;
+    zustand.textGesamt = [zustand.textGesamt, Textaufbereitung.bereinigen(roh)]
+      .filter(Boolean).join('\n\n');
+    eigenerTextPruefenSchritt(p, zustand);
+  };
+}
+
+/* Bild laden (EXIF-Drehung beachten), auf ein Arbeits-Canvas zeichnen und
+   den Zuschnitt-Bildschirm damit oeffnen. */
+async function eigenerTextZuschnittLaden(p, zustand, datei) {
+  view().innerHTML = `<h1>📸 Eigene Texte</h1><div class="card"><p>Bild wird geladen …</p></div>`;
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(datei, { imageOrientation: 'from-image' });
+  } catch {
+    view().innerHTML = `<h1>📸 Eigene Texte</h1><div class="card">
+      <p>Dieses Bild konnte nicht gelesen werden.</p>
+      <button class="btn" id="zurueck">Zurück</button></div>`;
+    view().querySelector('#zurueck').onclick = () => eigenerTextQuelleSchritt(p, zustand);
+    return;
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = bitmap.width; canvas.height = bitmap.height;
+  canvas.getContext('2d').drawImage(bitmap, 0, 0);
+  bitmap.close?.();
+  zustand.vollCanvas = canvas;
+  eigenerTextZuschnittSchritt(p, zustand);
+}
+
+/* Zuschneiden: ein Rechteck mit großen Griffen (≥32px, siehe app.css), per
+   Pointer-Events verschieb- und an den Ecken ziehbar. Vorbelegt ist das
+   ganze Bild - wer nichts tut, bekommt also das ganze Foto erkannt. */
+function eigenerTextZuschnittSchritt(p, zustand) {
+  view().innerHTML = `
+    <h1>📸 Eigene Texte</h1>
+    <div class="card">
+      <h3>Bereich zuschneiden</h3>
+      <p class="muted small">Rahmen mit dem Finger verschieben, an den Ecken ziehen.
+        Bei zwei Spalten: erst eine Spalte umrahmen, dann die nächste.</p>
+      <div id="zuschnittHuelle" style="position:relative;width:100%;border-radius:12px;
+           border:2px solid var(--line);overflow:hidden">
+        <canvas id="zuschnittCanvas" style="display:block;width:100%;height:auto"></canvas>
+        <div id="zuschnittRahmen">
+          <div class="zuschnitt-griff" data-griff="nw" style="position:absolute;left:-16px;top:-16px;width:32px;height:32px;border-radius:50%;background:var(--brand)"></div>
+          <div class="zuschnitt-griff" data-griff="ne" style="position:absolute;right:-16px;top:-16px;width:32px;height:32px;border-radius:50%;background:var(--brand)"></div>
+          <div class="zuschnitt-griff" data-griff="sw" style="position:absolute;left:-16px;bottom:-16px;width:32px;height:32px;border-radius:50%;background:var(--brand)"></div>
+          <div class="zuschnitt-griff" data-griff="se" style="position:absolute;right:-16px;bottom:-16px;width:32px;height:32px;border-radius:50%;background:var(--brand)"></div>
+        </div>
+      </div>
+      <button class="btn" id="zuschnittWeiter" style="margin-top:14px">Text erkennen ➜</button>
+      <button class="btn quiet" id="zuschnittZurueck" style="margin-top:10px">Zurück</button>
+    </div>`;
+  view().querySelector('#zuschnittZurueck').onclick = () => eigenerTextQuelleSchritt(p, zustand);
+
+  const quelle = zustand.vollCanvas;
+  const canvas = view().querySelector('#zuschnittCanvas');
+  canvas.width = quelle.width; canvas.height = quelle.height;
+  canvas.getContext('2d').drawImage(quelle, 0, 0);
+
+  const huelle = view().querySelector('#zuschnittHuelle');
+  const rahmen = view().querySelector('#zuschnittRahmen');
+  rahmen.style.cssText = 'position:absolute;border:3px solid var(--brand);box-sizing:border-box;touch-action:none';
+
+  let rechteck = { x: 0, y: 0, w: 1, h: 1 };   // Anteile der Hülle, 0..1
+  const MIN = 0.08;
+  const anwenden = () => {
+    const b = huelle.getBoundingClientRect();
+    rahmen.style.left = Math.round(rechteck.x * b.width) + 'px';
+    rahmen.style.top = Math.round(rechteck.y * b.height) + 'px';
+    rahmen.style.width = Math.round(rechteck.w * b.width) + 'px';
+    rahmen.style.height = Math.round(rechteck.h * b.height) + 'px';
+  };
+  requestAnimationFrame(anwenden);
+  const anwendenSicher = () => { if (huelle.isConnected) anwenden();
+    else window.removeEventListener('resize', anwendenSicher); };
+  window.addEventListener('resize', anwendenSicher);
+
+  const relativ = e => {
+    const b = huelle.getBoundingClientRect();
+    return { x: (e.clientX - b.left) / b.width, y: (e.clientY - b.top) / b.height };
+  };
+  let modus = null, start = null, rechteckStart = null;
+  rahmen.addEventListener('pointerdown', e => {
+    modus = e.target.dataset.griff || 'verschieben';
+    start = relativ(e);
+    rechteckStart = { ...rechteck };
+    rahmen.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  rahmen.addEventListener('pointermove', e => {
+    if (!modus) return;
+    const jetzt = relativ(e);
+    const dx = jetzt.x - start.x, dy = jetzt.y - start.y;
+    let { x, y, w, h } = rechteckStart;
+    if (modus === 'verschieben') {
+      x = Math.min(1 - w, Math.max(0, rechteckStart.x + dx));
+      y = Math.min(1 - h, Math.max(0, rechteckStart.y + dy));
+    } else {
+      if (modus.includes('w')) {
+        x = Math.max(0, Math.min(rechteckStart.x + rechteckStart.w - MIN, rechteckStart.x + dx));
+        w = rechteckStart.x + rechteckStart.w - x;
+      }
+      if (modus.includes('e')) w = Math.max(MIN, Math.min(1 - rechteckStart.x, rechteckStart.w + dx));
+      if (modus.includes('n')) {
+        y = Math.max(0, Math.min(rechteckStart.y + rechteckStart.h - MIN, rechteckStart.y + dy));
+        h = rechteckStart.y + rechteckStart.h - y;
+      }
+      if (modus.includes('s')) h = Math.max(MIN, Math.min(1 - rechteckStart.y, rechteckStart.h + dy));
+    }
+    rechteck = { x, y, w, h };
+    anwenden();
+  });
+  const loslassen = () => { modus = null; };
+  rahmen.addEventListener('pointerup', loslassen);
+  rahmen.addEventListener('pointercancel', loslassen);
+
+  view().querySelector('#zuschnittWeiter').onclick = () => {
+    window.removeEventListener('resize', anwendenSicher);
+    const ausschnitt = document.createElement('canvas');
+    const sx = Math.round(rechteck.x * canvas.width), sy = Math.round(rechteck.y * canvas.height);
+    const sw = Math.max(1, Math.round(rechteck.w * canvas.width));
+    const sh = Math.max(1, Math.round(rechteck.h * canvas.height));
+    ausschnitt.width = sw; ausschnitt.height = sh;
+    ausschnitt.getContext('2d').drawImage(canvas, sx, sy, sw, sh, 0, 0, sw, sh);
+    eigenerTextErkennungSchritt(p, zustand, ausschnitt);
+  };
+}
+
+async function eigenerTextErkennungSchritt(p, zustand, ausschnitt) {
+  view().innerHTML = `
+    <h1>📸 Eigene Texte</h1>
+    <div class="card">
+      <h3>Text wird erkannt …</h3>
+      <p class="small" id="erkennungStatus">Wird vorbereitet …</p>
+      <div class="bar"><i id="erkennungBalken" style="width:0%"></i></div>
+      <p class="muted small" style="margin-top:10px">Beim allerersten Mal lädt die Texterkennung
+        einmalig rund 9 MB - danach funktioniert sie auch ohne Internet.</p>
+    </div>`;
+  const statusEl = view().querySelector('#erkennungStatus');
+  const balkenEl = view().querySelector('#erkennungBalken');
+  try {
+    const ergebnis = await Texterkennung.erkenneText(ausschnitt, {
+      beiFortschritt: m => {
+        if (!statusEl.isConnected) return;
+        if (m?.status === 'recognizing text') {
+          const proz = Math.round((m.progress || 0) * 100);
+          statusEl.textContent = `Erkenne Text … ${proz} %`;
+          balkenEl.style.width = proz + '%';
+        } else {
+          statusEl.textContent = 'Lade Texterkennung (einmalig ~9 MB) …';
+        }
+      }
+    });
+    zustand.textGesamt = [zustand.textGesamt, Textaufbereitung.bereinigen(ergebnis.text)]
+      .filter(Boolean).join('\n\n');
+    zustand.woerterGesamt = [...zustand.woerterGesamt, ...ergebnis.woerter];
+    eigenerTextPruefenSchritt(p, zustand);
+  } catch (e) {
+    const netzwerk = /network|fetch|load|failed/i.test(String(e?.message || e || ''));
+    view().innerHTML = `
+      <h1>📸 Eigene Texte</h1>
+      <div class="card">
+        <h3>Das hat nicht geklappt</h3>
+        <p class="small">${netzwerk
+          ? 'Beim ersten Mal braucht die Texterkennung Internet - danach geht sie offline. Bitte einmal mit bestehender Internet-Verbindung versuchen.'
+          : 'Die Texterkennung konnte nicht starten: ' + esc(e?.message || String(e))}</p>
+        <button class="btn" id="erkennungNochmal">Nochmal versuchen</button>
+        <button class="btn quiet" id="erkennungAbbrechen" style="margin-top:10px">Abbrechen</button>
+      </div>`;
+    view().querySelector('#erkennungNochmal').onclick = () =>
+      eigenerTextErkennungSchritt(p, zustand, ausschnitt);
+    view().querySelector('#erkennungAbbrechen').onclick = () => eigenerTextListeAnzeigen(p);
+  }
+}
+
+/* Markiert im (bereits escaptem) Text die ersten Vorkommen der unsicher
+   erkannten Wörter gelb - ein grobes, aber ehrliches Vorgehen: jedes Wort
+   wird höchstens so oft markiert, wie es unsicher gemeldet wurde. */
+function markiereUnsichereWoerter(text, unsicher) {
+  if (!unsicher.length) return esc(text);
+  const uebrig = new Map();
+  unsicher.forEach(w => uebrig.set(w.text, (uebrig.get(w.text) || 0) + 1));
+  return esc(text).split(/(\s+)/).map(stueck => {
+    if (!stueck || /^\s+$/.test(stueck)) return stueck;
+    const kern = stueck.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '');
+    if (uebrig.get(kern) > 0) {
+      uebrig.set(kern, uebrig.get(kern) - 1);
+      return `<mark>${stueck}</mark>`;
+    }
+    return stueck;
+  }).join('');
+}
+
+function eigenerTextPruefenSchritt(p, zustand) {
+  const unsicher = Textaufbereitung.unsichereWoerter(zustand.woerterGesamt, 70);
+  const titelVorschlag = Textaufbereitung.titelVorschlag(zustand.textGesamt);
+  view().innerHTML = `
+    <h1>📸 Eigene Texte</h1>
+    ${unsicher.length ? `<div class="card">
+      <h3>⚠️ Bitte kurz prüfen</h3>
+      <p class="muted small">Gelb hinterlegte Wörter hat die Texterkennung sich nicht sicher
+        erkannt. Bitte prüfen und im Textfeld darunter berichtigen - ein falsch erkanntes Wort
+        ist für ein Kind mit Leseschwäche besonders verwirrend.</p>
+      <div class="lesetext" style="line-height:1.9">${markiereUnsichereWoerter(zustand.textGesamt, unsicher)}</div>
+    </div>` : ''}
+    <div class="card">
+      <h3>Text prüfen und berichtigen</h3>
+      <textarea id="pruefText" rows="12" style="width:100%;padding:10px;border-radius:12px;
+        border:2px solid var(--line);background:var(--bg);color:var(--ink);font:inherit">${esc(zustand.textGesamt)}</textarea>
+      <p class="small muted" id="laengeHinweis" style="margin-top:6px"></p>
+      <label class="field" style="margin-top:10px"><span>Titel</span>
+        <input type="text" id="pruefTitel" maxlength="60" value="${esc(titelVorschlag)}"></label>
+      <p class="small" style="font-weight:700;margin:14px 0 6px">Abschnittslänge</p>
+      <div class="row wrap" id="saetzeWahl">
+        ${[1,2,3].map(n => `<button class="btn small ${n===2?'':'ghost'}" data-saetze="${n}"
+          style="flex:1;min-width:80px">${n} Satz${n>1?'e':''}</button>`).join('')}
+      </div>
+      <p class="small" style="font-weight:700;margin:14px 0 6px">Vorschau der Abschnitte</p>
+      <div id="abschnittVorschau"></div>
+    </div>
+    <div class="card">
+      <button class="btn ghost" id="weitererBereich">➕ Weiteren Bereich aus demselben Bild</button>
+      <button class="btn" id="textSpeichern" style="margin-top:10px">💾 Speichern</button>
+      <button class="btn quiet" id="pruefenAbbrechen" style="margin-top:10px">Abbrechen</button>
+    </div>`;
+
+  let saetze = 2;
+  const aktualisieren = () => {
+    const text = view().querySelector('#pruefText').value;
+    const laenge = text.length;
+    view().querySelector('#laengeHinweis').textContent = laenge > 3000
+      ? `⚠️ ${laenge} Zeichen – bitte kürzer zuschneiden (höchstens etwa 3000).`
+      : `${laenge} Zeichen.`;
+    const speichernBtn = view().querySelector('#textSpeichern');
+    if (speichernBtn) speichernBtn.disabled = laenge > 3000;
+    const abschnitte = Textaufbereitung.inAbschnitte(text, { saetze });
+    view().querySelector('#abschnittVorschau').innerHTML = abschnitte.length
+      ? abschnitte.map(a => `<div class="lesetext" style="margin-bottom:10px;font-size:1rem">${silbenHtml(a)}</div>`).join('')
+      : '<p class="small muted">Noch kein Text.</p>';
+  };
+  aktualisieren();
+  view().querySelector('#pruefText').addEventListener('input', aktualisieren);
+  view().querySelectorAll('[data-saetze]').forEach(b => b.onclick = () => {
+    saetze = Number(b.dataset.saetze);
+    view().querySelectorAll('[data-saetze]').forEach(x => x.classList.toggle('ghost', x !== b));
+    aktualisieren();
+  });
+  view().querySelector('#pruefenAbbrechen').onclick = () => eigenerTextListeAnzeigen(p);
+  view().querySelector('#weitererBereich').onclick = () => {
+    if (!zustand.vollCanvas) {
+      alert('„Weiterer Bereich" braucht ein Foto - beim Einfügen von Text geht das nicht.');
+      return;
+    }
+    eigenerTextZuschnittSchritt(p, zustand);
+  };
+  view().querySelector('#textSpeichern').onclick = () => {
+    const text = view().querySelector('#pruefText').value;
+    if (text.length > 3000) return;
+    const titel = view().querySelector('#pruefTitel').value;
+    const abschnitte = Textaufbereitung.inAbschnitte(text, { saetze });
+    if (!abschnitte.length) { alert('Es ist noch kein Text zum Speichern da.'); return; }
+    S.eigenenTextSpeichern(p, { titel, abschnitte });
+    eigenerTextListeAnzeigen(p);
+  };
+}
 
 /* Wo greift das Kind zum Schmierblatt? Kein Gütesiegel in beide Richtungen –
    viel Malen ist nicht besser als wenig, es zeigt nur den Zugang. */
@@ -740,7 +1230,7 @@ function schmierblatt(a, host) {
      mehr die Silbe, sondern den Zufall.
    Ausserdem wird jedes Wort zusammengehalten, damit keine Silbe allein am
    Zeilenende haengt. */
-function silbenHtml(text) {
+export function silbenHtml(text) {
   const stuecke = textInSilben(text);
   let html = '', wort = '', n = 0, nummer = 0;
   const wortSchliessen = () => {
@@ -750,14 +1240,23 @@ function silbenHtml(text) {
   for (const s of stuecke) {
     if (s.typ === 'silbe') {
       /* Jede Silbe bekommt eine laufende Nummer. Damit lässt sie sich während
-         des Lesens einzeln hervorheben und danach einzeln einfärben. */
-      wort += `<span class="sil s${n++ % 2}" data-sil="${nummer++}">${esc(s.text)}</span>`;
+         des Lesens einzeln hervorheben und danach einzeln einfärben.
+         Ein Silbenbogen (Lesehilfe) ergibt nur Sinn, wenn die "Silbe" auch
+         wirklich einen Buchstaben enthält - sonst bekämen ein Notenzeichen
+         oder eine einzelne Ziffer in einer Zahlenantwort einen Bogen, der
+         nichts silbisch trennt (Klasse "nobogen" verhindert das in app.css). */
+      const hatBuchstabe = /\p{L}/u.test(s.text);
+      wort += `<span class="sil s${n++ % 2}${hatBuchstabe ? '' : ' nobogen'}" data-sil="${nummer++}">${esc(s.text)}</span>`;
       continue;
     }
     /* Wortende heisst nur: Farbwechsel von vorn. Geschlossen wird erst beim
        Leerzeichen - sonst faellt ein Punkt allein auf die naechste Zeile. */
     if (s.typ === 'wortende') { n = 0; continue; }
-    if (/^\s+$/.test(s.text)) { wortSchliessen(); html += ' '; continue; }
+    /* Leerraum unveraendert uebernehmen (auch Zeilenumbrueche!) - sonst geht
+       z. B. bei "…Silben: Schu-le\nWie viele…" der Zeilenumbruch verloren
+       und aus zwei Zeilen wird eine, die sich seltsam liest. esc() macht
+       daraus kein HTML-Sonderzeichen, ein "\n" bleibt ein echtes "\n". */
+    if (/^\s+$/.test(s.text)) { wortSchliessen(); html += esc(s.text); continue; }
     /* Satzzeichen gehoeren an das Wort daneben, nie auf eine eigene Zeile. */
     wort += `<span class="zei">${esc(s.text)}</span>`;
   }
@@ -830,6 +1329,7 @@ function aufnahme() {
 
 function lesepult(p, a, bereich, fertig) {
   const text = a.lesetext;
+  const fensterAn = !!(p.lesehilfe?.an && p.lesehilfe?.fenster);
   bereich.innerHTML = `
     <div class="lesepult">
       <div class="row spread small muted" style="margin-bottom:8px">
@@ -837,6 +1337,10 @@ function lesepult(p, a, bereich, fertig) {
         <span id="leseUhr">0,0 s</span>
       </div>
       <div id="leseText" class="lesetext">${silbenHtml(text)}</div>
+      ${fensterAn ? `<div class="lesefenster-nav">
+        <button class="btn ghost small" id="leseZeileZurueck">⬆︎ Zeile zurück</button>
+        <button class="btn ghost small" id="leseZeileVor">Nächste Zeile ⬇︎</button>
+      </div>` : ''}
       <div id="pegel" class="pegel"><i></i></div>
       <div id="leseHinweis" class="small muted" style="margin-top:10px"></div>
       <div class="row wrap" style="margin-top:12px">
@@ -851,7 +1355,49 @@ function lesepult(p, a, bereich, fertig) {
   const zeigeHinweis = t => bereich.querySelector('#leseHinweis').innerHTML = t;
   const balken = bereich.querySelector('#pegel').firstElementChild;
 
+  /* Lesefenster: nur die Zeile mit der aktuellen Silbe ist klar zu lesen
+     (siehe .lh-fenster in app.css), der Rest tritt zurück. Zeilen werden aus
+     den tatsächlichen offsetTop-Werten der Wörter gebildet – bei einer
+     Größenänderung (Drehen des Geräts, andere Schriftgröße) neu berechnet. */
+  let woerterZeilen = [];
+  const zeilenNeuBerechnen = () => {
+    if (!fensterAn) return;
+    const woerter = [...bereich.querySelectorAll('#leseText .wort')];
+    const tops = woerter.map(w => w.offsetTop);
+    const zeilen = Lesehilfe.zeilenGruppieren(tops);
+    woerterZeilen = woerter.map((w, i) => ({ el: w, zeile: zeilen[i] }));
+  };
+  let aktiveZeile = 0;
+  const zeileZeigen = z => {
+    if (!fensterAn) return;
+    aktiveZeile = Math.max(0, z);
+    woerterZeilen.forEach(w => w.el.classList.toggle('zeile-aktiv', w.zeile === aktiveZeile));
+  };
+  /* Robust abmelden: Wird der Lesepult-Bereich verlassen (✕ Beenden, ein
+     Mikrofon-Fehler, Navigation) OHNE dass einer der bekannten Ausgänge
+     unten durchlaufen wird, bliebe sonst ein Resize-Listener für immer
+     angemeldet. Der Listener meldet sich deshalb selbst ab, sobald der
+     Lesetext nicht mehr im Dokument hängt. */
+  const zeilenNeuBerechnenSicher = () => {
+    if (!bereich.isConnected) { window.removeEventListener('resize', zeilenNeuBerechnenSicher); return; }
+    zeilenNeuBerechnen();
+  };
+  if (fensterAn) {
+    zeilenNeuBerechnen();
+    zeileZeigen(0);
+    window.addEventListener('resize', zeilenNeuBerechnenSicher);
+    /* Antippen einer Zeile setzt das Fenster dorthin – auch ohne Mikrofon. */
+    bereich.querySelector('#leseText').addEventListener('click', e => {
+      const wort = e.target.closest('.wort');
+      const treffer = woerterZeilen.find(w => w.el === wort);
+      if (treffer) zeileZeigen(treffer.zeile);
+    });
+    bereich.querySelector('#leseZeileZurueck').onclick = () => zeileZeigen(aktiveZeile - 1);
+    bereich.querySelector('#leseZeileVor').onclick = () => zeileZeigen(aktiveZeile + 1);
+  }
+
   bereich.querySelector('#leseOhne').onclick = () => {
+    window.removeEventListener('resize', zeilenNeuBerechnenSicher);
     /* Ohne Mikrofon zählt nur, dass gelesen wurde – keine Messung, keine Zahlen. */
     fertig(null, { ohneMikro: true });
   };
@@ -909,6 +1455,11 @@ function lesepult(p, a, bereich, fertig) {
       const wo = Math.min(bisher, wieVieleSilben) - 1;
       felder.forEach((f, i) => f.classList.toggle('jetzt', i === wo));
       if (wo >= 0 && felder[wo]) felder[wo].scrollIntoView({ block:'nearest', behavior:'smooth' });
+      if (fensterAn && wo >= 0 && felder[wo]) {
+        const wort = felder[wo].closest('.wort');
+        const treffer = woerterZeilen.find(w => w.el === wort);
+        if (treffer) zeileZeigen(treffer.zeile);
+      }
 
       if (wo !== letzteWo && wo >= 0) {
         if (letzteWo >= 0) {
@@ -930,6 +1481,7 @@ function lesepult(p, a, bereich, fertig) {
       laeuftNoch = false;
       auf.stopp();
       felder.forEach(f => f.classList.remove('jetzt'));
+      window.removeEventListener('resize', zeilenNeuBerechnenSicher);
       fertig(auf.huellkurve, { schrittMs: SCHRITT_MS });
     };
   };
@@ -1493,6 +2045,15 @@ function screenLernen(p) {
         </div>
       </div>
     </div>
+    ${S.eigeneTexte(p).length ? `<div class="card">
+      <div class="row spread">
+        <div style="flex:1">
+          <b>📸 Meine Texte (${S.eigeneTexte(p).length})</b>
+          <div class="muted small">Deine eigenen Texte aus der Schule – zum Vorlesen üben.</div>
+        </div>
+        <button class="btn small" id="meineTexte">Los</button>
+      </div>
+    </div>` : ''}
     <div class="card">
       <div class="row spread"><b>Heute geschafft</b><span class="muted small">${heuteAufgaben} / ${tagesziel}</span></div>
       <div class="bar ${heuteAufgaben>=tagesziel?'ok':''}" style="margin-top:8px">
@@ -1530,6 +2091,98 @@ function screenLernen(p) {
   view().querySelectorAll('[data-fach]').forEach(b => b.onclick = () => zeige('session', { fach:b.dataset.fach, laenge:8 }));
   view().querySelectorAll('[data-ziel]').forEach(b => b.onclick = () => zeige('session', { zielId:b.dataset.ziel, laenge:8 }));
   view().querySelector('#zurUeberraschung')?.addEventListener('click', () => zeige('ueberraschung'));
+  view().querySelector('#meineTexte')?.addEventListener('click', () => zeige('meinetexte'));
+}
+
+/* ------------------------------ Meine Texte (Kind) ------------------------------
+   Eigene, im Eltern-Bereich geprüfte Texte vorlesen üben - mit demselben
+   Lesepult, denselben Silbenfarben und derselben Mikrofonmessung wie beim
+   normalen Lautlesen (siehe lesepult() weiter oben), nur außerhalb einer
+   Übungs-Session, weil der Motor (engine.js) diese Texte nicht kennt. */
+function screenMeineTexte(p) {
+  const texte = S.eigeneTexte(p);
+  view().innerHTML = `
+    <h1>📸 Meine Texte</h1>
+    ${texte.length ? `<div class="card">
+      <p class="muted small">Wähl einen Text zum Vorlesen üben.</p>
+      ${texte.map(t => `
+        <button class="choice" data-text="${t.id}" style="margin-bottom:10px">
+          <b>${esc(t.titel)}</b>
+          <div class="muted small">${t.abschnitte.length} Abschnitt${t.abschnitte.length===1?'':'e'}</div>
+        </button>`).join('')}
+    </div>` : `<div class="card"><p>Hier stehen noch keine eigenen Texte.
+      Ein Erwachsener kann im Eltern-Bereich einen Text hinzufügen.</p></div>`}
+    <button class="btn quiet" id="zurueckLernen">Zurück</button>`;
+  view().querySelector('#zurueckLernen').onclick = () => zeige('lernen');
+  view().querySelectorAll('[data-text]').forEach(b => b.onclick = () => {
+    const text = texte.find(t => t.id === b.dataset.text);
+    if (text) meineTexteLesen(p, text, 0, 1);
+  });
+}
+
+/* Ein Abschnitt, bis zu 3 Durchgänge (wiederholtes Lautlesen), danach weiter
+   zum nächsten Abschnitt. Punkte und Messwerte laufen über dieselben
+   Speicher-Funktionen wie beim normalen Lautlesen, damit sie im
+   Eltern-Bereich (Leseflüssigkeit, Stolperwörter) mit auftauchen. */
+function meineTexteLesen(p, text, abschnittIndex, durchgang) {
+  const abschnitt = text.abschnitte[abschnittIndex];
+  const lesetitel = `${text.titel} (${abschnittIndex + 1})`;
+  const a = { typ: 'lesen', lesetext: abschnitt, lesetitel, durchgang };
+
+  view().innerHTML = `
+    <h1>📸 ${esc(text.titel)}</h1>
+    <p class="muted small">Abschnitt ${abschnittIndex + 1} von ${text.abschnitte.length}</p>
+    <div class="card">
+      <button class="btn ghost" id="ersAnhoeren" style="margin-bottom:12px">🔊 Erst anhören</button>
+      <div id="mtBereich"></div>
+    </div>
+    <button class="btn quiet" id="mtRaus" style="margin-top:10px">✕ Beenden</button>`;
+  view().querySelector('#mtRaus').onclick = () => zeige('lernen');
+  view().querySelector('#ersAnhoeren').onclick = () => vorlesen(abschnitt, { tempo: 0.85 });
+
+  const bereich = view().querySelector('#mtBereich');
+  Avatar.beiseite(true);
+  lesepult(p, a, bereich, (huellkurve, extra) => {
+    Avatar.beiseite(false);
+    const ms = 0;
+    if (!huellkurve) {
+      S.verbuche(p, { zielId: 'lautlesen', weg: 'erzaehlen', level: p.etappe || 1,
+        richtig: true, ms, keineWertung: true });
+      meineTexteWeiter(p, text, abschnittIndex, durchgang, null);
+      return;
+    }
+    const werte = Lesen.auswerten(huellkurve, { text: abschnitt, schrittMs: extra.schrittMs, durchgang });
+    a.leseWerte = werte;
+    const liste = silbenListe(abschnitt);
+    a.silbenBild = Aussprache.zuordnen(liste, huellkurve, { schrittMs: extra.schrittMs });
+    a.betonung = a.silbenBild.sicher ? Aussprache.betonungPruefen(nachWoertern(a.silbenBild.silben)) : [];
+    a.silbenBlick = Aussprache.zusammenfassung(a.silbenBild, a.betonung);
+    if (a.silbenBild.sicher) S.merkeStolper(p, a.silbenBlick.stolpersteine);
+    a.leseUrteil = Lesen.einordnung(werte, p.etappe || 1);
+    a.leseFortschritt = Lesen.fortschritt(S.letzteLesung(p, lesetitel, durchgang - 1), werte);
+    S.merkeLesung(p, { titel: lesetitel, durchgang, ...werte, stufe: a.leseUrteil.stufe });
+    S.verbuche(p, { zielId: 'lautlesen', weg: 'erzaehlen', level: p.etappe || 1, richtig: true, ms });
+    kopfzeile(p);
+    meineTexteWeiter(p, text, abschnittIndex, durchgang, a);
+  });
+}
+
+function meineTexteWeiter(p, text, abschnittIndex, durchgang, a) {
+  const bereich = view().querySelector('#mtBereich') || view();
+  const letzterAbschnitt = abschnittIndex >= text.abschnitte.length - 1;
+  const naechsterDurchgang = durchgang < 3;
+  bereich.innerHTML = `
+    <div class="feedback ok pop">
+      ${a ? leseRueckmeldung(a) : '✅ Gelesen.'}
+    </div>
+    <button class="btn" id="mtWeiter" style="margin-top:12px">
+      ${naechsterDurchgang ? '🔁 Nochmal derselbe Abschnitt' : letzterAbschnitt ? '✓ Fertig' : 'Weiter zum nächsten Abschnitt →'}</button>`;
+  view().querySelector('#mtWeiter').onclick = () => {
+    if (naechsterDurchgang) { meineTexteLesen(p, text, abschnittIndex, durchgang + 1); return; }
+    S.eigenenTextGelesenVermerken(p, text.id);
+    if (letzterAbschnitt) { zeige('meinetexte'); return; }
+    meineTexteLesen(p, text, abschnittIndex + 1, 1);
+  };
 }
 
 /* Teaser für das Überraschungsrätsel des Tages: derselbe Anreiz wie bei
@@ -1636,6 +2289,11 @@ function screenSession(p, opts = {}) {
     const punkte = Array.from({length: sess.laenge}, (_,i) =>
       `<i class="${status[i] || (i===sess.index?'now':'')}"></i>`).join('');
     const hatHoertext = !!a.hoertext;
+    /* Lesehilfe: Aufgabentext (und Auswahl-Antworten aus Wörtern) silbenweise
+       einfärben, wenn im Eltern-Bereich eingeschaltet. Vorgelesen wird immer
+       der unveränderte Originaltext (vorleseText() unten). */
+    const lhSilben = !!(p.lesehilfe?.an && p.lesehilfe?.aufgabenSilben);
+    const textAnzeige = t => (lhSilben && /\p{L}/u.test(String(t))) ? silbenHtml(String(t)) : esc(t);
     view().innerHTML = `
       <div class="row spread" style="margin-bottom:10px">
         <button class="btn quiet small" id="raus">✕ Beenden</button>
@@ -1654,7 +2312,7 @@ function screenSession(p, opts = {}) {
           ${kannVorlesen() ? '<button class="btn small ghost" id="lies" title="Vorlesen">🔊</button>' : ''}
         </div>
         ${a.bild ? `<div class="aufgabenbild">${a.bild}</div>` : ''}
-        <p class="task pop">${esc(a.frage)}</p>
+        <p class="task pop">${textAnzeige(a.frage)}</p>
         ${a.zweisprachig ? `<button class="btn small ghost" id="hoerZweisprachig" style="margin:-4px auto 10px;display:flex">
           🔊 ${esc(a.zweisprachig.de)} → ${esc(a.zweisprachig.en)}</button>` : ''}
         <div id="antwortbereich"></div>
@@ -1664,6 +2322,7 @@ function screenSession(p, opts = {}) {
       </div>
       <p class="muted small center">${esc(a.wegInfo.hinweis)}</p>`;
     view().querySelector('#raus').onclick = () => { stopp(); zeige('lernen'); };
+    window.__aufgabe = a;   // erleichtert automatisches Testen (z. B. Textgleichheit bei Silbenfärbung)
 
     /* Vorlesen */
     const vorleseText = () => [a.hoertext, a.frage,
@@ -1692,7 +2351,7 @@ function screenSession(p, opts = {}) {
 
     if (a.typ === 'choice') {
       bereich.innerHTML = `<div class="choices${a.bildwahl ? ' bildwahl' : ''}">${a.optionen.map(o =>
-        `<button class="choice" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
+        `<button class="choice" data-o="${esc(o)}">${textAnzeige(o)}</button>`).join('')}</div>`;
       if (ergebnis === null) bereich.querySelectorAll('[data-o]').forEach(b =>
         b.onclick = () => auswerten(a, b.dataset.o));
       else bereich.querySelectorAll('[data-o]').forEach(b => {
@@ -2377,6 +3036,8 @@ function screenEltern(p) {
             ${e.emoji} ${e.name} (${e.kurz})</option>`).join('')}</select></label>
       <p class="small muted">Aktuell ${S.zieleFuerEtappe(p).length} Lernziele freigeschaltet.</p>
     </div>
+    ${lesehilfeKarte(p)}
+    ${eigeneTexteKarte(p)}
     <div class="card">
       <h3>Vorlesen</h3>
       <p class="muted small">Für Leseanfänger und Kinder mit Leseschwäche: Die App liest jede Aufgabe
@@ -2425,6 +3086,8 @@ function screenEltern(p) {
   view().querySelector('#vorleseSchalter').onclick = () => {
     p.vorlesen = !p.vorlesen; S.speichern(); zeige('eltern');
   };
+  lesehilfeVerdrahten(p);
+  view().querySelector('#zuEigenerText').onclick = () => zeige('eigenertext');
 
   /* Speicher-Status anzeigen und dauerhaften Speicher anfordern */
   (async () => {

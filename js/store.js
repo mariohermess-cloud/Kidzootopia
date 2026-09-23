@@ -4,6 +4,7 @@
 import { punkteFuer } from './punkte.js';
 import { TALENTE, WEGE, ZIELE, ABZEICHEN, ETAPPEN } from './data.js';
 import { auswerten } from './talenttest.js';
+import { LRS_VOREINSTELLUNG, normalisiere as lesehilfeNormalisieren } from './lesehilfe.js';
 
 const KEY = 'kidzootopia.v1';
 const heute = () => new Date().toISOString().slice(0,10);
@@ -109,10 +110,19 @@ function migriere(p) {
   p.stats.letzterTag      ??= null;
   p.stats.tage            ??= {};
   p.ueberraschung ||= { letzte: null, serie: 0, serieBest: 0 };
+  /* Lesehilfe bei Legasthenie/LRS – pro Profil einstellbar (siehe js/lesehilfe.js).
+     Ganz alte Profile kannten das Feld noch gar nicht, deshalb normalisiert
+     werden statt nur ??= – so ergänzen sich auch fehlende Einzelfelder. */
+  p.lesehilfe = lesehilfeNormalisieren(p.lesehilfe);
+  /* Eigene Texte (fotografiert oder eingetippt) - siehe js/texterkennung.js
+     und js/textaufbereitung.js. Gespeichert wird ausschliesslich Text, nie
+     ein Bild - das Foto verlaesst nie das Geraet und wird nach der Erkennung
+     gar nicht erst aufbewahrt. */
+  p.eigeneTexte ||= [];
   return p;
 }
 
-export function neuesProfil({ name, avatar, klasse, etappe }) {
+export function neuesProfil({ name, avatar, klasse, etappe, lrs }) {
   const stufe = Number(etappe) || 1;
   const p = migriere({
     id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
@@ -121,10 +131,26 @@ export function neuesProfil({ name, avatar, klasse, etappe }) {
     klasse: Number(klasse) || [3, 6, 9, 12, 13][stufe - 1],
     erstellt: heute(), testGemacht: false, testDatum: null
   });
+  /* Wurde beim Anlegen "Mein Kind tut sich mit dem Lesen schwer" angehakt,
+     startet die Lesehilfe direkt mit der LRS-Voreinstellung, und Vorlesen
+     wird gleich mit eingeschaltet – beides lässt sich im Eltern-Bereich
+     jederzeit wieder ändern. */
+  if (lrs) {
+    p.lesehilfe = { ...LRS_VOREINSTELLUNG };
+    p.vorlesen = true;
+  }
   db.profile.push(p);
   db.aktiv = p.id;
   speichern();
   return p;
+}
+
+/* Lesehilfe-Einstellungen ändern (Eltern-Bereich) – nur die übergebenen
+   Felder werden angepasst, der Rest bleibt wie er war. */
+export function setzeLesehilfe(profil, teil) {
+  profil.lesehilfe = lesehilfeNormalisieren({ ...profil.lesehilfe, ...teil });
+  speichern();
+  return profil.lesehilfe;
 }
 
 export function loescheProfil(id) {
@@ -609,6 +635,54 @@ export function merkeUeberraschungsloesung(profil, bonus) {
   profil.stats.punkte = (profil.stats.punkte || 0) + bonus;
   speichern();
   return true;
+}
+
+/* --------------------------- Eigene Texte ---------------------------
+   Ein Erwachsener fotografiert oder tippt einen Schultext ab (siehe
+   js/texterkennung.js), prueft und teilt ihn in mundgerechte Abschnitte
+   (js/textaufbereitung.js) - gespeichert wird ausschliesslich der geprueft
+   Text, nie ein Bild. Eine feste Obergrenze verhindert, dass der Speicher
+   auf dem Geraet unbegrenzt waechst; ist sie erreicht, faellt der aelteste
+   Text heraus, genau wie beim Gedaechtnis gegen Wiederholungen oben. */
+const EIGENE_TEXTE_MAX = 50;
+
+export function eigeneTexte(profil) {
+  return profil.eigeneTexte || [];
+}
+
+export function eigenenTextSpeichern(profil, { titel, abschnitte }) {
+  const saubereAbschnitte = (abschnitte || [])
+    .map(a => String(a || '').trim())
+    .filter(Boolean);
+  if (!saubereAbschnitte.length) throw new Error('Kein Text zum Speichern vorhanden.');
+  profil.eigeneTexte ||= [];
+  const eintrag = {
+    id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    titel: String(titel || 'Eigener Text').trim().slice(0, 60) || 'Eigener Text',
+    abschnitte: saubereAbschnitte,
+    erstellt: heute(),
+    gelesen: 0
+  };
+  profil.eigeneTexte.push(eintrag);
+  if (profil.eigeneTexte.length > EIGENE_TEXTE_MAX)
+    profil.eigeneTexte.splice(0, profil.eigeneTexte.length - EIGENE_TEXTE_MAX);
+  speichern();
+  return eintrag;
+}
+
+export function eigenenTextLoeschen(profil, id) {
+  profil.eigeneTexte = (profil.eigeneTexte || []).filter(t => t.id !== id);
+  speichern();
+}
+
+/* Wird nach jedem vollstaendig gelesenen Abschnitt gezaehlt - nicht nach
+   jedem Durchgang, sonst waechst die Zahl allein durch das dreimalige
+   Wiederholen desselben Abschnitts. */
+export function eigenenTextGelesenVermerken(profil, id) {
+  const t = (profil.eigeneTexte || []).find(x => x.id === id);
+  if (!t) return;
+  t.gelesen = (t.gelesen || 0) + 1;
+  speichern();
 }
 
 /* Geisterrennen: die Zeit-Punkte-Kurve der bisher besten Runde, zum

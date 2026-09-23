@@ -5,12 +5,18 @@
   --ok:#12a05c; --ok-soft:#e2f7ec; --bad:#e04b4b; --bad-soft:#fde8e8;
   --warn:#f0a202; --shadow:0 8px 24px rgba(40,30,110,.10);
   --r:20px; --safe-b:env(safe-area-inset-bottom,0px);
+  /* Lesehilfe bei Legasthenie/LRS (js/lesehilfe.js setzt diese je Profil neu).
+     Voreinstellung hier = genau das heutige Aussehen, falls js/ui.js aus
+     irgendeinem Grund noch nicht gelaufen ist. */
+  --lese-groesse:1; --lese-buchstabe:0.01em; --lese-wort:0.15em; --lese-zeile:1;
+  --lh-blau:#2b6bd9; --lh-rot:#c93b3b;
 }
 @media (prefers-color-scheme: dark){
   :root{ --bg:#14122b; --card:#1e1b3d; --ink:#f2f0ff; --muted:#a9a3d6;
     --line:#2e2a55; --brand:#8f83ff; --brand-soft:#2a2557;
     --ok:#4cd493; --ok-soft:#17372a; --bad:#ff8080; --bad-soft:#3a1f26;
-    --shadow:0 8px 24px rgba(0,0,0,.35); }
+    --shadow:0 8px 24px rgba(0,0,0,.35);
+    --lh-blau:#8fb8ff; --lh-rot:#ff9d9d; }
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -341,9 +347,90 @@ canvas.mini{width:100%;height:auto;aspect-ratio:1;background:var(--bg);
 /* Solange gefragt wird, tritt der Rest der Knopfleiste zurück */
 .row.fragt > *:not(.nachfrage){display:none}
 
+/* ---------------- Lesehilfe bei Legasthenie/LRS ----------------
+   Wirkt nur mit der Klasse .lh-an am body (js/ui.js, gesteuert über
+   js/lesehilfe.js je Profil). Ohne diese Klasse sieht alles exakt so aus
+   wie vorher – die Variablen stehen dann auf den Werten von heute.
+
+   Wichtig: jede Fläche hat ihre EIGENE Grundgröße (.task 1.3rem, .lesetext
+   1.45rem, .silbenbild 1.2rem, #hoertext ist zugleich .small = .85rem). Der
+   Faktor --lese-groesse muss auf diese Grundgröße multipliziert werden -
+   nicht auf 1em, sonst würde "größer" bei kleineren Flächen (z. B. .task)
+   tatsächlich KLEINER als vorher ausfallen. Ebenso beim Zeilenabstand. */
+.lh-an .task{
+  font-size:calc(1.3rem * var(--lese-groesse));
+  line-height:calc(1.45 * var(--lese-zeile));
+  letter-spacing:var(--lese-buchstabe); word-spacing:var(--lese-wort);
+}
+.lh-an .choice{
+  font-size:calc(1.05rem * var(--lese-groesse));
+  line-height:calc(1.5 * var(--lese-zeile));
+  letter-spacing:var(--lese-buchstabe); word-spacing:var(--lese-wort);
+}
+/* Bild-Auswahl (English Basics): riesige Emoji statt Text - die dürfen durch
+   die Lesehilfe nicht kleiner werden als ihre eigentliche Größe (2.6rem). */
+.lh-an .choices.bildwahl .choice{ font-size:calc(2.6rem * var(--lese-groesse)); line-height:1 }
+.lh-an .lesetext{
+  font-size:calc(1.45rem * var(--lese-groesse));
+  line-height:calc(2.1 * var(--lese-zeile));
+  letter-spacing:var(--lese-buchstabe); word-spacing:var(--lese-wort);
+}
+.lh-an #hoertext{
+  font-size:calc(.85rem * var(--lese-groesse));
+  line-height:calc(1.5 * var(--lese-zeile));
+  letter-spacing:var(--lese-buchstabe); word-spacing:var(--lese-wort);
+}
+.lh-an .silbenbild{
+  font-size:calc(1.2rem * var(--lese-groesse));
+  line-height:calc(2 * var(--lese-zeile));
+  letter-spacing:var(--lese-buchstabe); word-spacing:var(--lese-wort);
+}
+
+/* Silben abwechselnd blau/rot statt Tinte/Marke – kräftig und kontrastreich,
+   im Dunkelmodus hellere Töne (siehe --lh-blau/--lh-rot oben). */
+.lh-blaurot .sil.s0{ color:var(--lh-blau) }
+.lh-blaurot .sil.s1{ color:var(--lh-rot) }
+
+/* Silbenbögen: ein Bogen unter jeder Silbe, wie in Grundschulfibeln gedruckt.
+   Der Bogen sitzt als ::after mit eigenem, um 1px eingerücktem linken/rechten
+   Rand - dadurch bleiben die Bögen zweier Silben DESSELBEN Wortes fast
+   zusammenhängend (nur 1-2px Lücke), während der viel größere Abstand
+   zwischen WÖRTERN (--lese-wort, siehe oben) das Wort als Einheit erkennbar
+   hält. Kein zusätzlicher margin zwischen Silben - das würde ein Wort wie
+   zwei Wörter aussehen lassen. Silben ohne Buchstaben (Klasse "nobogen": ein
+   einzelnes Satzzeichen, eine Ziffer, ein Emoji) bekommen keinen Bogen. */
+.lh-boegen .sil{ position:relative; padding-bottom:4px }
+.lh-boegen .sil:not(.nobogen)::after{
+  content:''; position:absolute; left:1px; right:1px; bottom:0;
+  border-bottom:3px solid currentColor; border-radius:0 0 8px 8px;
+}
+.lh-boegen .sil.jetzt::after{ display:none }
+
+/* Lesefenster NUR im Lesepult (#leseText) - eine Live-Vorschau anderswo mit
+   der Klasse .lesetext (z. B. im Eltern-Bereich) hat keine "zeile-aktiv"
+   markierten Wörter und würde sonst komplett ausgegraut wirken. */
+.lh-fenster #leseText .wort{ opacity:.3; transition:opacity .25s ease }
+.lh-fenster #leseText .wort.zeile-aktiv{ opacity:1 }
+@media (prefers-reduced-motion: reduce){ .lh-fenster #leseText .wort{ transition:none } }
+.lesefenster-nav{display:flex;gap:10px;margin-top:10px}
+.lesefenster-nav .btn{min-height:48px}
+
 /* Rückblick am Rundenende: jede Antwort mit Erklärung */
 .rueckblick > summary{cursor:pointer;list-style:none}
 .rueckblick > summary::-webkit-details-marker{display:none}
 .rueckblick-item{padding:10px 0;border-top:1px solid var(--line)}
 .rueckblick-item:first-child{border-top:none}
 .rueckblick-frage{font-weight:700}
+
+/* Eigene Texte: Zuschnitt-Werkzeug (js/ui.js). Griffe groß genug für den
+   Daumen (mind. 32px), touch-action:none verhindert, dass das Ziehen des
+   Rahmens gleichzeitig die Seite scrollt. */
+#zuschnittHuelle{touch-action:none}
+.zuschnitt-griff{touch-action:none;cursor:grab;border:3px solid var(--card)}
+#zuschnittRahmen{touch-action:none;cursor:move}
+
+/* Von der Texterkennung als unsicher gemeldete Wörter: deutlich gelb, mit
+   dunkler Schrift - unabhängig vom Hell-/Dunkelmodus gut lesbar. */
+mark.unsicheres-wort, .lesetext mark{
+  background:#ffe066; color:#221d3a; border-radius:4px; padding:0 2px;
+}

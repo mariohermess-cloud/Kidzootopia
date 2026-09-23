@@ -210,6 +210,22 @@ stellt eine Etappe höher.
      **keine Diagnose**: Eine Lese-Rechtschreib-Schwäche erkennt man nicht an einer Tonaufnahme.
      Beides steht so auch im Eltern-Bereich.
 
+   **Lesehilfe bei Legasthenie/LRS** 📖 – *pro Kind einstellbar, im Eltern-Bereich*
+   Ein Kind, das stockend liest, Wörter auslässt oder mit ähnlich aussehenden/klingenden
+   Wörtern vertauscht, braucht vor allem eins: einen leichter lesbaren Text, nicht eine andere
+   Schrift. Belegt wirkt vor allem zusätzlicher **Buchstabenabstand** (Zorzi u. a. 2012, PNAS –
+   verbessert Lesetempo und -genauigkeit bei Legasthenie messbar). Dazu kommen größere Schrift,
+   mehr Wort- und Zeilenabstand, die **Silbenmethode** (abwechselnd blau/rot gefärbte Silben mit
+   Silbenbögen, wie in der Grundschulfibel) und ein **Lesefenster**, das beim Vorlesen üben nur
+   die gerade gelesene Zeile zeigt, während der Rest zurücktritt. Auf Wunsch werden auch
+   Aufgabentexte und Auswahl-Antworten silbenweise eingefärbt. Bewusst **nicht** enthalten: eine
+   eigene „Legasthenie-Schrift" wie OpenDyslexic – dafür zeigen Studien keinen Vorteil, und es
+   müsste zusätzlich etwas nachgeladen werden. Beim Anlegen eines Kindes lässt sich die Lesehilfe
+   direkt mit einer sinnvollen Voreinstellung einschalten; im Eltern-Bereich steht dieselbe
+   Einstellung mit einer Live-Vorschau, jederzeit änderbar. **Wichtig:** Die App ersetzt keine
+   LRS-Diagnostik oder -Förderung – bei Verdacht hilft die schulische Beratungsstelle oder eine
+   Fachdiagnostik weiter.
+
 10. **Schmierblatt an jeder Aufgabe** 📝 – *die Nebenrechnung zum Mitmalen*
    „Zeichne eine Skizze" ist die älteste und robusteste Problemlöse-Strategie überhaupt – bei
    Polya ein eigener Schritt, in der Grundschule der übliche Weg von der Sprache zur Rechnung.
@@ -643,6 +659,37 @@ Zusätzlich gibt es Export und Import als Datei für ein Backup am Rechner.
 
 ---
 
+## Eigene Texte fotografieren
+
+*Eltern → 📸 Eigene Texte* macht aus einer Schulbuchseite oder einem Arbeitsblatt einen
+Lesetext fürs Vorlesen üben – mit denselben Silbenfarben, demselben Lesefenster und derselben
+Mikrofonmessung wie bei den übrigen Texten.
+
+**Ablauf:** Quelle wählen (📷 fotografieren, 🖼️ Bild auswählen oder 📋 Text einfügen/eintippen –
+auf iPhone/iPad geht Letzteres auch über „Live Text“ in der Fotos-App, ganz ohne Foto hier) →
+den Bereich zuschneiden (bei zwei Spalten: erst die eine, mit „➕ Weiteren Bereich aus demselben
+Bild“ danach die andere – der zweite Text wird angehängt) → die Texterkennung läuft, danach
+prüft ein Erwachsener den Text.
+
+**Datenschutz:** Das Foto verlässt nie das Gerät und wird nirgends gespeichert – weder auf einem
+Server noch im Speicher der App. Gespeichert wird ausschließlich der von Ihnen geprüfte Text.
+Die Erkennung selbst läuft vollständig auf dem Gerät (Tesseract.js, Apache-2.0); ein Sprachmodell
+von rund 9 MB wird dafür **einmalig** geladen und danach offline zwischengespeichert (eigener,
+dauerhafter Speicherbereich im Service Worker – der wird beim „Offline-Speicher leeren“ bewusst
+nicht mit gelöscht, sonst müssten die 9 MB nach jeder neuen Fassung erneut geladen werden).
+
+**Prüfschritt:** Wörter, die sich die Texterkennung nicht sicher war, erscheinen gelb hinterlegt
+– bitte kurz nachsehen und im Textfeld berichtigen. Ein falsch erkanntes Wort ist für ein Kind
+mit Leseschwäche besonders verwirrend, deshalb liest hier immer erst ein Erwachsener mit.
+Danach: Titel, Abschnittslänge (1–3 Sätze) und eine Vorschau der fertigen Abschnitte in
+Silbendarstellung.
+
+Beim Kind erscheint unter *Lernen → 📸 Meine Texte* die Liste der gespeicherten Texte. Vor jedem
+Abschnitt gibt es „🔊 Erst anhören“ (das Kind hört gut zu – das ist eine Stärke, die genutzt
+wird), danach wird wie beim normalen Lautlesen bis zu dreimal derselbe Abschnitt geübt.
+
+---
+
 ## Tests
 
 ```bash
@@ -663,6 +710,9 @@ npm run test:ueberraschung # Rätsel des Tages: für alle gleich, immer rein rec
 npm run test:englisch     # English Basics: bildbasiert, jede Vokabel deutsch ≠ englisch
 npm run test:tiererkennung # Tiererkennung: alle sechs Insektenarten kommen vor und sind erklärt
 npm run test:strandfunde  # Strandfunde: jedes Bild gehört eindeutig zu genau einem Fund
+npm run test:lesehilfe    # Lesehilfe bei LRS: Einstellungen, Migration, Silbierung ohne Textverlust
+npm run test:texterkennung # Textaufbereitung für OCR: bereinigen, unsichere Wörter, Abschnitte
+npm run test:eigenetexte # Eigene Texte: Speichern, Löschen, Obergrenze, Migration, Umzugs-Code
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
@@ -691,6 +741,9 @@ js/rennen.js          Renn-Modus: Zeit-Punkte-Kurve der Runde, Geisterrennen geg
 js/ueberraschung.js   Überraschungsrätsel des Tages: aus dem Kalendertag berechnet, für alle gleich
 js/silben.js          Deutsche Silbentrennung – Grundlage der Silbenfärbung
 js/lesen.js           Lesetexte und Auswertung der Leseflüssigkeit (Tempo, Pausen, Betonung)
+js/lesehilfe.js       Lesehilfe bei Legasthenie/LRS: Einstellungen, CSS-Variablen, Zeilenfenster
+js/texterkennung.js   Texterkennung (OCR) auf dem Gerät – Tesseract.js, nie ein Server
+js/textaufbereitung.js Aus OCR-Rohtext einen Silben-Lesetext machen: bereinigen, Abschnitte
 js/version.js         Fassung, Datum und Änderungsverlauf – die einzige Stelle dafür
 js/kunstanalyse.js    Fachliche Zeichnungsauswertung: Feinmotorik, Entwicklungsstufe,
                       Menschzeichnung (Goodenough/Harris), Kreativität (Torrance)

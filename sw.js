@@ -2,21 +2,30 @@
    Die Nummer in CACHE muss zu NUMMER in js/version.js passen – sonst zeigt der
    Eltern-Bereich eine andere Fassung an als die, die ausgeliefert wird.
    tests/version.mjs prueft das. */
-const CACHE = 'kidzootopia-v36';
+const CACHE = 'kidzootopia-v38';
 const DATEIEN = [
   './', './index.html', './app.css', './manifest.webmanifest',
   './icons/icon.svg', './icons/icon-maskable.svg',
   './js/app.js', './js/ui.js', './js/store.js', './js/engine.js',
   './js/generators.js', './js/data.js', './js/chart.js', './js/talenttest.js',
-  './js/sprache.js', './js/geschichten.js', './js/klassiker.js', './js/philosophie.js', './js/hauptwerke.js', './js/fortgeschritten.js', './js/installhilfe.js', './js/knacknuss_familien.js', './js/zeichnen.js', './js/avatar.js', './js/kunstanalyse.js', './js/version.js', './js/silben.js', './js/lesen.js', './js/skizze.js', './js/zahlfeld.js', './js/kommentar.js', './js/aussprache.js', './js/punkte.js', './js/rennen.js', './js/ueberraschung.js'
+  './js/sprache.js', './js/geschichten.js', './js/klassiker.js', './js/philosophie.js', './js/hauptwerke.js', './js/fortgeschritten.js', './js/installhilfe.js', './js/knacknuss_familien.js', './js/zeichnen.js', './js/avatar.js', './js/kunstanalyse.js', './js/version.js', './js/silben.js', './js/lesen.js', './js/skizze.js', './js/zahlfeld.js', './js/kommentar.js', './js/aussprache.js', './js/punkte.js', './js/rennen.js', './js/ueberraschung.js', './js/lesehilfe.js', './js/texterkennung.js', './js/textaufbereitung.js'
 ];
+
+/* Die Texterkennung (Tesseract.js, WASM, Sprachmodell) liegt in einem
+   EIGENEN, dauerhaften Cache und wird beim Aufraeumen NICHT geloescht -
+   anders als der Rest der App soll dieses knapp 9 MB grosse Paket nicht bei
+   jeder neuen Fassung erneut heruntergeladen werden muessen. Es steht
+   deshalb auch NICHT in DATEIEN (kein addAll beim Installieren): geladen
+   wird es erst, wenn "Eigene Texte" wirklich benutzt wird, und dann ueber
+   den fetch-Handler unten dauerhaft zwischengespeichert. */
+const TEXTERKENNUNG_CACHE = 'kidzootopia-texterkennung-v1';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(DATEIEN)).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys()
-    .then(k => Promise.all(k.filter(n => n !== CACHE).map(n => caches.delete(n))))
+    .then(k => Promise.all(k.filter(n => n !== CACHE && n !== TEXTERKENNUNG_CACHE).map(n => caches.delete(n))))
     .then(() => self.clients.claim()));
 });
 /* Beim Aufruf der Seite selbst zuerst das Netz fragen, sonst den Zwischenspeicher.
@@ -34,6 +43,14 @@ const AUS_DEM_NETZ = req => fetch(req).then(res => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+
+  /* Vendor-Dateien der Texterkennung: eigener dauerhafter Cache, erst beim
+     ersten wirklichen Gebrauch gefuellt (siehe Kommentar bei TEXTERKENNUNG_CACHE). */
+  if (e.request.url.includes('/vendor/tesseract/')) {
+    e.respondWith(caches.open(TEXTERKENNUNG_CACHE).then(c => c.match(e.request).then(treffer =>
+      treffer || fetch(e.request).then(res => { if (res.ok) c.put(e.request, res.clone()); return res; }))));
+    return;
+  }
 
   if (e.request.mode === 'navigate') {
     e.respondWith(new Promise(fertig => {
