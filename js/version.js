@@ -18,7 +18,8 @@ export const VERLAUF = [
     'Neu: Lesespiele – sechs kurze, farbige Übungen gegen genau die Fehler, die beim stockenden Lesen entstehen',
     'Wort-Detektiv (Bild passt zu welchem Wort?), b/d/p/q-Verwechslung, Silben hören & bauen, Quatschwörter erkennen, Satz-Detektiv und Blitzlesen',
     'Kein Zeitdruck und keine Punktabzüge – beim Blitzlesen darf man sich das Wort jederzeit kostenlos noch einmal zeigen lassen',
-    'Die Anzeigedauer beim Blitzlesen richtet sich automatisch nach dem, was das Kind schon schafft'
+    'Die Anzeigedauer beim Blitzlesen richtet sich automatisch nach dem, was das Kind schon schafft',
+    'Renn-Modus: der Kreisel war nach einer Runde mit viel Scrollen manchmal unter der Kopfleiste versteckt – das Rennen ließ sich dann nicht beenden'
   ]},
   { nr: 39, stand: '23.09.2026', was: [
     'Neu beim Vorlesen üben: „Echo-Lesen" – die App liest vor, die Silben leuchten mit, dann liest das Kind denselben Satz nach',

@@ -3150,6 +3150,14 @@ function screenSession(p, opts = {}) {
       <button class="btn quiet" id="heim" style="margin-top:10px">Zur Übersicht</button>`;
     view().querySelector('#nochmal').onclick = () => zeige('session', opts);
     view().querySelector('#heim').onclick = () => zeige('lernen');
+    /* Rundenende ersetzt den Bildschirm direkt (ohne zeige()), das dort
+       sonst übliche Zurücksetzen auf Scrollposition 0 fehlt hier also. Blieb
+       vom letzten Aufgabenbildschirm (z. B. einem hohen Zeichenbrett) eine
+       Scrollposition übrig, konnte die sticky Kopfleiste (position:sticky,
+       z-index über dem Inhalt) genau über dem Rennkreisel kleben bleiben -
+       der Kreisel war dann weder sichtbar noch antippbar, das Rennen ließ
+       sich nie beenden. */
+    window.scrollTo(0, 0);
     if (view().querySelector('#rennKreisel')) rennenStarten(p, sess, geistVorher);
   };
 
