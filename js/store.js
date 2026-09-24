@@ -8,6 +8,7 @@ import { LRS_VOREINSTELLUNG, normalisiere as lesehilfeNormalisieren } from './le
 import * as Lesemodi from './lesemodi.js';
 import { blitzAnpassen, BLITZ_MS_START } from './lesespiele.js';
 import * as Lernmotor from './lernmotor.js';
+import * as Lesetest from './lesetest.js';
 
 const KEY = 'kidzootopia.v1';
 const heute = () => new Date().toISOString().slice(0,10);
@@ -133,7 +134,22 @@ function migriere(p) {
   /* Lernmotor (js/lernmotor.js): Leitner-Kaesten je Lernelement, Tagesziel
      Lesen, Tagesminuten, Sammelalbum. Rein additiv, siehe dort. */
   Lernmotor.migriereLernZustand(p);
+  /* Lesetest (js/lesetest.js): der Verlauf der bisherigen Testergebnisse.
+     Rein additiv, siehe dort. */
+  Lesetest.migriereZustand(p);
   return p;
+}
+
+/* --- Lesetest: Verlauf lesen und ein neues Ergebnis anhängen --- */
+export function lesetestLetzter(profil) {
+  const v = profil.lesetests || [];
+  return v.length ? v[v.length - 1] : null;
+}
+
+export function lesetestSpeichern(profil, eintrag) {
+  profil.lesetests = Lesetest.verlaufSpeichern(profil.lesetests || [], eintrag);
+  speichern();
+  return profil.lesetests[profil.lesetests.length - 1];
 }
 
 export function neuesProfil({ name, avatar, klasse, etappe, lrs }) {

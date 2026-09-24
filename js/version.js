@@ -9,11 +9,18 @@
    Bei jeder Änderung: NUMMER hier hochzählen UND in sw.js (CACHE) gleichziehen.
    tests/version.mjs prüft, dass beide übereinstimmen. */
 
-export const NUMMER = 41;
+export const NUMMER = 42;
 export const STAND = '24.09.2026';
 
 /* Neueste zuerst. Kurz und in Alltagssprache – das lesen Eltern, nicht Entwickler. */
 export const VERLAUF = [
+  { nr: 42, stand: '24.09.2026', was: [
+    'Neu: Lesetest – ein kurzer, gemeinsamer Test (etwa 15 Minuten) für Eltern und Kind: Wörter lesen, Quatschwörter lesen, ähnliche Wörter unterscheiden, Tempo & Takt (mit Mikrofon, überspringbar) und Verstehen (selbst gelesen vs. vorgelesen)',
+    'Der Lesetest ist ausdrücklich KEINE Diagnose und ersetzt keine standardisierten Verfahren – er zeigt nur, wo es gerade hakt, und schlägt dazu passende Übungen aus der App vor',
+    'Ergebnisse werden auf dem Gerät gespeichert, mit Verlauf und Vergleich zum letzten Test ("+6 Wörter pro Minute seit dem 3. September")',
+    'Das Kind sieht während und nach dem Test nur Ermutigung, keine Zahlen und keine Fehler',
+    'Erinnerung im Eltern-Bereich, wenn der letzte Lesetest mehr als vier Wochen her ist'
+  ]},
   { nr: 41, stand: '24.09.2026', was: [
     'Ein Lernweg kam bisher nie dran – behoben: bei fünf möglichen Wegen wählte die App eine Übungsbrücke immer nur aus den zwei schwächsten, nie aus dem mittleren',
     'Neu: Die App merkt sich jetzt, welches Wort, welcher Satz oder welche Silbe schwerfällt, und bringt genau das in wachsenden Abständen wieder – wie ein Karteikasten',

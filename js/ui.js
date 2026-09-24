@@ -27,6 +27,7 @@ import * as Lesehilfe from './lesehilfe.js';
 import * as Texterkennung from './texterkennung.js';
 import * as Textaufbereitung from './textaufbereitung.js';
 import * as Lesemodi from './lesemodi.js';
+import * as Lesetest from './lesetest.js';
 
 const view = () => document.getElementById('view');
 export const esc = s => String(s).replace(/[&<>"']/g, c =>
@@ -58,7 +59,7 @@ export function zeige(neu, daten) {
   ({ start:screenStart, lernen:screenLernen, talente:screenTalente, wege:screenWege,
      eltern:screenEltern, test:screenTest, session:screenSession, profile:screenProfile,
      galerie:screenGalerie, ueberraschung:screenUeberraschung, eigenertext:screenEigenerText,
-     meinetexte:screenMeineTexte, album:screenAlbum }[neu] || screenLernen)(p, daten);
+     meinetexte:screenMeineTexte, album:screenAlbum, lesetest:screenLesetest }[neu] || screenLernen)(p, daten);
 }
 
 /* Lesehilfe bei Legasthenie/LRS auf das aktive Profil anwenden: CSS-Variablen
@@ -406,7 +407,379 @@ function leseProfilKarte(p) {
     </div>`;
 }
 
+/* Karte im Eltern-Bereich: letztes Lesetest-Ergebnis, Vergleich zum vorigen
+   Test und eine freundliche Erinnerung, falls der letzte Test schon über
+   vier Wochen her ist (siehe js/lesetest.js: erinnerungFaellig). */
+function lesetestKarte(p) {
+  const letzter = S.lesetestLetzter(p);
+  const voriger = (p.lesetests || [])[(p.lesetests || []).length - 2] || null;
+  const erinnerung = Lesetest.erinnerungFaellig(letzter?.datum);
+  return `
+    <div class="card">
+      <h3>📋 Lesetest</h3>
+      <p class="muted small">Ein kurzer, gemeinsamer Test (etwa 15 Minuten): Wörter lesen,
+        Quatschwörter lesen, ähnliche Wörter unterscheiden, Tempo &amp; Takt (mit Mikrofon,
+        überspringbar) und Verstehen. <b>Keine Diagnose</b> – nur ein Blick darauf, wo es
+        gerade hakt, mit passenden Übungsvorschlägen.</p>
+      ${letzter ? `
+        <div class="card flat" style="background:var(--bg);margin-top:10px">
+          <p class="small" style="margin:0"><b>Letzter Test: ${esc(Lesetest.datumKurz(letzter.datum))}</b></p>
+          <p class="small muted" style="margin:6px 0 0">
+            ${letzter.woerter?.proMinute ?? '–'} Wörter/Min ·
+            ${letzter.quatsch?.proMinute ?? '–'} Quatschwörter/Min</p>
+          ${voriger ? `<p class="small" style="margin:6px 0 0">${esc(Lesetest.verlaufVergleich(voriger, letzter)?.text || '')}</p>` : ''}
+        </div>` : `<p class="small">Noch kein Lesetest gemacht.</p>`}
+      ${erinnerung && letzter ? `<p class="small" style="margin-top:10px">
+        🔔 Der letzte Test ist eine Weile her – wenn es passt, ist ein neuer eine gute Idee.
+        Kein Muss, kein Zeitdruck.</p>` : ''}
+      <button class="btn" id="zumLesetest" style="margin-top:10px">📋 Lesetest starten</button>
+    </div>`;
+}
 
+/* ============================================================================
+   LESETEST: adaptives Leseprofil, Eltern und Kind gemeinsam (~15 Minuten).
+   Reine Anzeige/Verkabelung – die gesamte Auswertung steckt in js/lesetest.js
+   (DOM-frei, siehe tests/lesetest.mjs).
+
+   Für Ende-zu-Ende-Tests lässt sich die Dauer der Teile 1 und 2 (normal
+   60000ms) über window.__testDauerMs verkürzen – NUR zu Testzwecken, siehe
+   tests/e2e.mjs. Ohne diesen Schalter gilt immer die volle Minute.
+   ============================================================================ */
+function screenLesetest(p) {
+  /* Die Lesehilfe-Einstellungen des Profils gelten hier bewusst NICHT: eine
+     neutrale Darstellung hält die Ergebnisse über mehrere Tests hinweg
+     vergleichbar. zeige() wendet beim nächsten Bildschirmwechsel automatisch
+     wieder die gewohnte Einstellung an. */
+  lesehilfeAnwenden(null);
+  const teilDauerMs = () => (Number.isFinite(window.__testDauerMs) ? window.__testDauerMs : 60000);
+  const etappe = Math.max(1, Math.min(2, p.etappe || 1));
+
+  const stand = {
+    protokollWoerter: [], protokollQuatsch: [],
+    treppe: Lesetest.neuerTreppenZustand(), unterscheidenAntworten: [],
+    tempoTakt: null, verstehen: null
+  };
+
+  const kopf = (titel, teilNr) => `
+    <div class="row spread"><span class="pill">📋 Teil ${teilNr}/5 · ${esc(titel)}</span></div>`;
+
+  const ueberspringenKnopf = (weiter) =>
+    `<button class="btn ghost small" id="ueberspringen" style="margin-top:10px">Diesen Teil überspringen</button>`;
+
+  /* -------------------------------------------------------------- Intro */
+  const intro = () => {
+    view().innerHTML = `
+      <div class="hero"><h2>📋 Lesetest</h2>
+        <p>Ein kurzer Test für Sie beide gemeinsam – etwa 15 Minuten, in Ruhe.</p></div>
+      <div class="card">
+        <h3>Bevor es losgeht</h3>
+        <ul class="clean small">
+          <li>👨‍👩‍👧 Ihr Kind sitzt daneben, Sie bedienen die Uhr und tippen mit.</li>
+          <li>⏸️ Jederzeit pausieren oder abbrechen – jeder Teil ist einzeln überspringbar.</li>
+          <li>🔤 Die Lesehilfe-Einstellungen (Farben, Schrift, Fenster) sind für diesen Test
+            ausgeschaltet, damit die Darstellung neutral bleibt und die Ergebnisse über
+            mehrere Tests hinweg vergleichbar sind. Danach gilt wieder die gewohnte Einstellung.</li>
+          <li>🔒 Ein möglicher Mikrofon-Teil misst nur die Lautstärke, nichts wird gespeichert
+            oder verschickt.</li>
+        </ul>
+        <p class="small" style="margin-top:10px"><b>Wichtig: Das ist kein Diagnoseverfahren.</b>
+          Fachleute nutzen dafür standardisierte Tests (z. B. SLRT-II, ELFE II, WLLP-R).
+          Dieser Test zeigt nur, woran es gerade hakt, und schlägt dazu Übungen aus der App vor.
+          Bei einem Verdacht auf LRS berät die Schule über einen möglichen Nachteilsausgleich.</p>
+        <button class="btn" id="los" style="margin-top:14px;width:100%">Los geht's ➜</button>
+        <button class="btn quiet" id="abbrechen" style="margin-top:10px;width:100%">Abbrechen</button>
+      </div>`;
+    view().querySelector('#los').onclick = () => teil1();
+    view().querySelector('#abbrechen').onclick = () => zeige('eltern');
+  };
+
+  /* ------------------------------------------------- Teil 1 & 2: Tippen */
+  const wortTeil = (teilNr, titel, wortListeVoll, protokollFeld, naechster) => {
+    let liste = [...wortListeVoll];
+    let i = 0;
+    let restMs = teilDauerMs();
+    let timer = null;
+    /* "beendet" ist der Schutz gegen das Rundenende-Rennen: läuft die
+       (verkürzte) Zeit genau in dem Moment ab, in dem ein Tipp unterwegs
+       ist, darf dieser Tipp nicht mehr im Protokoll landen – sonst zählt
+       ein Wort mit, das während der Auswertung schon nicht mehr dran war. */
+    let beendet = false;
+
+    const naechstesWort = () => {
+      if (i >= liste.length) { liste = [...wortListeVoll]; i = 0; }
+      return liste[i];
+    };
+
+    const stopTimer = () => { if (timer) clearInterval(timer); timer = null; };
+    const startTimer = () => {
+      stopTimer();
+      timer = setInterval(() => {
+        restMs -= 250;
+        const anzeige = view().querySelector('#lesetestUhr');
+        if (anzeige) anzeige.textContent = `⏱ ${Math.max(0, Math.ceil(restMs / 1000))} s`;
+        if (restMs <= 0) beenden();
+      }, 250);
+    };
+
+    const renderTipp = () => {
+      view().innerHTML = `
+        <div class="card">${kopf(titel, teilNr)}
+          <p class="small muted" id="lesetestUhr" style="text-align:right;margin:0">⏱ ${Math.ceil(restMs / 1000)} s</p>
+          <p class="task pop" style="text-align:center;font-size:2.2rem;margin:24px 0" id="wortAnzeige">${esc(naechstesWort())}</p>
+          <p class="small muted center">Ihr Kind liest laut – Sie tippen das Ergebnis:</p>
+          <div class="row wrap" style="justify-content:center;gap:10px;margin-top:10px">
+            <button class="btn" id="tippRichtig">✓ richtig</button>
+            <button class="btn ghost" id="tippFalsch">✗ falsch</button>
+            <button class="btn quiet" id="tippAus">⏭ ausgelassen</button>
+          </div>
+          <div style="text-align:center">${ueberspringenKnopf()}</div>
+        </div>`;
+
+      view().querySelector('#tippRichtig').onclick = () => tippe('richtig');
+      view().querySelector('#tippFalsch').onclick = () => renderFehlerart();
+      view().querySelector('#tippAus').onclick = () => tippe('ausgelassen');
+      view().querySelector('#ueberspringen').onclick = () => beenden();
+      startTimer();
+    };
+
+    /* Während der Fehlerart-Wahl sind ✓/✗/⏭ komplett von der Seite (nicht
+       nur per Klick blockiert) – ein Erwachsener kann dann nicht mehr aus
+       Versehen daneben auf einen Tipp-Knopf statt eine Fehlerart tippen.
+       Die Uhr PAUSIERT bewusst dabei: Die Fehlerart in Ruhe auszuwählen
+       gehört zum Protokollieren, nicht zur gemessenen Lesezeit – sonst
+       würde ausgerechnet das sorgfältige Erfassen eines Fehlers das
+       gemessene Tempo verfälschen. Die pausierte Zeit zählt nicht zur
+       Minute; das Wort selbst wurde ja schon gelesen, bevor pausiert wurde. */
+    const renderFehlerart = () => {
+      stopTimer();
+      view().innerHTML = `
+        <div class="card">${kopf(titel, teilNr)}
+          <p class="small muted" id="lesetestUhr" style="text-align:right;margin:0">⏱ ${Math.ceil(restMs / 1000)} s · pausiert</p>
+          <p class="task pop" style="text-align:center;font-size:1.5rem;margin:20px 0">Fehlerart (optional):</p>
+          <div class="choices">
+            ${Lesetest.FEHLERARTEN.map(f => `<button class="choice small" data-f="${f.id}">${esc(f.label)}</button>`).join('')}
+            <button class="choice small" data-f="">ohne Angabe – weiter</button>
+          </div>
+        </div>`;
+      view().querySelectorAll('[data-f]').forEach(b => b.onclick = () => tippe('falsch', b.dataset.f || null));
+    };
+
+    const tippe = (ergebnis, fehlerart = null) => {
+      if (beendet) return;
+      stand[protokollFeld].push({ ergebnis, fehlerart });
+      i++;
+      renderTipp();
+    };
+
+    const beenden = () => {
+      if (beendet) return;
+      beendet = true;
+      stopTimer();
+      naechster();
+    };
+
+    renderTipp();
+  };
+
+  const teil1 = () => {
+    const woerter = Lesetest.wortlisteFuerTest(etappe, 40);
+    wortTeil(1, 'Wörter lesen (1 Minute)', woerter, 'protokollWoerter', teil2);
+  };
+  const teil2 = () => {
+    const kunst = Lesetest.kunstwortlisteFuerTest(30);
+    wortTeil(2, 'Quatschwörter lesen (1 Minute)', kunst, 'protokollQuatsch', () => teil3());
+  };
+
+  /* ------------------------------------------ Teil 3: Ähnliche Wörter */
+  const UNTERSCHEIDEN_ANZAHL = 12;
+  const teil3 = (i = 0) => {
+    if (i >= UNTERSCHEIDEN_ANZAHL) return teil4();
+    const ausschluss = new Set(stand.unterscheidenAntworten.map(a => a.element));
+    const a = Lesetest.unterscheidenAufgabe(stand.treppe.stufe, ausschluss);
+    const start = Date.now();
+    view().innerHTML = `
+      <div class="card">${kopf('Ähnliche Wörter unterscheiden', 3)}
+        <p class="muted small">Jetzt liest dein Kind allein. Frage ${i + 1} von ${UNTERSCHEIDEN_ANZAHL}.</p>
+        <p style="text-align:center;font-size:3.2rem;margin:14px 0">${a.bild}</p>
+        <div class="choices">${a.optionen.map(o => `<button class="choice" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+        <div style="text-align:center">${ueberspringenKnopf()}</div>
+      </div>`;
+    view().querySelectorAll('[data-o]').forEach(b => b.onclick = () => {
+      const richtig = b.dataset.o === a.antwort;
+      const zeitMs = Date.now() - start;
+      stand.treppe = Lesetest.treppeSchritt(stand.treppe, richtig);
+      stand.unterscheidenAntworten.push({ richtig, zeitMs, stufeNach: stand.treppe.stufe, element: a.element });
+      teil3(i + 1);
+    });
+    view().querySelector('#ueberspringen').onclick = () => teil4();
+  };
+
+  /* ------------------------------------------------ Teil 4: Tempo & Takt */
+  const teil4 = () => {
+    const text = Lesen.texteFuer(etappe)[0] || Lesen.TEXTE[0];
+    view().innerHTML = `
+      <div class="card">${kopf('Tempo & Takt (mit Mikrofon)', 4)}
+        <p class="muted small">Freiwillig. Ihr Kind liest den Text einmal laut vor.</p>
+        <div class="lesetext" style="margin:14px 0">${esc(text.text)}</div>
+        <div class="row wrap" style="gap:10px">
+          <button class="btn" id="mikroStart">🎤 Los, ich lese vor</button>
+          <button class="btn quiet" id="mikroFertig" hidden>Fertig</button>
+        </div>
+        <p class="small muted" id="mikroStatus" style="margin-top:8px"></p>
+        <div style="text-align:center">${ueberspringenKnopf()}</div>
+      </div>`;
+    let rec = null;
+    view().querySelector('#mikroStart').onclick = async () => {
+      try {
+        rec = aufnahme();
+        await rec.start();
+        view().querySelector('#mikroStart').hidden = true;
+        view().querySelector('#mikroFertig').hidden = false;
+        view().querySelector('#mikroStatus').textContent = '🔴 Aufnahme läuft …';
+      } catch {
+        view().querySelector('#mikroStatus').textContent = 'Mikrofon nicht verfügbar – Teil wird übersprungen.';
+      }
+    };
+    view().querySelector('#mikroFertig').onclick = () => {
+      rec?.stopp();
+      const huellkurve = rec?.huellkurve || [];
+      const leseWerte = Lesen.auswerten(huellkurve, { text: text.text, schrittMs: SCHRITT_MS });
+      const gipfelListe = Aussprache.gipfel(huellkurve, SCHRITT_MS);
+      const taktMessung = Lesemodi.taktMessen(gipfelListe);
+      stand.tempoTakt = Lesetest.tempoTaktKennzahlen(leseWerte, taktMessung);
+      teil5();
+    };
+    view().querySelector('#ueberspringen').onclick = () => teil5();
+  };
+
+  /* -------------------------------------------------------------- Teil 5 */
+  const teil5 = () => {
+    const paare = Lesetest.textpaareFuer(etappe);
+    const paar = paare[r0(paare.length)];
+    const selbstZuerst = Math.random() < 0.5;
+    const selbstText = selbstZuerst ? paar.a : paar.b;
+    const gehoertText = selbstZuerst ? paar.b : paar.a;
+
+    const fragenRunde = (titel, textObj, i, richtigBisher, weiter) => {
+      if (i >= textObj.fragen.length) return weiter(richtigBisher);
+      const f = textObj.fragen[i];
+      view().innerHTML = `
+        <div class="card">${kopf(titel, 5)}
+          <p class="task pop">${esc(f.frage)}</p>
+          <div class="choices">${shuffleArr(f.optionen).map(o => `<button class="choice" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+        </div>`;
+      view().querySelectorAll('[data-o]').forEach(b => b.onclick = () => {
+        const richtig = b.dataset.o === f.antwort;
+        fragenRunde(titel, textObj, i + 1, richtigBisher + (richtig ? 1 : 0), weiter);
+      });
+    };
+
+    const gehoertVorlesen = (selbstRichtig) => {
+      view().innerHTML = `
+        <div class="card">${kopf('Verstehen: vorgelesen', 5)}
+          <p class="muted small">Jetzt liest die App vor – der Text bleibt verborgen.</p>
+          <p style="text-align:center;font-size:2.4rem;margin:24px 0">🔊</p>
+          <button class="btn" id="vorlesenStart" style="width:100%">Vorlesen starten</button>
+          <div style="text-align:center">${ueberspringenKnopf()}</div>
+        </div>`;
+      view().querySelector('#vorlesenStart').onclick = () => {
+        view().querySelector('#vorlesenStart').disabled = true;
+        vorlesen(gehoertText.text, { tempo: 0.85, beiEnde: () => {
+          fragenRunde('Verstehen: vorgelesen', gehoertText, 0, 0, gehoertRichtig => {
+            stand.verstehen = { selbstRichtig, gehoertRichtig };
+            fertig();
+          });
+        } });
+      };
+      view().querySelector('#ueberspringen').onclick = () => { stand.verstehen = { selbstRichtig, gehoertRichtig: null }; fertig(); };
+    };
+
+    const selbstLesen = () => {
+      view().innerHTML = `
+        <div class="card">${kopf('Verstehen: selbst gelesen', 5)}
+          <p class="muted small">Ihr Kind liest diesen Text einmal für sich, dann kommen Fragen.</p>
+          <div class="lesetext" style="margin:14px 0">${esc(selbstText.text)}</div>
+          <button class="btn" id="weiterFragen" style="width:100%">Fertig gelesen – weiter ➜</button>
+          <div style="text-align:center">${ueberspringenKnopf()}</div>
+        </div>`;
+      view().querySelector('#weiterFragen').onclick = () =>
+        fragenRunde('Verstehen: selbst gelesen', selbstText, 0, 0, gehoertVorlesen);
+      view().querySelector('#ueberspringen').onclick = () => fertig();
+    };
+
+    selbstLesen();
+  };
+
+  const r0 = n => Math.floor(Math.random() * Math.max(1, n));
+  const shuffleArr = a => a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(v => v[1]);
+
+  /* --------------------------------------------------- Auswertung & Ende
+     "fertig" berechnet und speichert EINMAL, dann sieht das Kind zuerst nur
+     Ermutigung (keine Zahlen, keine Fehler) – die Kennzahlen öffnen sich erst
+     über einen eigenen, als "für Eltern" beschrifteten Knopf. */
+  function fertig() {
+    const woerter = Lesetest.woerterAuswerten(stand.protokollWoerter, teilDauerMs());
+    const quatsch = Lesetest.woerterAuswerten(stand.protokollQuatsch, teilDauerMs());
+    const unterscheiden = Lesetest.unterscheidenAuswerten(stand.unterscheidenAntworten);
+    const werte = { woerter, quatsch, verstehen: stand.verstehen, tempoTakt: stand.tempoTakt };
+    const aussagen = Lesetest.profilAussagen(werte);
+    const tipps = Lesetest.empfehlungen(werte);
+
+    const eintrag = {
+      datum: new Date().toISOString(),
+      etappe, woerter, quatsch, unterscheiden, tempoTakt: stand.tempoTakt, verstehen: stand.verstehen,
+      aussagen: aussagen.map(a => a.text), empfehlungen: tipps
+    };
+    const voriger = S.lesetestLetzter(p);
+    S.lesetestSpeichern(p, eintrag);
+    const vergleich = Lesetest.verlaufVergleich(voriger, eintrag);
+    ergebnisKind(eintrag, vergleich);
+  }
+
+  function ergebnisKind(eintrag, vergleich) {
+    view().innerHTML = `
+      <div class="hero"><h2>Super gemacht! 🌟</h2>
+        <p>Du hast den ganzen Lesetest geschafft!</p></div>
+      <div class="card" style="text-align:center">
+        <p style="font-size:3.4rem;margin:10px 0">🎉🌟🎉</p>
+        <p class="small muted">Frag deine Eltern, wenn du willst, was als Nächstes geübt wird.</p>
+        <button class="btn quiet small" id="fuerEltern" style="margin-top:20px">Für Eltern: Ergebnis ansehen</button>
+      </div>`;
+    view().querySelector('#fuerEltern').onclick = () => ergebnisEltern(eintrag, vergleich);
+  }
+
+  function ergebnisEltern(eintrag, vergleich) {
+    const { woerter, quatsch, unterscheiden, aussagen: aussagenText, empfehlungen: tipps } = eintrag;
+    const aussagen = aussagenText.map(text => ({ text }));
+
+    view().innerHTML = `
+      <div class="hero"><h2>Ergebnis für Sie</h2>
+        <p>Kein Diagnose-Ergebnis – ein Blick darauf, wo es gerade hakt.</p></div>
+      <div class="card">
+        <h3>Kennzahlen</h3>
+        <div class="grid two">
+          <div><div class="muted small">Wörter/Min</div><b style="font-size:1.4rem">${woerter.proMinute}</b></div>
+          <div><div class="muted small">Quatschwörter/Min</div><b style="font-size:1.4rem">${quatsch.proMinute}</b></div>
+          <div><div class="muted small">Unterscheiden</div><b style="font-size:1.4rem">${Math.round(unterscheiden.trefferquote * 100)}%</b></div>
+          <div><div class="muted small">Stufe erreicht</div><b style="font-size:1.4rem">${unterscheiden.stufeEnde}</b></div>
+        </div>
+        ${vergleich ? `<p class="small" style="margin-top:10px">${esc(vergleich.text)}</p>` : ''}
+      </div>
+      ${aussagen.length ? `<div class="card"><h3>Was auffällt</h3>
+        <ul class="clean small">${aussagen.map(a => `<li>${esc(a.text)}</li>`).join('')}</ul></div>` : ''}
+      ${tipps.length ? `<div class="card"><h3>Was jetzt helfen könnte</h3>
+        <ul class="clean small">${tipps.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>` : ''}
+      <div class="card">
+        <p class="small muted"><b>Keine Diagnose:</b> Dieser Test ersetzt keine standardisierten
+          Verfahren (z. B. SLRT-II, ELFE II, WLLP-R) und sagt nichts über „LRS ja/nein" aus.
+          Bei einem Verdacht berät die Schule über einen möglichen Nachteilsausgleich.</p>
+      </div>
+      <button class="btn" id="lesetestFertig" style="width:100%">Fertig</button>`;
+    view().querySelector('#lesetestFertig').onclick = () => zeige('eltern');
+  }
+
+  intro();
+}
 
 /* Lesehilfe bei Legasthenie/LRS: Hauptschalter, Einzel-Einstellungen und eine
    Live-Vorschau. Die Vorschau braucht keine eigene Verkabelung – sie steckt
@@ -3686,6 +4059,7 @@ function screenEltern(p) {
     ${vergleichKarte(p)}
     ${skizzenKarte(p)}
     ${leseProfilKarte(p)}
+    ${lesetestKarte(p)}
     ${versionsKarte()}
 `;
   view().querySelector('#profile').onclick = () => zeige('profile');
@@ -3700,6 +4074,7 @@ function screenEltern(p) {
   };
   lesehilfeVerdrahten(p);
   view().querySelector('#zuEigenerText').onclick = () => zeige('eigenertext');
+  view().querySelector('#zumLesetest')?.addEventListener('click', () => zeige('lesetest'));
 
   /* Speicher-Status anzeigen und dauerhaften Speicher anfordern */
   (async () => {

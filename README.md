@@ -631,6 +631,46 @@ verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
    Lösungserklärung hat – und dass sie nicht versehentlich mit der Herkunftsangabe
    verwechselt wird, genau der Fehler, der den Anlass gab.
 
+28. **Lesetest** 📋 – *ein adaptives Leseprofil, Eltern und Kind gemeinsam (~15 Minuten)*
+   **Ausdrücklich keine Diagnose und keine Normwerte**: kein Prozentrang, kein „LRS ja/nein“.
+   Fachleute setzen dafür standardisierte Verfahren ein (z. B. SLRT-II, ELFE II, WLLP-R); bei
+   einem Verdacht berät die Schule über einen möglichen Nachteilsausgleich. Dieser Test zeigt
+   nur beschreibend, wo es gerade hakt, und schlägt dazu passende Übungen aus der App vor.
+   Neue Karte „📋 Lesetest“ im Eltern-Bereich, Route `lesetest`.
+   * **Teil 1 – Wörter lesen (1 Minute)**: ein Wort nach dem anderen groß in der Mitte, das
+     Kind liest laut, ein Erwachsener tippt ✓ richtig · ✗ falsch (optional mit Fehlerart:
+     ähnlich aussehend/klingend, Buchstaben vertauscht, Silbe verschluckt/dazu, geraten,
+     stockend buchstabiert) · ⏭ ausgelassen. Wortpool nach Schwierigkeit gestaffelt, über 150
+     Wörter, pro Durchgang eine andere Auswahl. Die Uhr ist klein und nur für den Erwachsenen.
+   * **Teil 2 – Quatschwörter lesen (1 Minute)**: dieselbe Mechanik mit aussprechbaren
+     Kunstwörtern (dieselben Regeln wie in den Lesespielen: nicht echt, nicht fast-echt,
+     höchstens drei Konsonanten am Stück) – misst reines Entschlüsseln statt Wortbild-Erkennen.
+   * **Teil 3 – Ähnliche Wörter unterscheiden**: das Kind allein, 12 Aufgaben, Treppenverfahren
+     (2 richtig hintereinander → eine Stufe schwerer, 1 falsch → sofort eine Stufe leichter),
+     Antwortzeit wird gemessen.
+   * **Teil 4 – Tempo & Takt** (optional, mit Mikrofon): ein kurzer Text laut vorgelesen,
+     ausgewertet über die vorhandene Leseauswertung (`js/lesen.js`) und Takt-Messung
+     (`js/lesemodi.js`) – ohne Mikrofon einfach überspringbar.
+   * **Teil 5 – Verstehen**: ein Text wird selbst gelesen (3 Fragen), ein zweiter, gleich
+     schwerer Text wird vorgelesen und bleibt dabei verborgen (3 Fragen) – der Vergleich zeigt,
+     ob das Entschlüsseln oder das Verstehen selbst bremst.
+   * Die Lesehilfe-Einstellungen des Profils gelten **nicht** im Test – neutrale Darstellung,
+     damit Ergebnisse über mehrere Tests hinweg vergleichbar bleiben.
+   * **Auswertung** rein beschreibend, aus inneren Vergleichen: z. B. Wörter deutlich schneller
+     als Quatschwörter → nutzt Wortbilder, Entschlüsseln fällt schwer; Hörverstehen ≥ 2 Fragen
+     besser als Leseverstehen → Sprache wird gut verstanden, das Entschlüsseln bremst; viele
+     „ähnlich aussehend“-Fehler → verwechselt Wortbilder; viele Auslassungen → liest zu
+     schnell/überspringt. Dazu höchstens drei priorisierte Empfehlungen in Alltagssprache, die
+     auf vorhandene Übungen zeigen (Echo-Lesen, Takt-Lesen, Wort-Detektiv, b/d/p/q,
+     Silben-Baukasten, Blitzlesen, Satz-Detektiv, Meine Texte).
+   * **Verlauf**: die letzten 24 Ergebnisse je Kind (`p.lesetests`), Vergleich zum letzten Test
+     („+6 Wörter pro Minute seit dem 3. September“), freundliche Erinnerung im Eltern-Bereich,
+     wenn der letzte Test über vier Wochen her ist.
+   * Das Kind sieht während und nach dem Test nur Ermutigung („Super gemacht! 🌟“) – keine
+     Zahlen, keine Fehler. Die Kennzahlen öffnen sich erst über einen eigenen, als „für Eltern“
+     beschrifteten Knopf.
+   * Reine Auswertungslogik in `js/lesetest.js` – DOM-frei, vollständig testbar
+     (`npm run test:lesetest`).
 
 ---
 
@@ -814,6 +854,7 @@ npm run test:eigenetexte # Eigene Texte: Speichern, Löschen, Obergrenze, Migrat
 npm run test:lesemodi     # Echo-Lesen/Takt-Lesen: Takt messen/anpassen, Hilfestufe, Zeitplan-Fallback
 npm run test:lesespiele  # Lesespiele: Listen valide, Kunstwörter geprüft, Satz-Detektiv eindeutig, Blitz-Grenzen
 npm run test:lernmotor   # Lernmotor: Leitner-Übergänge/Intervalle, Lernzonen-Regel, Tagesminuten, Album, Migration
+npm run test:lesetest    # Lesetest: Kennzahlen, Treppenverfahren, Profil-Aussagen/Schwellen, Empfehlungen, Textpaare, Verlauf/Migration
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
@@ -846,6 +887,8 @@ js/lesehilfe.js       Lesehilfe bei Legasthenie/LRS: Einstellungen, CSS-Variable
 js/lesemodi.js        Echo-Lesen und Takt-Lesen: Hilfestufe/Takt anpassen, Zeitplan-Fallback
 js/lesespiele.js      Lesespiele: Wort-Detektiv, b/d/p/q, Silben-Baukasten, Quatschwörter, Satz-Detektiv, Blitzlesen
 js/lernmotor.js       Lernmotor: Leitner-Kästen, Lernzonen-Regel, Tagesminuten, Sammelalbum (reine Logik)
+js/lesetest.js        Lesetest: adaptives Leseprofil (Wortpool, Kunstwörter, Treppenverfahren,
+                      Textpaare, Profil-Aussagen, Empfehlungen, Verlauf) – reine Logik, keine Diagnose
 js/texterkennung.js   Texterkennung (OCR) auf dem Gerät – Tesseract.js, nie ein Server
 js/textaufbereitung.js Aus OCR-Rohtext einen Silben-Lesetext machen: bereinigen, Abschnitte
 js/version.js         Fassung, Datum und Änderungsverlauf – die einzige Stelle dafür

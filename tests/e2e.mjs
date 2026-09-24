@@ -1382,4 +1382,136 @@ console.log(fehler.length ? 'FEHLER:\n'+fehler.join('\n') : 'keine JS-Fehler ✅
   await b3.close();
 }
 
+// Lesetest: adaptives Leseprofil, Eltern und Kind gemeinsam (js/lesetest.js,
+// Route "lesetest"). Eigener Browser mit eigenem Profil, damit die Dauer der
+// Teile 1 und 2 (normal 60s) über window.__testDauerMs verkürzt werden kann -
+// NUR für den Test, siehe js/ui.js: screenLesetest. Teil 4 (Mikrofon) wird
+// bewusst übersprungen (dafür gibt es die Echo-Lesen-Prüfung mit Fake-Gerät
+// weiter oben); Teil 3 und 5 werden gelöst.
+{
+  const fehler4 = [];
+  const b4 = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
+  const p4 = await b4.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+  p4.on('pageerror', e => fehler4.push('pageerror: ' + e.message));
+  p4.on('console', m => { if (m.type() === 'error') fehler4.push('console: ' + m.text()); });
+  const P6 = '/tmp/claude-0/-home-user-Kidzootopia/4c253d49-4629-5ae6-8844-1db3f157bb52/scratchpad/p6';
+  await p4.addInitScript(() => { window.__testDauerMs = 2500; });
+
+  await p4.goto(BASIS + '/index.html');
+  await p4.waitForSelector('#nName');
+  await p4.fill('#nName', 'Ben');
+  await p4.selectOption('#nEtappe', '1');
+  await p4.click('[data-av="🦊"]');
+  await p4.click('#nAnlegen');
+
+  // Talent-Test schnell durchklicken, dann direkt zum Ergebnis springen.
+  await p4.waitForSelector('#testStart');
+  await p4.click('#testStart');
+  for (let n = 0; n < 40 && !(await p4.$('#fertigJetzt')); n++) {
+    if (await p4.$('.scale [data-v]')) { await p4.click('.scale [data-v="3"]'); continue; }
+    if (await p4.$('.choice')) { await p4.click('.choice'); continue; }
+    break;
+  }
+  await p4.click('#fertigJetzt');
+  await p4.waitForSelector('#losgehts');
+  await p4.click('#losgehts');
+  await p4.waitForSelector('#mission');
+
+  // In den Eltern-Bereich, Lesetest-Karte, Test starten.
+  await p4.click('.nav-btn[data-route="eltern"]');
+  await p4.waitForSelector('#zumLesetest');
+  await p4.click('#zumLesetest');
+  await p4.waitForSelector('#los');
+  await p4.screenshot({ path: `${P6}/einleitung.png`, fullPage: true });
+  await p4.screenshot({ path: `${S}/lt-1-einleitung.png`, fullPage: true });
+  await p4.click('#los');
+
+  // Teil 1: Wörter lesen – ein paar Tipps setzen, einmal ✗ mit Fehlerart,
+  // einmal ⏭, den Rest ✓, bis die (verkürzte) Zeit abläuft.
+  await p4.waitForSelector('#tippRichtig');
+  await p4.screenshot({ path: `${P6}/teil1-eltern-tippleiste.png`, fullPage: true });
+  await p4.screenshot({ path: `${S}/lt-2-teil1.png`, fullPage: true });
+  await p4.click('#tippFalsch');
+  await p4.waitForSelector('[data-f]');
+  await p4.screenshot({ path: `${P6}/fehlerart-auswahl.png`, fullPage: true });
+  await p4.screenshot({ path: `${S}/lt-3-fehlerart.png`, fullPage: true });
+  await p4.click('[data-f="aehnlich_aussehend"]');
+  await p4.waitForSelector('#tippAus');
+  await p4.click('#tippAus');
+  // Eigenes ElementHandle statt Selektor-String: bei jedem Tipp rendert die
+  // App den Bildschirm komplett neu (neues Wort) - ein Selektor-String würde
+  // versuchen, ein bereits verschwundenes Element erneut zu finden, sobald
+  // die (verkürzte) Zeit mitten in einem Klick ablief und Teil 2/3 beginnt.
+  const solangeDa = async (id, max) => {
+    for (let n = 0; n < max; n++) {
+      const btn = await p4.$(id);
+      if (!btn) break;
+      await btn.click().catch(() => {});
+    }
+  };
+  await solangeDa('#tippRichtig', 60);
+  console.log('Lesetest Teil 1 (Wörter) durchlaufen ✅');
+
+  // Teil 2: Quatschwörter lesen – derselbe Mechanismus, hier reicht ✓.
+  await p4.waitForSelector('#tippRichtig', { timeout: 8000 });
+  await solangeDa('#tippRichtig', 60);
+  console.log('Lesetest Teil 2 (Quatschwörter) durchlaufen ✅');
+
+  // Teil 3: ähnliche Wörter unterscheiden – 12 Aufgaben lösen (immer die
+  // erste Option, das Treppenverfahren selbst prüft tests/lesetest.mjs).
+  await p4.waitForSelector('.choices .choice', { timeout: 8000 });
+  for (let n = 0; n < 12; n++) {
+    await p4.waitForSelector('.choices .choice');
+    await p4.click('.choices .choice');
+  }
+  console.log('Lesetest Teil 3 (Unterscheiden) durchlaufen ✅');
+
+  // Teil 4: Tempo & Takt (Mikrofon) – bewusst übersprungen.
+  await p4.waitForSelector('#ueberspringen', { timeout: 8000 });
+  await p4.click('#ueberspringen');
+  console.log('Lesetest Teil 4 (Tempo & Takt) übersprungen ✅');
+
+  // Teil 5: selbst gelesen, dann vorgelesen – je 3 Fragen beantworten.
+  await p4.waitForSelector('#weiterFragen', { timeout: 8000 });
+  await p4.screenshot({ path: `${P6}/teil5.png`, fullPage: true });
+  await p4.screenshot({ path: `${S}/lt-4-teil5.png`, fullPage: true });
+  await p4.click('#weiterFragen');
+  for (let n = 0; n < 3; n++) {
+    await p4.waitForSelector('.choices .choice');
+    await p4.click('.choices .choice');
+  }
+  await p4.waitForSelector('#vorlesenStart', { timeout: 8000 });
+  await p4.click('#vorlesenStart');
+  await p4.waitForSelector('.choices .choice', { timeout: 15000 });
+  for (let n = 0; n < 3; n++) {
+    await p4.waitForSelector('.choices .choice');
+    await p4.click('.choices .choice');
+  }
+  console.log('Lesetest Teil 5 (Verstehen) durchlaufen ✅');
+
+  // Kind-Abschluss: nur Ermutigung, KEINE Zahlen.
+  await p4.waitForSelector('#fuerEltern', { timeout: 8000 });
+  const kindText = await p4.evaluate(() => document.getElementById('view').textContent);
+  if (/\d/.test(kindText.replace(/🌟|🎉/g, '')))
+    throw new Error('Kind-Abschluss enthält eine Ziffer, sollte aber zahlenfrei sein: ' + kindText);
+  await p4.screenshot({ path: `${P6}/kind-abschluss.png`, fullPage: true });
+  await p4.screenshot({ path: `${S}/lt-5-kind-abschluss.png`, fullPage: true });
+  console.log('Kind-Abschluss zeigt keine Zahlen ✅');
+
+  // Eltern-Ergebnis: Kennzahlen, "keine Diagnose"-Hinweis.
+  await p4.click('#fuerEltern');
+  await p4.waitForSelector('#lesetestFertig');
+  const elternText = await p4.evaluate(() => document.getElementById('view').textContent);
+  if (!/keine Diagnose/i.test(elternText)) throw new Error('Eltern-Ergebnis nennt nicht ausdrücklich "keine Diagnose"');
+  await p4.screenshot({ path: `${P6}/eltern-ergebnis.png`, fullPage: true });
+  await p4.screenshot({ path: `${S}/lt-6-eltern-ergebnis.png`, fullPage: true });
+  await p4.click('#lesetestFertig');
+  await p4.waitForSelector('#zumLesetest');
+  console.log('Lesetest-Ergebnis für Eltern zeigt Kennzahlen und "keine Diagnose" ✅');
+
+  if (fehler4.length) throw new Error('Lesetest-Block: JS-Fehler:\n' + fehler4.join('\n'));
+  console.log('Lesetest-Block: keine JS-Fehler ✅');
+  await b4.close();
+}
+
 await b.close();

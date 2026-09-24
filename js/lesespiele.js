@@ -152,7 +152,7 @@ export function wortDetektivAufgabe(lvl, kontext = null) {
    Buchstaben vertauscht oder gespiegelt. Ablenker dürfen Kunstwörter sein,
    müssen aber klar erkennbar "falsch geschrieben" aussehen.
    ============================================================================ */
-const SPIEGEL_WOERTER = [
+export const SPIEGEL_WOERTER = [
   'Dach', 'Ball', 'Bett', 'Baum', 'Buch', 'Brot', 'Boot', 'Bild', 'Puppe', 'Papa',
   'Papier', 'Pilz', 'Post', 'Pony', 'Dose', 'Dorf', 'Decke', 'Dame', 'Bad', 'Brief',
   'Bruder', 'Blume', 'Birne', 'Banane', 'Drache', 'Delfin', 'Lampe', 'Suppe', 'Treppe',
