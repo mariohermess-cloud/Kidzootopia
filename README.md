@@ -271,7 +271,60 @@ stellt eine Etappe höher.
      Wortes zwischen zwei `boundary`-Ereignissen) – ohne DOM und ohne Audio, dadurch
      vollständig ohne Browser testbar.
 
-10. **Schmierblatt an jeder Aufgabe** 📝 – *die Nebenrechnung zum Mitmalen*
+   **Lesespiele** 🎮 – *sechs kurze, farbige Übungen gegen genau die Fehler beim stockenden Lesen*
+   Ein eigenes Lernziel „Lesespiele“, zugeschnitten auf ein Kind, das Wörter ausfallen lässt,
+   vertauscht oder durch optisch/akustisch ähnliche Wörter ersetzt – bei starkem Gehör und
+   sicherem lautgetreuem Schreiben. Ohne Zeitdruck-Anzeige, ohne Punktabzüge (dieselbe
+   Punktelogik wie überall sonst: 0 oder volle Punkte, nie ein Abzug).
+   * **🔍 Wort-Detektiv** – ein großes Emoji-Bild, vier Wörter zur Auswahl, drei davon optisch
+     oder akustisch ähnlich (z. B. Haus/Maus/Laus/Hose) – aber keines passt ebenfalls zum Bild.
+   * **👂 b/d/p/q & Spiegelbuchstaben** – das Wort wird nur GEHÖRT, gewählt wird unter
+     Spiegel-Varianten (Dach/Bach, Puppe/Buppe …). Ablenker dürfen Kunstwörter sein, sehen aber
+     klar „falsch geschrieben“ aus.
+   * **🧩 Silben-Baukasten** – das Wort wird gehört, nicht gezeigt; die Silben werden in der
+     richtigen Reihenfolge angetippt (Wörter mit zwei gleichen Silben scheiden aus, sonst gäbe
+     es zwei richtige Lösungen).
+   * **🔎 Quatschwörter** – ein echtes Wort unter drei aussprechbaren Kunstwörtern, die aus
+     Silben echter Wörter neu gemischt sind. Jedes Kunstwort wird gegen eine Wortliste geprüft
+     (Übungswörter aus `js/silben.js`, Wörter aus den Lesetexten, eigene Listen) – kein
+     Kunstwort darf zufällig ein echtes Wort sein.
+   * **🕵️ Satz-Detektiv** – ein kurzer Satz wird korrekt vorgelesen, angezeigt wird er mit
+     GENAU einem Fehler: ein Wort fehlt, eines ist zu viel, zwei sind vertauscht, oder eines
+     wurde durch ein ähnlich aussehendes Wort ersetzt – genau die Fehlerarten des Kindes.
+   * **⚡ Blitzlesen** – eine Silbe oder ein häufiges Wort erscheint groß, verschwindet wieder,
+     dann kommen vier Antworten („Was hast du gesehen?“). „👀 Nochmal zeigen“ kostet nichts. Die
+     Anzeigedauer startet bei 1,5 Sekunden und passt sich adaptiv an (−10 % nach richtig, +15 %
+     nach falsch, Grenzen 300–3000 ms), gespeichert je Kind (`p.blitzMs`).
+   * Reine Daten und Rechenlogik in `js/lesespiele.js` – DOM-frei, ohne Audio.
+
+10. **Lernmotor** 🧠 – *was schwerfällt, kommt wieder – in wachsenden Abständen*
+   Ein Karteikasten (Leitner-Prinzip) je Kind: jedes geübte Wort, jede b/d/p/q-Verwechslung,
+   jede Silbe und jeder Satz aus den Lesespielen bekommt einen eigenen "Kasten" 1–5. Richtig
+   gelöst wandert ein Element einen Kasten weiter (0/1/3/7/14 Tage bis zur nächsten Wiederholung),
+   falsch fällt es zurück auf Kasten 1 – dort kommt es sofort wieder. Stolperwörter aus dem
+   Vorlesen landen ebenfalls direkt in Kasten 1 und tauchen später gezielt in Blitzlesen und
+   Wort-Übungen wieder auf. Rein rechnerisch in `js/lesespiele.js` werden dafür bevorzugt fällige
+   Elemente in die Aufgaben eingebaut (≈ 40 %, wenn welche anstehen) – nie ausschließlich, damit
+   es abwechslungsreich bleibt.
+   * **Lernzone statt Zufall**: ein gleitendes Fenster der letzten 10 Antworten je Lernziel hält
+     die Trefferquote bei etwa 75–85 % – über 90 % hebt das Level, unter 65 % senkt es, dazwischen
+     bleibt es (ergänzt die bestehende "4 richtig in Folge"-Regel als schnellen Aufstieg).
+   * **Tagesziel Lesen** 📖 mit Fortschrittsring auf der Lernen-Seite (5/10/15 Minuten, im
+     Eltern-Bereich einstellbar) – gezählt wird echte Übungszeit in Lautlesen, Meine Texte,
+     Lesespielen und Silben. Kein Countdown, keine Strafe, nur eine kleine Feier beim Erreichen.
+   * **📒 Lese-Album**: für jedes erreichte Tagesziel und für Meilensteine (z. B. 10 Elemente in
+     Kasten 5, 3 Lesetage in Folge) schaltet sich der jeweils nächste von mindestens 40 Stickern
+     frei – feste Reihenfolge, keine Zufallsbelohnung, keine Lootbox.
+   * Beim Vorlesen üben kommt, sobald ein eigener Text gespeichert ist, etwa jede zweite Aufgabe
+     aus einem zufälligen Abschnitt daraus (Titel "📸 …") – derselbe Abschnitt für alle Durchgänge
+     einer Sitzung, damit wiederholtes Lautlesen sinnvoll bleibt.
+   * Im Eltern-Bereich: Karte "🧠 Was gerade geübt wird" mit Kasten-Verteilung, den acht aktuell
+     schwierigsten Elementen in Worten, wie viele heute fällig sind, der Tagesziel-Einstellung und
+     dem Leseminuten-Verlauf der letzten 7 Tage.
+   * Reine Rechenlogik in `js/lernmotor.js` (Leitner-Übergänge/Intervalle, Lernzonen-Regel,
+     Tagesminuten, Sammelalbum, Migration) – ohne Speicherzugriff, ohne DOM, vollständig testbar.
+
+11. **Schmierblatt an jeder Aufgabe** 📝 – *die Nebenrechnung zum Mitmalen*
    „Zeichne eine Skizze" ist die älteste und robusteste Problemlöse-Strategie überhaupt – bei
    Polya ein eigener Schritt, in der Grundschule der übliche Weg von der Sprache zur Rechnung.
    Ein Kind, das bei „Anna hat 3 Tüten mit je 4 Äpfeln" nicht weiterkommt, kommt fast immer
@@ -578,6 +631,46 @@ verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
    Lösungserklärung hat – und dass sie nicht versehentlich mit der Herkunftsangabe
    verwechselt wird, genau der Fehler, der den Anlass gab.
 
+28. **Lesetest** 📋 – *ein adaptives Leseprofil, Eltern und Kind gemeinsam (~15 Minuten)*
+   **Ausdrücklich keine Diagnose und keine Normwerte**: kein Prozentrang, kein „LRS ja/nein“.
+   Fachleute setzen dafür standardisierte Verfahren ein (z. B. SLRT-II, ELFE II, WLLP-R); bei
+   einem Verdacht berät die Schule über einen möglichen Nachteilsausgleich. Dieser Test zeigt
+   nur beschreibend, wo es gerade hakt, und schlägt dazu passende Übungen aus der App vor.
+   Neue Karte „📋 Lesetest“ im Eltern-Bereich, Route `lesetest`.
+   * **Teil 1 – Wörter lesen (1 Minute)**: ein Wort nach dem anderen groß in der Mitte, das
+     Kind liest laut, ein Erwachsener tippt ✓ richtig · ✗ falsch (optional mit Fehlerart:
+     ähnlich aussehend/klingend, Buchstaben vertauscht, Silbe verschluckt/dazu, geraten,
+     stockend buchstabiert) · ⏭ ausgelassen. Wortpool nach Schwierigkeit gestaffelt, über 150
+     Wörter, pro Durchgang eine andere Auswahl. Die Uhr ist klein und nur für den Erwachsenen.
+   * **Teil 2 – Quatschwörter lesen (1 Minute)**: dieselbe Mechanik mit aussprechbaren
+     Kunstwörtern (dieselben Regeln wie in den Lesespielen: nicht echt, nicht fast-echt,
+     höchstens drei Konsonanten am Stück) – misst reines Entschlüsseln statt Wortbild-Erkennen.
+   * **Teil 3 – Ähnliche Wörter unterscheiden**: das Kind allein, 12 Aufgaben, Treppenverfahren
+     (2 richtig hintereinander → eine Stufe schwerer, 1 falsch → sofort eine Stufe leichter),
+     Antwortzeit wird gemessen.
+   * **Teil 4 – Tempo & Takt** (optional, mit Mikrofon): ein kurzer Text laut vorgelesen,
+     ausgewertet über die vorhandene Leseauswertung (`js/lesen.js`) und Takt-Messung
+     (`js/lesemodi.js`) – ohne Mikrofon einfach überspringbar.
+   * **Teil 5 – Verstehen**: ein Text wird selbst gelesen (3 Fragen), ein zweiter, gleich
+     schwerer Text wird vorgelesen und bleibt dabei verborgen (3 Fragen) – der Vergleich zeigt,
+     ob das Entschlüsseln oder das Verstehen selbst bremst.
+   * Die Lesehilfe-Einstellungen des Profils gelten **nicht** im Test – neutrale Darstellung,
+     damit Ergebnisse über mehrere Tests hinweg vergleichbar bleiben.
+   * **Auswertung** rein beschreibend, aus inneren Vergleichen: z. B. Wörter deutlich schneller
+     als Quatschwörter → nutzt Wortbilder, Entschlüsseln fällt schwer; Hörverstehen ≥ 2 Fragen
+     besser als Leseverstehen → Sprache wird gut verstanden, das Entschlüsseln bremst; viele
+     „ähnlich aussehend“-Fehler → verwechselt Wortbilder; viele Auslassungen → liest zu
+     schnell/überspringt. Dazu höchstens drei priorisierte Empfehlungen in Alltagssprache, die
+     auf vorhandene Übungen zeigen (Echo-Lesen, Takt-Lesen, Wort-Detektiv, b/d/p/q,
+     Silben-Baukasten, Blitzlesen, Satz-Detektiv, Meine Texte).
+   * **Verlauf**: die letzten 24 Ergebnisse je Kind (`p.lesetests`), Vergleich zum letzten Test
+     („+6 Wörter pro Minute seit dem 3. September“), freundliche Erinnerung im Eltern-Bereich,
+     wenn der letzte Test über vier Wochen her ist.
+   * Das Kind sieht während und nach dem Test nur Ermutigung („Super gemacht! 🌟“) – keine
+     Zahlen, keine Fehler. Die Kennzahlen öffnen sich erst über einen eigenen, als „für Eltern“
+     beschrifteten Knopf.
+   * Reine Auswertungslogik in `js/lesetest.js` – DOM-frei, vollständig testbar
+     (`npm run test:lesetest`).
 
 ---
 
@@ -759,6 +852,9 @@ npm run test:lesehilfe    # Lesehilfe bei LRS: Einstellungen, Migration, Silbier
 npm run test:texterkennung # Textaufbereitung für OCR: bereinigen, unsichere Wörter, Abschnitte
 npm run test:eigenetexte # Eigene Texte: Speichern, Löschen, Obergrenze, Migration, Umzugs-Code
 npm run test:lesemodi     # Echo-Lesen/Takt-Lesen: Takt messen/anpassen, Hilfestufe, Zeitplan-Fallback
+npm run test:lesespiele  # Lesespiele: Listen valide, Kunstwörter geprüft, Satz-Detektiv eindeutig, Blitz-Grenzen
+npm run test:lernmotor   # Lernmotor: Leitner-Übergänge/Intervalle, Lernzonen-Regel, Tagesminuten, Album, Migration
+npm run test:lesetest    # Lesetest: Kennzahlen, Treppenverfahren, Profil-Aussagen/Schwellen, Empfehlungen, Textpaare, Verlauf/Migration
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
@@ -789,6 +885,10 @@ js/silben.js          Deutsche Silbentrennung – Grundlage der Silbenfärbung
 js/lesen.js           Lesetexte und Auswertung der Leseflüssigkeit (Tempo, Pausen, Betonung)
 js/lesehilfe.js       Lesehilfe bei Legasthenie/LRS: Einstellungen, CSS-Variablen, Zeilenfenster
 js/lesemodi.js        Echo-Lesen und Takt-Lesen: Hilfestufe/Takt anpassen, Zeitplan-Fallback
+js/lesespiele.js      Lesespiele: Wort-Detektiv, b/d/p/q, Silben-Baukasten, Quatschwörter, Satz-Detektiv, Blitzlesen
+js/lernmotor.js       Lernmotor: Leitner-Kästen, Lernzonen-Regel, Tagesminuten, Sammelalbum (reine Logik)
+js/lesetest.js        Lesetest: adaptives Leseprofil (Wortpool, Kunstwörter, Treppenverfahren,
+                      Textpaare, Profil-Aussagen, Empfehlungen, Verlauf) – reine Logik, keine Diagnose
 js/texterkennung.js   Texterkennung (OCR) auf dem Gerät – Tesseract.js, nie ein Server
 js/textaufbereitung.js Aus OCR-Rohtext einen Silben-Lesetext machen: bereinigen, Abschnitte
 js/version.js         Fassung, Datum und Änderungsverlauf – die einzige Stelle dafür

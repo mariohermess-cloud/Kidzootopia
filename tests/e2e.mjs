@@ -62,6 +62,13 @@ async function loeseAufgabe(p) {
     return;
   }
   if (await p.$('.teil[data-e]')) { let n=0; while (await p.$('.teil[data-e]') && n++<12) await p.click('.teil[data-e]'); return; }
+  if (await p.$('#blitzFlash')) {
+    /* Blitzlesen: erst verschwindet die Anzeige, dann kommen die Optionen -
+       bis dahin warten statt sofort zu klicken. */
+    await p.waitForSelector('#blitzOptionen:not([hidden])', { timeout: 6000 });
+    await p.click('#blitzOptionen .choice');
+    return;
+  }
   if (await p.$('#eingabe')) {
     if (await p.$('#zahlfeld')) {                 // eigenes Tastenfeld statt Systemtastatur
       await p.click('[data-k="4"]'); await p.click('[data-k="2"]');
@@ -965,7 +972,7 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
     S.echoNachLesungAnpassen(p, { stufe: 4, stockungen: 0, tempo: 150 });
   }));
   await p.click('.nav-btn[data-route="eltern"]');
-  await p.waitForSelector('text=Echo-Lesen und Takt-Lesen', { timeout: 5000 });
+  await p.waitForSelector('text=Echo-Lesen, Takt-Lesen und Blitzlesen', { timeout: 5000 });
   await p.screenshot({ path: `${S}/lm-6-eltern.png`, fullPage: true });
   console.log('Eltern-Bereich: Echo-Stufe und Takt-Vorgabe bei der Leseflüssigkeit sichtbar ✅');
   await p.click('.nav-btn[data-route="lernen"]');
@@ -1124,6 +1131,67 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   await p.waitForSelector('#mission');
 }
 
+// Lesespiele: gezielt starten und mindestens einmal jeden Spieltyp lösen.
+// Vier statt fünf Wege (siehe js/data.js), damit engine.js (waehleWeg wählt
+// bei fünf Wegen nur aus den beiden staerksten ODER den beiden schwaechsten -
+// der mittlere käme nie dran) auf Dauer wirklich alle vier anbietet. "knobeln"
+// mischt zusätzlich zwischen Quatschwörtern, Spiegelbuchstaben und Blitzlesen -
+// dafür wird über genug Runden gespielt, bis alle sechs Spielarten dran waren.
+{
+  await bannerWeg(p);
+  await p.click('[data-ziel="lesespiele"]');
+  const gesehen = new Set();
+  const erkenneSpiel = async () => {
+    const a = await p.evaluate(() => window.__aufgabe);
+    if (!a) return null;
+    if (a.typ === 'blitz') return 'blitz';
+    if (a.typ === 'ordnen') return 'silbenbaukasten';
+    if (a.bild) return 'wortdetektiv';
+    if (a.typ === 'choice' && a.hoertext && /🕵️/.test(a.frage || '')) return 'satzdetektiv';
+    if (a.typ === 'choice' && a.hoertext) return 'spiegel';
+    if (a.typ === 'choice') return 'quatsch';
+    return null;
+  };
+  const ALLE_SPIELE = ['wortdetektiv', 'silbenbaukasten', 'satzdetektiv', 'spiegel', 'quatsch', 'blitz'];
+  /* Satz-Detektiv hat vier Fehlerarten (fehlt/zusatz/vertauscht/ersetzt) -
+     "fehlt" bekommt zusätzlich einen eigenen Screenshot, weil genau dort die
+     Lücken-Position gezielt geprüft werden soll (Chef-Review). Best-effort:
+     blockiert die Runde nicht, falls sie in den gespielten Runden nicht dran war. */
+  let fehltGesehen = false;
+  let runden = 0;
+  while ((gesehen.size < ALLE_SPIELE.length || !fehltGesehen) && runden < 16) {
+    runden++;
+    for (let i = 0; i < 8; i++) {
+      await p.waitForSelector('.task');
+      const spiel = await erkenneSpiel();
+      if (spiel && !gesehen.has(spiel)) {
+        console.log(`Lesespiele: „${spiel}" erscheint, wird gelöst …`);
+        await p.screenshot({ path: `${S}/ls-${spiel}.png`, fullPage: true });
+      }
+      if (spiel === 'satzdetektiv' && !fehltGesehen) {
+        const frage = await p.textContent('.task').catch(() => '');
+        if (/Welches Wort fehlt/.test(frage || '')) {
+          fehltGesehen = true;
+          console.log('Lesespiele: Satz-Detektiv „fehlt" erscheint, wird gelöst …');
+          await p.screenshot({ path: `${S}/ls-satzdetektiv-fehlt.png`, fullPage: true });
+        }
+      }
+      if (spiel) gesehen.add(spiel);
+      await loeseAufgabe(p);
+      await p.waitForSelector('#weiter');
+      await p.click('#weiter');
+    }
+    await p.waitForSelector('#nochmal', { timeout: 8000 });
+    const wirdWeitergespielt = (gesehen.size < ALLE_SPIELE.length || !fehltGesehen) && runden < 16;
+    if (wirdWeitergespielt) await p.click('#nochmal'); else await p.click('#heim');
+  }
+  if (!fehltGesehen) console.log('Lesespiele: Hinweis - Satz-Detektiv "fehlt" kam in den gespielten Runden nicht vor (kein Fehler, nur kein Extra-Screenshot).');
+  const fehlend = ALLE_SPIELE.filter(s => !gesehen.has(s));
+  if (fehlend.length) throw new Error(`Lesespiele: nach ${runden} Runden fehlen noch: ${fehlend.join(', ')}`);
+  console.log(`Lesespiele: alle sechs Spielarten mindestens einmal gelöst (${runden} Runden) ✅`);
+  await p.waitForSelector('#mission');
+}
+
 // Notausgang gegen die festgebissene alte Fassung: Offline-Speicher leeren.
 // Entscheidend ist die Zusicherung im Text daneben – der Fortschritt muss das ueberleben.
 await p.click('.nav-btn[data-route="eltern"]');
@@ -1234,6 +1302,216 @@ console.log(fehler.length ? 'FEHLER:\n'+fehler.join('\n') : 'keine JS-Fehler ✅
   if (fehler2.length) throw new Error('Echo Stufe 1 (mit Mikrofon): JS-Fehler:\n' + fehler2.join('\n'));
   console.log('Echo Stufe 1 (mit Mikrofon): keine JS-Fehler ✅');
   await b2.close();
+}
+
+// Lernmotor (js/lernmotor.js): Tagesziel-Ring, Lese-Album, Eltern-Karte
+// "Was gerade geübt wird" und eigene Texte im Lautlesen - eigener, frischer
+// Browser, damit die zufällige "50 % eigener Text"-Entscheidung in engine.js
+// (einmal je Sitzung gewürfelt) mehrfach neu gezogen werden kann, ohne den
+// übrigen Testlauf oben zu verändern.
+{
+  const fehler3 = [];
+  const b3 = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
+  const p3 = await b3.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+  p3.on('pageerror', e => fehler3.push('pageerror: ' + e.message));
+  p3.on('console', m => { if (m.type() === 'error') fehler3.push('console: ' + m.text()); });
+  p3.on('dialog', d => d.accept().catch(() => {}));
+
+  await p3.goto(`${BASIS}/index.html`);
+  await p3.waitForSelector('#nName');
+  await p3.fill('#nName', 'Ben');
+  await p3.selectOption('#nEtappe', '1');
+  await p3.click('[data-av="🐧"]');
+  await p3.click('#nAnlegen');
+  await p3.reload();                       // Talent-Test überspringen, direkt zur Lernen-Seite
+  await p3.waitForSelector('#mission');
+
+  // Tagesziel-Ring: muss von Anfang an sichtbar sein (0 von x Minuten).
+  await p3.waitForSelector('#zumAlbum');
+  const ringKarte = p3.locator('.card', { has: p3.locator('#zumAlbum') });
+  const ringText = await ringKarte.textContent();
+  if (!/Heute:\s*\d+([.,]\d+)?\s*von\s*\d+\s*Minuten/.test(ringText || ''))
+    throw new Error('Tagesziel-Ring fehlt auf der Lernen-Seite: ' + ringText);
+  console.log('Tagesziel-Ring auf der Lernen-Seite sichtbar ✅');
+  await ringKarte.screenshot({ path: `${S}/lm-8-tagesziel.png` });
+
+  // Lese-Album öffnen
+  await p3.click('#zumAlbum');
+  await p3.waitForSelector('#albumZurueck');
+  await p3.screenshot({ path: `${S}/lm-9-album.png`, fullPage: true });
+  console.log('Lese-Album öffnet sich ✅');
+  await p3.click('#albumZurueck');
+  await p3.waitForSelector('#mission');
+
+  // Eltern-Karte "🧠 Was gerade geübt wird"
+  await p3.click('.nav-btn[data-route="eltern"]');
+  await p3.waitForSelector('#tageszielWahl');
+  const elternKarte = p3.locator('.card', { has: p3.locator('h3', { hasText: 'Was gerade geübt wird' }) });
+  if (await elternKarte.count() === 0) throw new Error('Eltern-Karte "Was gerade geübt wird" fehlt');
+  console.log('Eltern-Karte "Was gerade geübt wird" sichtbar ✅');
+  await elternKarte.screenshot({ path: `${S}/lm-10-eltern.png` });
+
+  // Eigene Texte in normalen Lautlese-Aufgaben: direkt über den Speicher
+  // geseedet (Foto/OCR ist bereits anderswo geprüft), danach so lange
+  // Lautlese-Sitzungen neu gestartet, bis eine Aufgabe mit dem eigenen
+  // Text ("📸 …") erscheint - die Auswahl ist bewusst zufällig (≈ jede
+  // zweite Sitzung), 12 Versuche machen ein Verfehlen praktisch unmöglich.
+  await p3.evaluate(async () => {
+    const S = await import('./js/store.js');
+    S.eigenenTextSpeichern(S.aktiv(), { titel: 'Mein Ausflug', abschnitte: ['Wir waren heute im Wald und haben Pilze gesucht.'] });
+  });
+  await p3.click('.nav-btn[data-route="lernen"]');
+  await p3.waitForSelector('[data-ziel="lautlesen"]');
+  let eigenerTextGefunden = false;
+  for (let versuch = 0; versuch < 12 && !eigenerTextGefunden; versuch++) {
+    await p3.click('[data-ziel="lautlesen"]');
+    await p3.waitForSelector('.task');
+    const frage = await p3.textContent('.task');
+    if ((frage || '').includes('📸')) {
+      eigenerTextGefunden = true;
+      await p3.screenshot({ path: `${S}/lm-11-eigener-text-lautlesen.png`, fullPage: true });
+    }
+    await p3.click('#raus');
+    await p3.waitForSelector('#mission');
+  }
+  if (!eigenerTextGefunden) throw new Error('In 12 Versuchen erschien keine Lautlese-Aufgabe aus dem eigenen Text');
+  console.log('Lautlese-Aufgabe aus eigenem Text erscheint ✅');
+
+  if (fehler3.length) throw new Error('Lernmotor-Block: JS-Fehler:\n' + fehler3.join('\n'));
+  console.log('Lernmotor-Block: keine JS-Fehler ✅');
+  await b3.close();
+}
+
+// Lesetest: adaptives Leseprofil, Eltern und Kind gemeinsam (js/lesetest.js,
+// Route "lesetest"). Eigener Browser mit eigenem Profil, damit die Dauer der
+// Teile 1 und 2 (normal 60s) über window.__testDauerMs verkürzt werden kann -
+// NUR für den Test, siehe js/ui.js: screenLesetest. Teil 4 (Mikrofon) wird
+// bewusst übersprungen (dafür gibt es die Echo-Lesen-Prüfung mit Fake-Gerät
+// weiter oben); Teil 3 und 5 werden gelöst.
+{
+  const fehler4 = [];
+  const b4 = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
+  const p4 = await b4.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+  p4.on('pageerror', e => fehler4.push('pageerror: ' + e.message));
+  p4.on('console', m => { if (m.type() === 'error') fehler4.push('console: ' + m.text()); });
+  const P6 = '/tmp/claude-0/-home-user-Kidzootopia/4c253d49-4629-5ae6-8844-1db3f157bb52/scratchpad/p6';
+  await p4.addInitScript(() => { window.__testDauerMs = 2500; });
+
+  await p4.goto(BASIS + '/index.html');
+  await p4.waitForSelector('#nName');
+  await p4.fill('#nName', 'Ben');
+  await p4.selectOption('#nEtappe', '1');
+  await p4.click('[data-av="🦊"]');
+  await p4.click('#nAnlegen');
+
+  // Talent-Test schnell durchklicken, dann direkt zum Ergebnis springen.
+  await p4.waitForSelector('#testStart');
+  await p4.click('#testStart');
+  for (let n = 0; n < 40 && !(await p4.$('#fertigJetzt')); n++) {
+    if (await p4.$('.scale [data-v]')) { await p4.click('.scale [data-v="3"]'); continue; }
+    if (await p4.$('.choice')) { await p4.click('.choice'); continue; }
+    break;
+  }
+  await p4.click('#fertigJetzt');
+  await p4.waitForSelector('#losgehts');
+  await p4.click('#losgehts');
+  await p4.waitForSelector('#mission');
+
+  // In den Eltern-Bereich, Lesetest-Karte, Test starten.
+  await p4.click('.nav-btn[data-route="eltern"]');
+  await p4.waitForSelector('#zumLesetest');
+  await p4.click('#zumLesetest');
+  await p4.waitForSelector('#los');
+  await p4.screenshot({ path: `${P6}/einleitung.png`, fullPage: true });
+  await p4.screenshot({ path: `${S}/lt-1-einleitung.png`, fullPage: true });
+  await p4.click('#los');
+
+  // Teil 1: Wörter lesen – ein paar Tipps setzen, einmal ✗ mit Fehlerart,
+  // einmal ⏭, den Rest ✓, bis die (verkürzte) Zeit abläuft.
+  await p4.waitForSelector('#tippRichtig');
+  await p4.screenshot({ path: `${P6}/teil1-eltern-tippleiste.png`, fullPage: true });
+  await p4.screenshot({ path: `${S}/lt-2-teil1.png`, fullPage: true });
+  await p4.click('#tippFalsch');
+  await p4.waitForSelector('[data-f]');
+  await p4.screenshot({ path: `${P6}/fehlerart-auswahl.png`, fullPage: true });
+  await p4.screenshot({ path: `${S}/lt-3-fehlerart.png`, fullPage: true });
+  await p4.click('[data-f="aehnlich_aussehend"]');
+  await p4.waitForSelector('#tippAus');
+  await p4.click('#tippAus');
+  // Eigenes ElementHandle statt Selektor-String: bei jedem Tipp rendert die
+  // App den Bildschirm komplett neu (neues Wort) - ein Selektor-String würde
+  // versuchen, ein bereits verschwundenes Element erneut zu finden, sobald
+  // die (verkürzte) Zeit mitten in einem Klick ablief und Teil 2/3 beginnt.
+  const solangeDa = async (id, max) => {
+    for (let n = 0; n < max; n++) {
+      const btn = await p4.$(id);
+      if (!btn) break;
+      await btn.click().catch(() => {});
+    }
+  };
+  await solangeDa('#tippRichtig', 60);
+  console.log('Lesetest Teil 1 (Wörter) durchlaufen ✅');
+
+  // Teil 2: Quatschwörter lesen – derselbe Mechanismus, hier reicht ✓.
+  await p4.waitForSelector('#tippRichtig', { timeout: 8000 });
+  await solangeDa('#tippRichtig', 60);
+  console.log('Lesetest Teil 2 (Quatschwörter) durchlaufen ✅');
+
+  // Teil 3: ähnliche Wörter unterscheiden – 12 Aufgaben lösen (immer die
+  // erste Option, das Treppenverfahren selbst prüft tests/lesetest.mjs).
+  await p4.waitForSelector('.choices .choice', { timeout: 8000 });
+  for (let n = 0; n < 12; n++) {
+    await p4.waitForSelector('.choices .choice');
+    await p4.click('.choices .choice');
+  }
+  console.log('Lesetest Teil 3 (Unterscheiden) durchlaufen ✅');
+
+  // Teil 4: Tempo & Takt (Mikrofon) – bewusst übersprungen.
+  await p4.waitForSelector('#ueberspringen', { timeout: 8000 });
+  await p4.click('#ueberspringen');
+  console.log('Lesetest Teil 4 (Tempo & Takt) übersprungen ✅');
+
+  // Teil 5: selbst gelesen, dann vorgelesen – je 3 Fragen beantworten.
+  await p4.waitForSelector('#weiterFragen', { timeout: 8000 });
+  await p4.screenshot({ path: `${P6}/teil5.png`, fullPage: true });
+  await p4.screenshot({ path: `${S}/lt-4-teil5.png`, fullPage: true });
+  await p4.click('#weiterFragen');
+  for (let n = 0; n < 3; n++) {
+    await p4.waitForSelector('.choices .choice');
+    await p4.click('.choices .choice');
+  }
+  await p4.waitForSelector('#vorlesenStart', { timeout: 8000 });
+  await p4.click('#vorlesenStart');
+  await p4.waitForSelector('.choices .choice', { timeout: 15000 });
+  for (let n = 0; n < 3; n++) {
+    await p4.waitForSelector('.choices .choice');
+    await p4.click('.choices .choice');
+  }
+  console.log('Lesetest Teil 5 (Verstehen) durchlaufen ✅');
+
+  // Kind-Abschluss: nur Ermutigung, KEINE Zahlen.
+  await p4.waitForSelector('#fuerEltern', { timeout: 8000 });
+  const kindText = await p4.evaluate(() => document.getElementById('view').textContent);
+  if (/\d/.test(kindText.replace(/🌟|🎉/g, '')))
+    throw new Error('Kind-Abschluss enthält eine Ziffer, sollte aber zahlenfrei sein: ' + kindText);
+  await p4.screenshot({ path: `${P6}/kind-abschluss.png`, fullPage: true });
+  await p4.screenshot({ path: `${S}/lt-5-kind-abschluss.png`, fullPage: true });
+  console.log('Kind-Abschluss zeigt keine Zahlen ✅');
+
+  // Eltern-Ergebnis: Kennzahlen, "keine Diagnose"-Hinweis.
+  await p4.click('#fuerEltern');
+  await p4.waitForSelector('#lesetestFertig');
+  const elternText = await p4.evaluate(() => document.getElementById('view').textContent);
+  if (!/keine Diagnose/i.test(elternText)) throw new Error('Eltern-Ergebnis nennt nicht ausdrücklich "keine Diagnose"');
+  await p4.screenshot({ path: `${P6}/eltern-ergebnis.png`, fullPage: true });
+  await p4.screenshot({ path: `${S}/lt-6-eltern-ergebnis.png`, fullPage: true });
+  await p4.click('#lesetestFertig');
+  await p4.waitForSelector('#zumLesetest');
+  console.log('Lesetest-Ergebnis für Eltern zeigt Kennzahlen und "keine Diagnose" ✅');
+
+  if (fehler4.length) throw new Error('Lesetest-Block: JS-Fehler:\n' + fehler4.join('\n'));
+  console.log('Lesetest-Block: keine JS-Fehler ✅');
+  await b4.close();
 }
 
 await b.close();
