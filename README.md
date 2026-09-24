@@ -226,6 +226,51 @@ stellt eine Etappe höher.
    LRS-Diagnostik oder -Förderung – bei Verdacht hilft die schulische Beratungsstelle oder eine
    Fachdiagnostik weiter.
 
+   **Echo-Lesen und Takt-Lesen** 🔊🥁 – *für Kinder, deren Stärke das Hören ist*
+   Ein Kind, das stockend liest, Wörter auslässt oder vertauscht, versteht Vorgelesenes oft
+   sehr gut – der Weg zum flüssigen Lesen führt dann übers **Hören**. Im Lesepult (auch bei
+   „Meine Texte") wählt das Kind zwischen drei großen Knöpfen; vorausgewählt ist, was zum
+   Stand des Kindes passt, gewechselt werden darf jederzeit:
+   * **🔊 Echo** – *assisted reading / repeated reading* (Rasinski). Drei Hilfestufen, die
+     mit dem Können automatisch weniger werden. **Stufe 1 ("Hören & mitschauen")** läuft
+     WIRKLICH Satz für Satz: Erst liest die App genau einen Satz vor, mit synchron
+     mitlaufender Silbenmarkierung – der restliche Text tritt dabei zurück, nur dieser
+     eine Satz bleibt hell. Direkt danach heißt es „🎙️ Jetzt du!“: Das Kind liest genau
+     diesen Satz, das Mikrofon läuft (nur EIN Berechtigungsdialog für den ganzen Text).
+     Die Aufnahme endet automatisch nach rund 1,2 Sekunden Stille oder per Knopf
+     „Weiter ➜“ – dann der nächste Satz. Klappt das gut, liest die App auf **Stufe 2**
+     nur noch **gleichzeitig** mit (Chorlesen, „Zusammen lesen"). Zuletzt liest das Kind
+     ganz allein. Zwei gute Lesungen in Folge senken die Hilfe um eine Stufe, zwei
+     schwache heben sie wieder an – eine einzelne schwächere Lesung dazwischen ändert
+     noch nichts.
+   * **🥁 Im Takt** – ein Ball hüpft gleichmäßig von Silbe zu Silbe (an Satzzeichen mit einer
+     kleinen Pause), das Kind liest laut mit. Das lehnt sich an die **Silbenmethode** und die
+     rhythmische Silbengliederung an, mit der auch sonst in der App gearbeitet wird
+     (`js/silben.js`). Vor dem Start zählt die App sichtbar „1 – 2 – 3 – los" ein. Das Tempo
+     startet knapp unter dem, was das Kind zuletzt selbst geschafft hat, und wird nur in
+     kleinen Schritten (±5 %) angepasst – kein Wettlauf, kein Zeitdruck. Ohne Mikrofon läuft
+     der Takt trotzdem als reine Mitklatsch-Übung. Ein optionaler Klickton je Schlag ist
+     standardmäßig aus – der Schalter sagt ausdrücklich dazu: „🔈 Klick (dann wird nicht
+     gemessen)".
+   * **Nur verwertbare Aufnahmen fließen in Zahlen ein.** Die Aufnahme läuft ohne
+     Echo-Unterdrückung (`echoCancellation:false`) – nötig für die reine Lautstärkemessung,
+     aber dadurch landet jeder Ton, den die App SELBST macht, mit im Mikrofon: die eigene
+     Stimme beim Chorlesen (Echo-Stufe 2) und der Klickton beim Takt. In diesen zwei Fällen
+     zählt die Lesung fürs Kind ganz normal als geübt (Punkte wie immer), fließt aber NICHT
+     in Tempo, Stockungen, Silbenbild, Stolperwörter, Takt-Verlauf oder die Hilfestufen-
+     Anpassung ein – eine ehrliche „nicht gemessen"-Rückmeldung statt falscher Zahlen
+     (`Lesemodi.messungVerwertbar`).
+   * Verwertbare Lesungen münden in dieselbe Auswertung wie das normale Vorlesen
+     (Silbenbild, Stolperwörter, Leseflüssigkeit) – nur der Weg dorthin ist ein anderer.
+     Nach jeder verwertbaren Lesung mit Mikrofon wird zusätzlich der tatsächlich gelesene
+     **Takt** gemessen (Silben pro Minute, Gleichmaß) und im Profil vermerkt.
+   * Reine Rechenlogik in `js/lesemodi.js` (Anpassung der Hilfestufe, Verwertbarkeits-Prüfung,
+     Satzteilung, Verketten kurzer Aufnahme-Abschnitte mit künstlicher Stille, automatische
+     Stille-Erkennung, Takt messen/vorgeben/anpassen, Zeitplan-Fallback für die
+     Silbenmarkierung ohne `onboundary`-Ereignisse, Silben-Weiterschalten INNERHALB eines
+     Wortes zwischen zwei `boundary`-Ereignissen) – ohne DOM und ohne Audio, dadurch
+     vollständig ohne Browser testbar.
+
 10. **Schmierblatt an jeder Aufgabe** 📝 – *die Nebenrechnung zum Mitmalen*
    „Zeichne eine Skizze" ist die älteste und robusteste Problemlöse-Strategie überhaupt – bei
    Polya ein eigener Schritt, in der Grundschule der übliche Weg von der Sprache zur Rechnung.
@@ -713,6 +758,7 @@ npm run test:strandfunde  # Strandfunde: jedes Bild gehört eindeutig zu genau e
 npm run test:lesehilfe    # Lesehilfe bei LRS: Einstellungen, Migration, Silbierung ohne Textverlust
 npm run test:texterkennung # Textaufbereitung für OCR: bereinigen, unsichere Wörter, Abschnitte
 npm run test:eigenetexte # Eigene Texte: Speichern, Löschen, Obergrenze, Migration, Umzugs-Code
+npm run test:lesemodi     # Echo-Lesen/Takt-Lesen: Takt messen/anpassen, Hilfestufe, Zeitplan-Fallback
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
@@ -742,6 +788,7 @@ js/ueberraschung.js   Überraschungsrätsel des Tages: aus dem Kalendertag berec
 js/silben.js          Deutsche Silbentrennung – Grundlage der Silbenfärbung
 js/lesen.js           Lesetexte und Auswertung der Leseflüssigkeit (Tempo, Pausen, Betonung)
 js/lesehilfe.js       Lesehilfe bei Legasthenie/LRS: Einstellungen, CSS-Variablen, Zeilenfenster
+js/lesemodi.js        Echo-Lesen und Takt-Lesen: Hilfestufe/Takt anpassen, Zeitplan-Fallback
 js/texterkennung.js   Texterkennung (OCR) auf dem Gerät – Tesseract.js, nie ein Server
 js/textaufbereitung.js Aus OCR-Rohtext einen Silben-Lesetext machen: bereinigen, Abschnitte
 js/version.js         Fassung, Datum und Änderungsverlauf – die einzige Stelle dafür

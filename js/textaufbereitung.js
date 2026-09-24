@@ -122,8 +122,13 @@ function istSatzende(absatz, index) {
   return true;
 }
 
-/* Zerlegt EINEN Absatz (keine Leerzeilen mehr enthalten) in Sätze. */
-function absatzInSaetze(absatz) {
+/* Zerlegt EINEN Absatz (keine Leerzeilen mehr enthalten) in Sätze - unter
+   Berücksichtigung von Abkürzungen ("z. B.", "Dr.") und Ordnungszahlen
+   ("3. Klasse"), die keinen Satzschluss bedeuten. Exportiert, weil js/
+   lesemodi.js (Echo-Lesen, Satz für Satz) dieselbe Zerlegung braucht wie
+   die Abschnittsbildung hier - eine zweite, einfachere Regel würde bei
+   genau diesen Sonderfällen aus dem Ruder laufen. */
+export function absatzInSaetze(absatz) {
   const saetze = [];
   const regex = /[.!?]+|…/g;
   let letzterSchnitt = 0;

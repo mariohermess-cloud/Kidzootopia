@@ -5,6 +5,7 @@ import { punkteFuer } from './punkte.js';
 import { TALENTE, WEGE, ZIELE, ABZEICHEN, ETAPPEN } from './data.js';
 import { auswerten } from './talenttest.js';
 import { LRS_VOREINSTELLUNG, normalisiere as lesehilfeNormalisieren } from './lesehilfe.js';
+import * as Lesemodi from './lesemodi.js';
 
 const KEY = 'kidzootopia.v1';
 const heute = () => new Date().toISOString().slice(0,10);
@@ -119,6 +120,10 @@ function migriere(p) {
      ein Bild - das Foto verlaesst nie das Geraet und wird nach der Erkennung
      gar nicht erst aufbewahrt. */
   p.eigeneTexte ||= [];
+  /* Echo-Lesen und Takt-Lesen (siehe js/lesemodi.js): welche Hilfestufe beim
+     Echo-Lesen gerade passt, die zuletzt gemessenen Takt-Werte. Rein additiv,
+     ganz alte Profile hatten das Feld noch nicht. */
+  p.lesemodus ||= Lesemodi.neuerLesemodusZustand();
   return p;
 }
 
@@ -548,6 +553,63 @@ export function leseVerlauf(profil) {
       return paare.length ? Math.round(paare.reduce((a, b) => a + b, 0) / paare.length) : null;
     })()
   };
+}
+
+/* Median-Lesetempo (erste Durchgänge) - Bezugsgröße für echoAnpassen: "90%
+   des EIGENEN Tempos" ergibt nur mit dem eigenen Median einen Sinn, nicht
+   mit einer festen Zahl für alle Kinder. */
+export function medianLeseTempo(profil) {
+  const werte = (profil.lesungen || []).filter(l => l.durchgang === 1).map(l => l.tempo).filter(Number.isFinite);
+  if (!werte.length) return 0;
+  const s = [...werte].sort((a, b) => a - b);
+  const m = s.length / 2;
+  return Number.isInteger(m) ? Math.round((s[m - 1] + s[m]) / 2) : s[Math.floor(m)];
+}
+
+/* --------------------------- Echo-Lesen und Takt-Lesen ---------------------------
+   Reine Rechenlogik in js/lesemodi.js; hier wird nur der Profilzustand
+   gelesen, angepasst und wieder gespeichert. */
+
+export function echoZustand(profil) {
+  profil.lesemodus ||= Lesemodi.neuerLesemodusZustand();
+  return profil.lesemodus;
+}
+
+/* Nach einer Lesung (mit Mikrofon) die Echo-Hilfestufe anpassen - siehe
+   Lesemodi.echoAnpassen für die Regeln. */
+export function echoNachLesungAnpassen(profil, leseWerte) {
+  const z = echoZustand(profil);
+  const neu = Lesemodi.echoAnpassen(z, { ...leseWerte, medianTempo: medianLeseTempo(profil) });
+  profil.lesemodus = neu;
+  speichern();
+  return neu;
+}
+
+const TAKT_VERLAUF_MAX = Lesemodi.LESEMODUS_VERLAUF_MAX;
+
+/* Takt einer Lesung messen und im Profil vermerken - unabhängig vom Modus,
+   damit taktVorgabe() immer aus dem tatsächlich gemessenen Tempo schöpft. */
+export function merkeTakt(profil, { silbenProMin, gleichmass, modus } = {}) {
+  const z = echoZustand(profil);
+  z.verlauf ||= [];
+  z.verlauf.push({ wann: Date.now(), silbenProMin, gleichmass, modus });
+  if (z.verlauf.length > TAKT_VERLAUF_MAX) z.verlauf.splice(0, z.verlauf.length - TAKT_VERLAUF_MAX);
+  speichern();
+  return z;
+}
+
+/* Die aktuelle Takt-Vorgabe (Silben/Minute) für "Im Takt". */
+export function taktVorgabeFuer(profil) {
+  return Lesemodi.taktVorgabe(echoZustand(profil));
+}
+
+/* Nach einer Takt-Runde die nächste Vorgabe festlegen und merken. */
+export function taktNachRundeAnpassen(profil, vorgabe, messung) {
+  const z = echoZustand(profil);
+  const neu = Lesemodi.taktAnpassen(vorgabe, messung);
+  z.takt = neu;
+  speichern();
+  return neu;
 }
 
 /* Wo hilft eine Skizze? Fuer den Eltern-Bereich. Es geht nicht darum, ob viel

@@ -26,6 +26,7 @@ import * as Ueberraschung from './ueberraschung.js';
 import * as Lesehilfe from './lesehilfe.js';
 import * as Texterkennung from './texterkennung.js';
 import * as Textaufbereitung from './textaufbereitung.js';
+import * as Lesemodi from './lesemodi.js';
 
 const view = () => document.getElementById('view');
 export const esc = s => String(s).replace(/[&<>"']/g, c =>
@@ -219,6 +220,30 @@ function screenProfile() {
 
 
 
+/* Echo-Lesen und Takt-Lesen im Eltern-Bereich - unabhängig davon, ob schon
+   drei erste Durchgänge für die Leseflüssigkeits-Karte vorliegen: der Takt
+   wird nach JEDER Lesung mit Mikrofon gemessen, in jedem Modus. */
+function echoTaktKarteHtml(p) {
+  const z = S.echoZustand(p);
+  const takt = (z.verlauf || []).slice(-10);
+  if (!takt.length) return '';
+  const erste = takt.slice(0, Math.max(1, Math.floor(takt.length / 2)));
+  const letzte = takt.slice(Math.floor(takt.length / 2));
+  const schnitt = (liste, feld) => Math.round(liste.reduce((s, x) => s + (x[feld] || 0), 0) / liste.length);
+  return `<div class="card flat" style="background:var(--bg);margin-top:12px">
+    <p class="small" style="margin:0 0 6px"><b>🔊🥁 Echo-Lesen und Takt-Lesen</b></p>
+    <p class="small" style="margin:0">Echo-Stufe: <b>${esc(Lesemodi.echoStufeName(z.echoStufe))}</b></p>
+    <p class="small" style="margin:4px 0 0">Aktuelle Takt-Vorgabe: <b>${Lesemodi.taktVorgabe(z)} Silben/Minute</b></p>
+    <p class="small muted" style="margin:6px 0 0">Zuletzt gemessener Takt: ${schnitt(letzte, 'silbenProMin')}
+      Silben/Minute, Gleichmaß ${schnitt(letzte, 'gleichmass')}
+      ${erste.length < takt.length ? `(vorher ${schnitt(erste, 'silbenProMin')} Silben/Minute)` : ''}.</p>
+    <p class="small muted" style="margin:6px 0 0">Die Hilfestufe beim Echo-Lesen und das Takt-Tempo
+      passen sich von selbst an – nach guten Lesungen wird schrittweise weniger geholfen bzw.
+      etwas zügiger vorgegeben, nach schwächeren wieder mehr Hilfe bzw. etwas ruhiger.
+      Kein Zeitdruck, kein Punktabzug.</p>
+  </div>`;
+}
+
 /* Leseflüssigkeit im Eltern-Bereich. Verglichen werden nur ERSTE Durchgänge –
    der dritte Durchgang eines geübten Textes ist immer besser und würde einen
    Fortschritt vortäuschen, den es nicht gibt. */
@@ -229,6 +254,7 @@ function leseProfilKarte(p) {
       <h3>🎤 Leseflüssigkeit</h3>
       <p class="muted small">Sobald Ihr Kind dreimal laut vorgelesen hat, steht hier die
         Entwicklung: Tempo, Stockungen und Betonung. Bisher: ${v ? v.anzahl : 0} von 3.</p>
+      ${echoTaktKarteHtml(p)}
     </div>`;
 
   const pfeil = (jetzt, frueher, hochIstGut = true) => {
@@ -281,6 +307,8 @@ function leseProfilKarte(p) {
           im Schnitt <b>${v.wiederholung > 0 ? '+' : ''}${v.wiederholung} Silben pro Minute</b>
           schneller als beim ersten. Genau das ist der Sinn der Übung.</p>` : ''}
       </div>
+
+      ${echoTaktKarteHtml(p)}
 
       ${(() => {
         const st = S.stolperWoerter(p);
@@ -1327,23 +1355,106 @@ function aufnahme() {
   return { start, stopp: () => stopFn?.(), huellkurve };
 }
 
+/* Nach JEDER Lesung mit Mikrofon (alle drei Lese-Arten): den tatsächlich
+   gelesenen Takt messen und merken, und - nur beim Echo-Lesen - die
+   Hilfestufe anpassen. Rein additiv zur bestehenden Auswertung, ändert an
+   Lesen.auswerten()/Aussprache.zuordnen() nichts. Wird nur fuer VERWERTBARE
+   Messungen aufgerufen (siehe verarbeiteLesung unten). */
+function lesemodiNachLesung(p, a, huellkurve, extra, werte) {
+  const modus = a.lesemodus || 'allein';
+  const gipfelListe = Aussprache.gipfel(huellkurve, extra.schrittMs);
+  const taktMessung = Lesemodi.taktMessen(gipfelListe);
+  if (taktMessung) {
+    S.merkeTakt(p, { silbenProMin: taktMessung.silbenProMin, gleichmass: taktMessung.gleichmass, modus });
+    if (modus === 'takt' && a.taktVorgabeBenutzt) {
+      a.taktRueckmeldung = Lesemodi.taktRueckmeldung(a.taktVorgabeBenutzt, taktMessung);
+      S.taktNachRundeAnpassen(p, a.taktVorgabeBenutzt, taktMessung);
+    }
+  }
+  if (modus === 'echo') {
+    S.echoNachLesungAnpassen(p, { stufe: a.leseUrteil.stufe, stockungen: werte.stockungen, tempo: werte.tempo });
+  }
+}
+
+/* Kindgerechte Rückmeldung, wenn eine Lesung zwar geschafft, aber NICHT
+   verwertbar war (siehe verarbeiteLesung/Lesemodi.messungVerwertbar): beim
+   Chorlesen (Echo Stufe 2) hört das Mikrofon die Gerätestimme mit, beim
+   Takt mit Klickton den Klick - beides würde Tempo, Stockungen, Silbenbild
+   und alle daraus lernenden Anpassungen verfälschen. Lieber ehrlich nichts
+   zeigen als falsche Zahlen. */
+function nichtVerwertetHtml(a) {
+  const grund = a.klickBenutzt
+    ? 'Weil dabei der Klickton lief, hat das Mikrofon auch den Klick gehört'
+    : 'Weil die App dabei gleichzeitig vorgelesen hat, hat das Mikrofon auch die Computerstimme gehört';
+  return `
+    <div style="font-weight:800;font-size:1.05rem;margin-bottom:6px">${
+      a.klickBenutzt ? '🥁 Fein mitgeklatscht!' : '🔊 Fein mitgelesen!'}</div>
+    <p class="small" style="margin:0">${grund} – deshalb wurde diesmal nichts gemessen.
+      Das zählt trotzdem als geübt.</p>`;
+}
+
+/* Kernstück der Auswertung einer Lesung MIT Mikrofon - fuer beide Stellen
+   (normales Vorlesen und "Meine Texte") gleich. Prüft zuerst, ob die
+   Aufnahme durch eigenen Ton der App verfälscht sein könnte; wenn ja, wird
+   nichts davon berechnet oder gemerkt (siehe Lesemodi.messungVerwertbar). */
+function verarbeiteLesung(p, a, huellkurve, extra, { titel, durchgang, vorherigerDurchgang }) {
+  const verwertbar = Lesemodi.messungVerwertbar({
+    modus: a.lesemodus, echoStufe: a.echoStufeBenutzt, klick: a.klickBenutzt
+  });
+  if (!verwertbar) { a.nichtVerwertbar = true; return { verwertbar: false }; }
+
+  const werte = Lesen.auswerten(huellkurve, { text: a.lesetext, schrittMs: extra.schrittMs, durchgang });
+  a.leseWerte = werte;
+  const liste = silbenListe(a.lesetext);
+  a.silbenBild = Aussprache.zuordnen(liste, huellkurve, { schrittMs: extra.schrittMs });
+  a.betonung = a.silbenBild.sicher ? Aussprache.betonungPruefen(nachWoertern(a.silbenBild.silben)) : [];
+  a.silbenBlick = Aussprache.zusammenfassung(a.silbenBild, a.betonung);
+  if (a.silbenBild.sicher) S.merkeStolper(p, a.silbenBlick.stolpersteine);
+  a.leseUrteil = Lesen.einordnung(werte, p.etappe || 1);
+  a.leseFortschritt = Lesen.fortschritt(vorherigerDurchgang, werte);
+  S.merkeLesung(p, { titel, durchgang, ...werte, stufe: a.leseUrteil.stufe, modus: a.lesemodus });
+  lesemodiNachLesung(p, a, huellkurve, extra, werte);
+  return { verwertbar: true, werte };
+}
+
+/* Kindgerechte Erklärung je Lese-Art - unter den Modus-Knöpfen. */
+const LESEMODUS_ERKLAERUNG = {
+  echo: '🔊 Die App liest zuerst vor, dann liest du nach.',
+  takt: '🥁 Ein Ball hüpft im Takt – lies laut mit.',
+  allein: '🎤 Du liest ganz allein.'
+};
+
 function lesepult(p, a, bereich, fertig) {
   const text = a.lesetext;
   const fensterAn = !!(p.lesehilfe?.an && p.lesehilfe?.fenster);
+  const lesemodusZustand = S.echoZustand(p);
+  let modus = a.lesemodus || Lesemodi.modusEmpfehlung(lesemodusZustand);
+  let klickAn = false;
+
   bereich.innerHTML = `
     <div class="lesepult">
+      <div class="lesemodus-wahl" role="group" aria-label="Lese-Art wählen">
+        <button class="btn ${modus==='echo'?'':'ghost'}" data-modus="echo">🔊 Echo</button>
+        <button class="btn ${modus==='takt'?'':'ghost'}" data-modus="takt">🥁 Im Takt</button>
+        <button class="btn ${modus==='allein'?'':'ghost'}" data-modus="allein">🎤 Allein</button>
+        <button class="btn ghost small" id="taktKlick" hidden>🔈 Klick (dann wird nicht gemessen)</button>
+      </div>
+      <p class="small muted" id="lesemodusText" style="margin-bottom:10px">${LESEMODUS_ERKLAERUNG[modus]}</p>
+      <div id="einzaehlAnzeige" class="einzaehl-anzeige" hidden></div>
+      <div id="echoJetztDu" class="einzaehl-anzeige" hidden>🎙️ Jetzt du! Lies genau diesen Satz.</div>
       <div class="row spread small muted" style="margin-bottom:8px">
         <span>Durchgang ${a.durchgang} von 3</span>
         <span id="leseUhr">0,0 s</span>
       </div>
-      <div id="leseText" class="lesetext">${silbenHtml(text)}</div>
+      <div id="leseText" class="lesetext">${silbenHtml(text)}<div id="taktBall" class="takt-ball" hidden></div></div>
+      <button class="btn" id="echoWeiter" style="margin-top:12px;width:100%;font-size:1.15rem" hidden>Weiter ➜</button>
       ${fensterAn ? `<div class="lesefenster-nav">
         <button class="btn ghost small" id="leseZeileZurueck">⬆︎ Zeile zurück</button>
         <button class="btn ghost small" id="leseZeileVor">Nächste Zeile ⬇︎</button>
       </div>` : ''}
       <div id="pegel" class="pegel"><i></i></div>
       <div id="leseHinweis" class="small muted" style="margin-top:10px"></div>
-      <div class="row wrap" style="margin-top:12px">
+      <div class="row wrap" id="leseStartReihe" style="margin-top:12px">
         <button class="btn" id="leseStart">🎤 Los, ich lese vor</button>
         <button class="btn ghost" id="leseOhne">Ohne Mikrofon lesen</button>
       </div>
@@ -1354,11 +1465,49 @@ function lesepult(p, a, bereich, fertig) {
 
   const zeigeHinweis = t => bereich.querySelector('#leseHinweis').innerHTML = t;
   const balken = bereich.querySelector('#pegel').firstElementChild;
+  const taktKlickKnopf = bereich.querySelector('#taktKlick');
+  taktKlickKnopf.hidden = modus !== 'takt';
+  /* Beschriftung sagt IMMER dazu, dass ein Klickton die Messung unmöglich
+     macht (siehe Lesemodi.messungVerwertbar) - der Klick landet mit im
+     Mikrofon (echoCancellation ist aus) und würde als Silbentakt gezählt. */
+  taktKlickKnopf.onclick = () => {
+    klickAn = !klickAn;
+    taktKlickKnopf.textContent = klickAn
+      ? '🔊 Klick an (wird nicht gemessen)'
+      : '🔈 Klick (dann wird nicht gemessen)';
+  };
+  bereich.querySelectorAll('[data-modus]').forEach(b => b.onclick = () => {
+    modus = b.dataset.modus;
+    a.lesemodus = modus;
+    bereich.querySelectorAll('[data-modus]').forEach(x =>
+      x.classList.toggle('ghost', x.dataset.modus !== modus));
+    bereich.querySelector('#lesemodusText').textContent = LESEMODUS_ERKLAERUNG[modus];
+    taktKlickKnopf.hidden = modus !== 'takt';
+  });
+  a.lesemodus = modus;
+
+  /* Sobald eine Lesung wirklich läuft, darf der Modus nicht mehr wechseln -
+     und bei Echo/Takt gibt es während der Übung keinen sinnvollen Grund
+     mehr für "Los" oder "Ohne Mikrofon": Echo läuft Satz für Satz von
+     selbst durch, Takt spielt die Schlagfolge von selbst ab. Die ganze
+     Start-Reihe verschwindet deshalb (nicht nur "disabled" - sie soll auch
+     keinen Platz mehr beanspruchen). Im Modus "Allein" bleibt es wie bisher:
+     "Los, ich lese vor" wird zu "✓ Fertig gelesen", "Ohne Mikrofon" bleibt
+     nur ausgegraut daneben stehen. */
+  const modusKnoepfeSperren = () =>
+    bereich.querySelectorAll('[data-modus], #taktKlick').forEach(b => b.disabled = true);
+  const startReiheVerstecken = () => {
+    const reihe = bereich.querySelector('#leseStartReihe');
+    if (reihe) reihe.hidden = true;
+  };
 
   /* Lesefenster: nur die Zeile mit der aktuellen Silbe ist klar zu lesen
      (siehe .lh-fenster in app.css), der Rest tritt zurück. Zeilen werden aus
      den tatsächlichen offsetTop-Werten der Wörter gebildet – bei einer
-     Größenänderung (Drehen des Geräts, andere Schriftgröße) neu berechnet. */
+     Größenänderung (Drehen des Geräts, andere Schriftgröße) neu berechnet.
+     Steht weiter oben als früher, weil sowohl der Takt-Ball als auch die
+     Echo-Hörphase (beide weiter unten definiert) die aktive Zeile mitführen
+     müssen - nicht nur das normale Mikrofon-Mitlesen. */
   let woerterZeilen = [];
   const zeilenNeuBerechnen = () => {
     if (!fensterAn) return;
@@ -1368,10 +1517,30 @@ function lesepult(p, a, bereich, fertig) {
     woerterZeilen = woerter.map((w, i) => ({ el: w, zeile: zeilen[i] }));
   };
   let aktiveZeile = 0;
+  let lesefensterAus = false;   // waehrend Echo-Satzdimmen: siehe unten
   const zeileZeigen = z => {
-    if (!fensterAn) return;
+    if (!fensterAn || lesefensterAus) return;
     aktiveZeile = Math.max(0, z);
     woerterZeilen.forEach(w => w.el.classList.toggle('zeile-aktiv', w.zeile === aktiveZeile));
+  };
+  /* Welche Zeile gehört zu einer gegebenen Silbe (Index in #leseText
+     [data-sil])? Gemeinsam genutzt vom Takt-Ball und der Echo-Hörphase -
+     beide markieren eine Silbe, nicht direkt ein Wort. */
+  const zeileFuerSilbeZeigen = i => {
+    if (!fensterAn || lesefensterAus || i < 0) return;
+    const felderAlle = [...bereich.querySelectorAll('#leseText [data-sil]')];
+    const wort = felderAlle[i]?.closest('.wort');
+    const treffer = woerterZeilen.find(w => w.el === wort);
+    if (treffer) zeileZeigen(treffer.zeile);
+  };
+  /* Während Echo Satz für Satz läuft, dimmt bereits das Satzfenster
+     (.satz-dim) den Rest des Textes - das Lesefenster würde dieselbe
+     Opazität ein zweites Mal, nach einer anderen Regel (Zeile statt Satz)
+     anwenden und sich damit widersprechen. Deshalb wird es für die Dauer
+     ganz abgeschaltet (siehe ":not(.lesefenster-aus)" in app.css). */
+  const lesefensterAbschalten = an => {
+    lesefensterAus = an;
+    bereich.querySelector('#leseText')?.classList.toggle('lesefenster-aus', an);
   };
   /* Robust abmelden: Wird der Lesepult-Bereich verlassen (✕ Beenden, ein
      Mikrofon-Fehler, Navigation) OHNE dass einer der bekannten Ausgänge
@@ -1396,9 +1565,254 @@ function lesepult(p, a, bereich, fertig) {
     bereich.querySelector('#leseZeileVor').onclick = () => zeileZeigen(aktiveZeile + 1);
   }
 
-  bereich.querySelector('#leseOhne').onclick = () => {
+  /* --------------------------- Takt-Ball -----------------------------
+     Bewegt sich rein zeitgesteuert über die Silben - unabhängig vom
+     Mikrofon, damit "Im Takt" auch ganz ohne Mikrofon als reine
+     Mitklatsch-Übung funktioniert. */
+  let audioCtx = null;
+  const klickSpielen = () => {
+    if (!klickAn) return;
+    try {
+      audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = 880; g.gain.value = 0.06;
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(); o.stop(audioCtx.currentTime + 0.05);
+    } catch {}
+  };
+  const ballZuSilbeBewegen = i => {
+    const ball = bereich.querySelector('#taktBall');
+    const felder = [...bereich.querySelectorAll('#leseText [data-sil]')];
+    const ziel = felder[i];
+    const container = bereich.querySelector('#leseText');
+    if (!ball || !ziel || !container) return;
+    ball.hidden = false;
+    ball.style.left = (ziel.offsetLeft + ziel.offsetWidth / 2) + 'px';
+    ball.style.top = ziel.offsetTop + 'px';
+    zeileFuerSilbeZeigen(i);   // Lesefenster folgt dem Ball, nicht der Silbenfärbung
+  };
+  const taktAbspielen = schlagfolge => {
+    let lauft = true, letzterIndex = -1;
+    const start = performance.now();
+    const schritt = () => {
+      if (!lauft) return;
+      const t = performance.now() - start;
+      let i = 0;
+      for (let k = 0; k < schlagfolge.silben.length; k++) {
+        if (schlagfolge.silben[k].startMs <= t) i = k; else break;
+      }
+      if (i !== letzterIndex) {
+        letzterIndex = i;
+        ballZuSilbeBewegen(i);
+        klickSpielen();
+      }
+      if (t < schlagfolge.gesamtMs + 300) setTimeout(schritt, 60);
+    };
+    schritt();
+    return () => { lauft = false; };
+  };
+  const einzaehlenZeigen = vorgabe => new Promise(resolve => {
+    const plan = Lesemodi.einzaehlPlan(vorgabe);
+    const anzeige = bereich.querySelector('#einzaehlAnzeige');
+    anzeige.hidden = false;
+    plan.forEach(schlag => setTimeout(() => {
+      anzeige.textContent = schlag.wort;
+      klickSpielen();
+    }, schlag.startMs));
+    setTimeout(() => { anzeige.hidden = true; resolve(); }, plan.at(-1).startMs + 500);
+  });
+
+  /* --------------------------- Echo-Vorlesephase -----------------------
+     Die App liest EINEN Satz vor, die Silbenmarkierung läuft synchron mit.
+     Bevorzugt über die onboundary-Ereignisse der Stimme (echte Synchro-
+     nität); liefert das Gerät oder der Browser keine (z. B. manche
+     Headless-/Desktop-Stimmen), übernimmt der Zeitplan-Fallback aus der
+     geschätzten Sprechrate - die Markierung bewegt sich so oder so.
+     Gemeinsam genutzt von der reinen Hör-Vorschau (ohne Mikrofon, ganzer
+     Text) und von der echten Echo-Stufe-1-Übung (mit Mikrofon, Satz für
+     Satz, siehe echoSatzFuerSatz unten). */
+  let wortTimerToken = 0;
+  /* Punkt 3: SpeechSynthesis liefert "boundary" nur am WORTANFANG. Innerhalb
+     eines mehrsilbigen Wortes wird deshalb selbst weitergezählt - eine
+     Silbe je geschätzter Silbendauer (aus dem Sprech-Tempo) - bis entweder
+     das Wort zu Ende ist oder das NÄCHSTE boundary-Ereignis (token erhöht
+     sich) diesen Lauf sofort abbricht und woanders neu beginnt. */
+  const wortInnenAbspielen = (silbenDesWorts, basisOffset, markiere, tempo) => {
+    const meinToken = ++wortTimerToken;
+    if (!silbenDesWorts.length) return;
+    const zeitplan = Lesemodi.wortSilbenZeitplan(silbenDesWorts, tempo);
+    zeitplan.forEach(s => setTimeout(() => {
+      if (wortTimerToken !== meinToken) return;      // ein neueres Wort hat übernommen
+      markiere(basisOffset + s.index);
+    }, s.startMs));
+  };
+  const hoereSatz = (satz, basisOffset, markiere) => new Promise(resolve => {
+    const planSatz = Lesemodi.silbenPlan(satz);
+    const zeitplan = Lesemodi.zeitplanErstellen(satz, { tempo: 0.85 });
+    let erledigt = false, boundaryGenutzt = false;
+    const start = performance.now();
+    const weiter = () => { if (erledigt) return; erledigt = true; resolve(); };
+    /* "onend"/"onerror" nur dann als Ende akzeptieren, wenn wirklich etwas
+       gesprochen wurde (boundary-Ereignisse kamen) oder plausibel lange
+       genug Zeit vergangen ist. Manche Browser ohne installierte Stimme
+       (z. B. Headless-Chromium) melden eine Sprachausgabe als sofort
+       "fertig", obwohl gar nichts zu hören war - würde das akzeptiert,
+       würde die ganze Vorlese-Phase durchrauschen, ohne dass die
+       Markierung je zu sehen war. Dann übernimmt stattdessen der
+       Zeitplan-Fallback für die volle geschätzte Dauer. */
+    const stimmeFertig = () => {
+      const vergangen = performance.now() - start;
+      if (boundaryGenutzt || vergangen >= zeitplan.gesamtMs * 0.4) weiter();
+    };
+    const u = vorlesen(satz, { tempo: 0.85, beiEnde: stimmeFertig });
+    if (u) {
+      u.addEventListener?.('boundary', e => {
+        if (e.name && e.name !== 'word') return;
+        boundaryGenutzt = true;
+        const wortIndex = Lesemodi.wortBeiZeichen(planSatz, e.charIndex);
+        wortInnenAbspielen(Lesemodi.silbenDesWorts(planSatz, wortIndex), basisOffset, markiere, 0.85);
+      });
+    }
+    /* Sicherheitsnetz, das IMMER läuft: Egal ob eine Stimme wirklich
+       spricht, ob boundary-Ereignisse kommen oder ob "onend" überhaupt
+       jemals feuert (manche Browser/Headless-Umgebungen tun das nicht) -
+       nach der geschätzten Sprechzeit geht es in jedem Fall weiter. Ohne
+       boundary-Ereignisse bewegt in der Zwischenzeit der Zeitplan selbst
+       die Markierung (der eigentliche Fallback). */
+    const schritt = () => {
+      if (erledigt) return;
+      const t = performance.now() - start;
+      if (!boundaryGenutzt) {
+        const i = Lesemodi.silbeBeiZeit(zeitplan, t);
+        if (i >= 0) markiere(basisOffset + i);
+      }
+      if (t < zeitplan.gesamtMs) setTimeout(schritt, 60);
+      else weiter();
+    };
+    setTimeout(schritt, 60);
+  });
+
+  /* Reine Hör-Vorschau über den GANZEN Text (ohne Mikrofon) - der Reihe
+     nach Satz für Satz, siehe hoereSatz oben. */
+  const hoerenUndMitschauen = async () => {
+    const felder = [...bereich.querySelectorAll('#leseText [data-sil]')];
+    const markiere = i => {
+      felder.forEach((f, idx) => f.classList.toggle('jetzt', idx === i));
+      zeileFuerSilbeZeigen(i);   // Echo-Hörphase: Lesefenster folgt der Markierung
+    };
+    const saetze = Lesemodi.saetzeTeilen(text);
+    let offset = 0;
+    for (const satz of saetze) {
+      await hoereSatz(satz, offset, markiere);
+      offset += Lesemodi.silbenPlan(satz).length;
+    }
+    markiere(-1);
+  };
+
+  /* --------------------------- Echo, Stufe 1, MIT Mikrofon ----------------
+     Genau HIER wirkt Echo-Lesen: nicht "erst alles hören, dann alles
+     lesen", sondern je Satz HÖREN -> SOFORT DENSELBEN SATZ LESEN -> nächster
+     Satz. Das Mikrofon ist die ganze Zeit über offen (nur EIN Berechtigungs-
+     dialog), aber nur die "Jetzt du"-Phase je Satz wird tatsächlich in die
+     Auswertung übernommen - was während der Hör-Phase im Hintergrund
+     aufgenommen wird (z. B. die eigene Stimme der App), wird verworfen.
+     Die Kind-Segmente werden am Ende mit kurzer künstlicher Stille verkettet
+     und wie EIN Lesetext ausgewertet (siehe Lesemodi.huellkurvenVerketten). */
+  const echoSatzFuerSatz = async auf => {
+    const woerterEls = [...bereich.querySelectorAll('#leseText .wort')];
+    const felder = [...bereich.querySelectorAll('#leseText [data-sil]')];
+    const markiere = i => felder.forEach((f, idx) => f.classList.toggle('jetzt', idx === i));
+    const saetze = Lesemodi.saetzeTeilen(text);
+    /* Satzdimmen UND Lesefenster gleichzeitig würden sich widersprechen
+       (siehe app.css) - für die ganze Satz-für-Satz-Übung ist das
+       Lesefenster deshalb abgeschaltet, das Satzdimmen übernimmt die Rolle. */
+    lesefensterAbschalten(true);
+
+    /* Wortgrenzen je Satz, um im DOM genau diesen Satz hell zu lassen und
+       den Rest zu dimmen (wie ein Lesefenster, nur satzweise statt
+       zeilenweise). Grob über die Wortanzahl gezählt - reicht, weil .wort im
+       Text in derselben Reihenfolge steht wie die echten Wörter. */
+    let woertGezaehlt = 0;
+    const wortGrenzen = saetze.map(s => {
+      const anzahl = (s.match(/\S+/g) || []).length;
+      const von = woertGezaehlt; woertGezaehlt += anzahl;
+      return { von, bis: woertGezaehlt };
+    });
+    const dimmen = idx => {
+      const { von, bis } = wortGrenzen[idx] || { von: 0, bis: woerterEls.length };
+      woerterEls.forEach((w, i) => w.classList.toggle('satz-dim', !(i >= von && i < bis)));
+    };
+    const dimmenAus = () => woerterEls.forEach(w => w.classList.remove('satz-dim'));
+
+    const hinweis = bereich.querySelector('#echoJetztDu');
+    const weiterBtn = bereich.querySelector('#echoWeiter');
+
+    const jetztDuWarten = () => new Promise(resolve => {
+      let fertigGemacht = false;
+      const vonIndex = auf.huellkurve.length;
+      const abschliessen = () => {
+        if (fertigGemacht) return;
+        fertigGemacht = true;
+        weiterBtn.onclick = null;
+        resolve(auf.huellkurve.slice(vonIndex));
+      };
+      weiterBtn.onclick = abschliessen;
+      /* Automatisches Ende: nach echtem Sprechen + ~1,2s Stille - reine
+         Funktion, siehe Lesemodi.stilleEndeErkannt. Wird alle 150ms
+         geprüft, das reicht für eine Sprechpause locker aus. */
+      const pruefen = () => {
+        if (fertigGemacht) return;
+        const segment = auf.huellkurve.slice(vonIndex);
+        if (Lesemodi.stilleEndeErkannt(segment, SCHRITT_MS)) { abschliessen(); return; }
+        setTimeout(pruefen, 150);
+      };
+      setTimeout(pruefen, 300);
+    });
+
+    const segmente = [];
+    let offset = 0;
+    for (let idx = 0; idx < saetze.length; idx++) {
+      const satz = saetze[idx];
+      dimmen(idx);
+      hinweis.hidden = true; weiterBtn.hidden = true;
+      zeigeHinweis('🔊 Hör zu …');
+      await hoereSatz(satz, offset, markiere);
+      offset += Lesemodi.silbenPlan(satz).length;
+
+      zeigeHinweis('🎙️ Jetzt du!');
+      hinweis.hidden = false; weiterBtn.hidden = false;
+      /* "Weiter ➜" liegt direkt unter dem Text (siehe Template oben), kann
+         aber bei einem langen Text unterhalb der unteren Navigationsleiste
+         liegen - deshalb aktiv ins Bild scrollen, sobald er auftaucht. */
+      weiterBtn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      segmente.push(await jetztDuWarten());
+      hinweis.hidden = true; weiterBtn.hidden = true;
+    }
+    markiere(-1);
+    dimmenAus();
+    lesefensterAbschalten(false);
+    return Lesemodi.huellkurvenVerketten(segmente, { schrittMs: SCHRITT_MS });
+  };
+
+  bereich.querySelector('#leseOhne').onclick = async () => {
     window.removeEventListener('resize', zeilenNeuBerechnenSicher);
-    /* Ohne Mikrofon zählt nur, dass gelesen wurde – keine Messung, keine Zahlen. */
+    modusKnoepfeSperren();
+    /* Ohne Mikrofon zählt nur, dass gelesen wurde – keine Messung, keine Zahlen.
+       "Echo" und "Im Takt" laufen trotzdem als Hör- bzw. Mitklatsch-Übung ab,
+       bevor es weitergeht - nur das Mikrofon fehlt. Beide laufen von selbst
+       durch, deshalb verschwinden die Start-Knöpfe für die Dauer ganz. */
+    if (modus === 'echo') {
+      startReiheVerstecken();
+      await hoerenUndMitschauen();
+    } else if (modus === 'takt') {
+      startReiheVerstecken();
+      const vorgabe = S.taktVorgabeFuer(p);
+      await einzaehlenZeigen(vorgabe);
+      const schlagfolge = Lesemodi.taktSchlagfolge(text, vorgabe);
+      const stoppen = taktAbspielen(schlagfolge);
+      await new Promise(r => setTimeout(r, schlagfolge.gesamtMs + 300));
+      stoppen();
+    }
     fertig(null, { ohneMikro: true });
   };
 
@@ -1406,8 +1820,24 @@ function lesepult(p, a, bereich, fertig) {
     const knopf = bereich.querySelector('#leseStart');
     const ohne = bereich.querySelector('#leseOhne');
     knopf.disabled = true; ohne.disabled = true;
-    zeigeHinweis('⏳ Mikrofon wird gefragt …');
+    modusKnoepfeSperren();
 
+    /* Welche Echo-Stufe UND welche Klick-Einstellung tatsächlich benutzt
+       wurden, wird JETZT festgehalten (nicht erst nach der Aufnahme neu
+       abgefragt) - beides entscheidet hinterher, ob die Messung überhaupt
+       verwertbar ist (siehe Lesemodi.messungVerwertbar). */
+    if (modus === 'echo') a.echoStufeBenutzt = lesemodusZustand.echoStufe || 1;
+    if (modus === 'takt') { taktKlickKnopf.disabled = true; a.klickBenutzt = klickAn; }
+
+    let taktVorgabeBenutzt = null, taktStoppen = null;
+    if (modus === 'takt') {
+      taktVorgabeBenutzt = S.taktVorgabeFuer(p);
+      a.taktVorgabeBenutzt = taktVorgabeBenutzt;
+      zeigeHinweis('🥁 Gleich geht’s los …');
+      await einzaehlenZeigen(taktVorgabeBenutzt);
+    }
+
+    zeigeHinweis('⏳ Mikrofon wird gefragt …');
     const auf = aufnahme();
     try {
       await auf.start(pegel => {
@@ -1424,6 +1854,32 @@ function lesepult(p, a, bereich, fertig) {
       b.onclick = () => fertig(null, { ohneMikro: true });
       bereich.querySelector('.lesepult').appendChild(b);
       return;
+    }
+
+    /* Echo, Stufe 1: WIRKLICH Satz für Satz - hören, dann sofort denselben
+       Satz lesen, dann der nächste Satz. Läuft komplett eigenständig (die
+       normale Live-Markierung unten ist hierfür nicht gedacht) und ruft
+       "fertig" selbst auf, sobald der letzte Satz gelesen ist. Das Mikrofon
+       war dabei die ganze Zeit über offen (ein einziger Berechtigungs-
+       dialog); nur die "Jetzt du"-Abschnitte wandern in die Auswertung. */
+    if (modus === 'echo' && a.echoStufeBenutzt === 1) {
+      startReiheVerstecken();     // läuft komplett von selbst - "Los"/"Ohne Mikrofon" brauchts nicht mehr
+      const huellkurveEcho = await echoSatzFuerSatz(auf);
+      auf.stopp();
+      window.removeEventListener('resize', zeilenNeuBerechnenSicher);
+      fertig(huellkurveEcho, { schrittMs: SCHRITT_MS });
+      return;
+    }
+
+    /* Echo, Stufe 2 ("Zusammen lesen"): die App liest jetzt LEISER/LANGSAMER
+       GLEICHZEITIG mit - Chorlesen. Das Mikrofon misst trotzdem mit (die
+       Messung selbst ist dadurch nicht verwertbar, siehe oben - aber das
+       Kind soll deswegen nicht mittendrin unterbrochen werden). */
+    if (modus === 'echo' && a.echoStufeBenutzt === 2) {
+      vorlesen(text, { tempo: 0.75 });
+    }
+    if (modus === 'takt' && taktVorgabeBenutzt) {
+      taktStoppen = taktAbspielen(Lesemodi.taktSchlagfolge(text, taktVorgabeBenutzt));
     }
 
     const beginn = Date.now();
@@ -1480,6 +1936,8 @@ function lesepult(p, a, bereich, fertig) {
     knopf.onclick = () => {
       laeuftNoch = false;
       auf.stopp();
+      stopp();                 // Echo Stufe 2: eigene Stimme mit beenden
+      taktStoppen?.();
       felder.forEach(f => f.classList.remove('jetzt'));
       window.removeEventListener('resize', zeilenNeuBerechnenSicher);
       fertig(auf.huellkurve, { schrittMs: SCHRITT_MS });
@@ -1539,6 +1997,7 @@ function silbenBildHtml(a) {
 /* Rueckmeldung nach dem Vorlesen. Bewusst OHNE Punktzahl und ohne Note:
    Wer beim Vorlesen benotet wird, liest vorsichtiger statt fluessiger. */
 function leseRueckmeldung(a) {
+  if (a.nichtVerwertbar) return nichtVerwertetHtml(a);
   const w = a.leseWerte, u = a.leseUrteil, f = a.leseFortschritt;
   const STERNE = { 1: '🌱', 2: '🌿', 3: '🌳', 4: '🌟' };
   return `
@@ -1546,6 +2005,8 @@ function leseRueckmeldung(a) {
     <div style="font-weight:800;font-size:1.05rem;margin-bottom:6px">
       ${STERNE[u.stufe]} ${esc(u.name)}</div>
     <div class="small" style="font-weight:500;margin-bottom:10px">${esc(u.text)}</div>
+    ${a.taktRueckmeldung ? `<div class="small" style="font-weight:700;margin-bottom:8px">
+      ${esc(a.taktRueckmeldung)}</div>` : ''}
     ${f ? `<div class="small" style="font-weight:700;margin-bottom:8px">
       ${f.besser ? '📈 Besser als eben:' : '↔️'} ${esc(f.text)}</div>` : ''}
     <div class="lesezahlen small">
@@ -2151,16 +2612,9 @@ function meineTexteLesen(p, text, abschnittIndex, durchgang) {
       meineTexteWeiter(p, text, abschnittIndex, durchgang, null);
       return;
     }
-    const werte = Lesen.auswerten(huellkurve, { text: abschnitt, schrittMs: extra.schrittMs, durchgang });
-    a.leseWerte = werte;
-    const liste = silbenListe(abschnitt);
-    a.silbenBild = Aussprache.zuordnen(liste, huellkurve, { schrittMs: extra.schrittMs });
-    a.betonung = a.silbenBild.sicher ? Aussprache.betonungPruefen(nachWoertern(a.silbenBild.silben)) : [];
-    a.silbenBlick = Aussprache.zusammenfassung(a.silbenBild, a.betonung);
-    if (a.silbenBild.sicher) S.merkeStolper(p, a.silbenBlick.stolpersteine);
-    a.leseUrteil = Lesen.einordnung(werte, p.etappe || 1);
-    a.leseFortschritt = Lesen.fortschritt(S.letzteLesung(p, lesetitel, durchgang - 1), werte);
-    S.merkeLesung(p, { titel: lesetitel, durchgang, ...werte, stufe: a.leseUrteil.stufe });
+    verarbeiteLesung(p, a, huellkurve, extra, {
+      titel: lesetitel, durchgang, vorherigerDurchgang: S.letzteLesung(p, lesetitel, durchgang - 1)
+    });
     S.verbuche(p, { zielId: 'lautlesen', weg: 'erzaehlen', level: p.etappe || 1, richtig: true, ms });
     kopfzeile(p);
     meineTexteWeiter(p, text, abschnittIndex, durchgang, a);
@@ -2370,29 +2824,16 @@ function screenSession(p, opts = {}) {
             auswerten(a, 'ohne Messung gelesen');
             return;
           }
-          const werte = Lesen.auswerten(huellkurve, {
-            text: a.lesetext, schrittMs: extra.schrittMs, durchgang: a.durchgang });
-          a.leseWerte = werte;
-
-          /* Silbe für Silbe zuordnen: Wo im Text hat es gehakt? Das geht nur,
-             weil die App den Text kennt – erkannt wird nichts. */
-          const liste = silbenListe(a.lesetext);
-          a.silbenBild = Aussprache.zuordnen(liste, huellkurve, { schrittMs: extra.schrittMs });
-          a.betonung = a.silbenBild.sicher
-            ? Aussprache.betonungPruefen(nachWoertern(a.silbenBild.silben)) : [];
-          a.silbenBlick = Aussprache.zusammenfassung(a.silbenBild, a.betonung);
-          if (a.silbenBild.sicher) S.merkeStolper(p, a.silbenBlick.stolpersteine);
-          a.leseUrteil = Lesen.einordnung(werte, p.etappe || 1);
-          /* Der vorige Durchgang desselben Textes - der Vergleich ist der Kern
-             des wiederholten Lautlesens. */
-          a.leseFortschritt = Lesen.fortschritt(S.letzteLesung(p, a.lesetitel, a.durchgang - 1), werte);
-          S.merkeLesung(p, { titel: a.lesetitel, durchgang: a.durchgang, ...werte, stufe: a.leseUrteil.stufe });
+          const { verwertbar } = verarbeiteLesung(p, a, huellkurve, extra, {
+            titel: a.lesetitel, durchgang: a.durchgang,
+            vorherigerDurchgang: S.letzteLesung(p, a.lesetitel, a.durchgang - 1)
+          });
           /* Bestanden ist, wer gelesen hat. Es gibt keine Note fuers Vorlesen -
              wer bewertet wird, liest vorsichtiger statt fluessiger. */
           /* Vorlesen wird immer als geschafft gewertet. Wer beim Vorlesen
              benotet wird, liest vorsichtiger statt fluessiger - und genau
              das ist das Gegenteil dessen, was hier geuebt werden soll. */
-          auswerten(a, `Stufe ${a.leseUrteil.stufe}: ${a.leseUrteil.name}`, true);
+          auswerten(a, verwertbar ? `Stufe ${a.leseUrteil.stufe}: ${a.leseUrteil.name}` : 'geübt (nicht gemessen)', true);
         });
       }
 
@@ -2554,7 +2995,7 @@ function screenSession(p, opts = {}) {
         <div class="feedback ${ergebnis?'ok':'bad'} pop">
           ${a.punkte > 0 ? `<div class="punktezuwachs">+${a.punkte} Punkte</div>` : ''}
           ${a.kommentar ? `<div class="kommentar">${esc(a.kommentar)}</div>` : ''}
-          ${a.leseWerte ? leseRueckmeldung(a) : zeichenAufgabe
+          ${a.leseWerte || a.nichtVerwertbar ? leseRueckmeldung(a) : zeichenAufgabe
             ? (ergebnis ? `✅ Getroffen! ${esc(eingabe)}` : `🖌️ Noch nicht ganz: ${esc(eingabe)}`)
             : ergebnis ? '✅ Richtig! Super gemacht.'
                        : `❌ Nicht ganz. Richtig wäre: <u>${esc(a.antwort)}</u>`}

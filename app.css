@@ -322,6 +322,23 @@ canvas.mini{width:100%;height:auto;aspect-ratio:1;background:var(--bg);
 
 /* Silbe für Silbe: aktuelle Stelle beim Lesen, Färbung danach */
 .lesetext .sil.jetzt{background:var(--brand);color:#fff;border-radius:6px}
+
+/* Echo-Lesen und Takt-Lesen: Modus-Wahl und Takt-Ball (siehe js/lesemodi.js) */
+.lesemodus-wahl{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.lesemodus-wahl .btn{flex:1 1 auto;min-width:104px}
+#leseText{position:relative}
+.takt-ball{position:absolute;width:16px;height:16px;border-radius:50%;background:var(--brand);
+  box-shadow:0 2px 6px rgba(0,0,0,.25);pointer-events:none;transform:translate(-50%,-130%);
+  transition:left .12s ease,top .12s ease;z-index:2}
+@media (prefers-reduced-motion: reduce){ .takt-ball{transition:none} }
+.einzaehl-anzeige{font-size:1.6rem;font-weight:800;text-align:center;margin:10px 0}
+
+/* Echo-Lesen, Stufe 1: waehrend der "Jetzt du"-Phase tritt der Rest des
+   Textes zurueck, nur der gerade dran genommene Satz bleibt hell - wie ein
+   Lesefenster, nur satzweise statt zeilenweise (siehe echoSatzFuerSatz in
+   js/ui.js). */
+.lesetext .wort.satz-dim{opacity:.3;transition:opacity .25s ease}
+@media (prefers-reduced-motion: reduce){ .lesetext .wort.satz-dim{transition:none} }
 .silbenbild{font-size:1.2rem;line-height:2;font-weight:700;margin-bottom:10px}
 .silbild{border-radius:5px;padding:1px 2px}
 .silbild.gruen{background:rgba(34,170,110,.22)}
@@ -408,9 +425,14 @@ canvas.mini{width:100%;height:auto;aspect-ratio:1;background:var(--bg);
 
 /* Lesefenster NUR im Lesepult (#leseText) - eine Live-Vorschau anderswo mit
    der Klasse .lesetext (z. B. im Eltern-Bereich) hat keine "zeile-aktiv"
-   markierten Wörter und würde sonst komplett ausgegraut wirken. */
-.lh-fenster #leseText .wort{ opacity:.3; transition:opacity .25s ease }
-.lh-fenster #leseText .wort.zeile-aktiv{ opacity:1 }
+   markierten Wörter und würde sonst komplett ausgegraut wirken.
+   ":not(.lesefenster-aus)" - während Echo-Lesen Satz für Satz dimmt (siehe
+   .satz-dim unten), ist das Lesefenster bewusst AUSGESCHALTET (js/ui.js
+   setzt dafür die Klasse "lesefenster-aus" auf #leseText): beide Effekte
+   dimmen mit derselben Opazität, gleichzeitig aktiv würden sie sich
+   widersprechen (mal die Zeile, mal der Satz gewinnt je nach Spezifität). */
+.lh-fenster #leseText:not(.lesefenster-aus) .wort{ opacity:.3; transition:opacity .25s ease }
+.lh-fenster #leseText:not(.lesefenster-aus) .wort.zeile-aktiv{ opacity:1 }
 @media (prefers-reduced-motion: reduce){ .lh-fenster #leseText .wort{ transition:none } }
 .lesefenster-nav{display:flex;gap:10px;margin-top:10px}
 .lesefenster-nav .btn{min-height:48px}
