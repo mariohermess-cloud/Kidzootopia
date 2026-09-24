@@ -7,6 +7,7 @@ import { auswerten } from './talenttest.js';
 import { LRS_VOREINSTELLUNG, normalisiere as lesehilfeNormalisieren } from './lesehilfe.js';
 import * as Lesemodi from './lesemodi.js';
 import { blitzAnpassen, BLITZ_MS_START } from './lesespiele.js';
+import * as Lernmotor from './lernmotor.js';
 
 const KEY = 'kidzootopia.v1';
 const heute = () => new Date().toISOString().slice(0,10);
@@ -129,6 +130,9 @@ function migriere(p) {
      angezeigt wird, bevor sie verschwindet. Passt sich pro Kind an -
      schneller nach richtig, langsamer nach falsch, siehe blitzAnpassen(). */
   p.blitzMs ??= BLITZ_MS_START;
+  /* Lernmotor (js/lernmotor.js): Leitner-Kaesten je Lernelement, Tagesziel
+     Lesen, Tagesminuten, Sammelalbum. Rein additiv, siehe dort. */
+  Lernmotor.migriereLernZustand(p);
   return p;
 }
 
@@ -318,10 +322,24 @@ export const zieleFuerKlasse = zieleFuerEtappe;   // alter Name, weiterhin gült
 
 export const etappeVon = profil => ETAPPEN.find(x => x.id === (profil.etappe || 1)) || ETAPPEN[0];
 
-/* Ergebnis einer Aufgabe verbuchen */
+/* Lese-Aufgaben im Sinne des Tagesziels: Lautlesen (deckt auch "Meine
+   Texte" ab, siehe ui.js), Lesespiele und Silben hören & bauen. */
+const LESE_ZIELE = new Set(['lautlesen', 'lesespiele', 'silbenwissen']);
+
+/* Ergebnis einer Aufgabe verbuchen. "element" (optional) benennt ein
+   einzelnes Lernelement (z. B. "wort:Haus", "stolper:Sonnenblume") fuer den
+   Lernmotor (js/lernmotor.js) – nur die Lesespiele und das Vorlesen liefern
+   das aktuell. */
 export function verbuche(profil, { zielId, weg, level, richtig, bruecke, ms = 0,
                                    tippsGenutzt = 0, knacknuss = false, keineWertung = false,
-                                   skizze = false }) {
+                                   skizze = false, element = null, lesedauerMs = null }) {
+  /* Fuers Tagesziel Lesen zaehlt, wenn vorhanden, die TATSAECHLICH GEMESSENE
+     Lesedauer (Mikrofon, js/lesen.js: dauerMs) statt der verstrichenen Zeit
+     auf dem Bildschirm ("ms") - sonst wuerde liegen gelassenes Nachdenken
+     oder ein abgelenktes Kind als Lesezeit durchgehen. Ohne Messung bleibt
+     die verstrichene Zeit die einzige verfuegbare Naeherung. Ein zusaetzlicher
+     Deckel je Aufgabe sitzt in Lernmotor.minutenHinzufuegen. */
+  const lesezeitMs = lesedauerMs ?? ms;
   /* Wurde das Schmierblatt benutzt? Das ist keine Bewertung, sondern ein
      Hinweis darauf, WIE das Kind denkt - und bei welchen Zielen es den
      Umweg über ein Bild braucht. Zählt auch bei unbewerteten Aufgaben. */
@@ -341,6 +359,7 @@ export function verbuche(profil, { zielId, weg, level, richtig, bruecke, ms = 0,
     s.tage[heute()] = (s.tage[heute()]||0) + 1;
     profil.wegeGenutzt[weg] = (profil.wegeGenutzt[weg]||0) + 1;
     tagesSerie(profil);
+    if (LESE_ZIELE.has(zielId)) verbucheLesezeit(profil, lesezeitMs);
     pruefeAbzeichen(profil);
     speichern();
     return zielStand(profil, zielId);
@@ -350,9 +369,40 @@ export function verbuche(profil, { zielId, weg, level, richtig, bruecke, ms = 0,
   z.gesamt++; if (richtig) { z.richtig++; z.xp += 10 + level * 2; }
   z.serie = richtig ? z.serie + 1 : 0;
 
-  if (richtig && z.serie >= 4 && z.level < 5) { z.level++; z.serie = 0; }
-  if (!richtig && z.level > 1 && z.gesamt % 3 === 0 && z.richtig / z.gesamt < .5) z.level--;
+  /* Hoechstens EIN Levelschritt je Antwort - und nach jeder Leveländerung
+     (egal durch welche Regel) wird das Lernzonen-Fenster dieses Ziels
+     geleert. Ohne das koennte die "4 in Folge"-Regel UND die Lernzonen-Regel
+     in DERSELBEN Antwort greifen (dann sprang das Level um 2), und vor allem
+     wertete lernzonenSchritt() sonst nach JEDER weiteren Antwort dasselbe,
+     unveraenderte "> 90 %"-Fenster erneut aus - zehn Treffer in Folge hoben
+     das Level dann bei Antwort 10, 11, 12, 13 … immer wieder, weil das
+     Fenster weiter bei "10 von 10" stehen blieb. Erst das Leeren nach jedem
+     Schritt zwingt dazu, wieder FENSTER_MINDESTENS frische Antworten zu
+     sammeln, bevor die Regel ein zweites Mal greifen darf. */
+  let levelGeaendert = false;
+  if (richtig && z.serie >= 4 && z.level < 5) { z.level++; z.serie = 0; levelGeaendert = true; }
+  if (!richtig && z.level > 1 && z.gesamt % 3 === 0 && z.richtig / z.gesamt < .5) { z.level--; levelGeaendert = true; }
   if (z.level >= 5 && z.richtig >= 25 && z.richtig / z.gesamt >= .8) z.gemeistert = true;
+
+  /* Lernzonen-Regel (js/lernmotor.js): zusaetzlich zur schnellen "4 in Folge"-
+     Regel oben ein gleitendes Fenster der letzten Antworten je Ziel – so
+     pendelt sich die Trefferquote bei ~75-85 % ein, statt dauerhaft zu leicht
+     oder zu schwer zu bleiben. Greift nur, wenn die schnelle Regel oben in
+     DIESER Antwort nicht schon selbst das Level geaendert hat. */
+  profil.zielFenster[zielId] = Lernmotor.fensterAktualisieren(profil.zielFenster[zielId], richtig);
+  if (!levelGeaendert) {
+    const zonenSchritt = Lernmotor.lernzonenSchritt(profil.zielFenster[zielId]);
+    if (zonenSchritt) { z.level = Math.max(1, Math.min(5, z.level + zonenSchritt)); levelGeaendert = true; }
+  }
+  if (levelGeaendert) profil.zielFenster[zielId] = [];
+
+  /* Leitner-Kasten des geuebten Lernelements (nur Lesespiele/Stolperwoerter
+     liefern aktuell ein "element" mit, siehe js/lesespiele.js). */
+  if (element) {
+    Lernmotor.kastenVerbuchen(profil.kaesten, element, richtig);
+    const gemeistert = Lernmotor.kaestenVerteilung(profil.kaesten)[4];
+    if (gemeistert >= 10) Lernmotor.meilensteinFreischalten(profil.album, 'kasten5');
+  }
 
   const talent = WEGE[weg]?.talent;
   if (talent) {
@@ -380,9 +430,28 @@ export function verbuche(profil, { zielId, weg, level, richtig, bruecke, ms = 0,
   if (richtig && knacknuss && tippsGenutzt === 0) s.ohneTipp++;
   s.tage[heute()] = (s.tage[heute()]||0) + 1;
   tagesSerie(profil);
+  if (LESE_ZIELE.has(zielId)) verbucheLesezeit(profil, lesezeitMs);
   pruefeAbzeichen(profil);
   speichern();
   return z;
+}
+
+/* Tagesziel Lesen (js/lernmotor.js): echte Uebungszeit in Lese-Aufgaben
+   sammeln, und beim erstmaligen Erreichen an diesem Tag einen Sticker aus dem
+   Sammelalbum freischalten. Keine Strafe, kein Countdown – nur die Feier.
+   Der Vergleich "erreicht?" laeuft ueber tageszielErreicht (exakte Sekunden),
+   nicht ueber den gerundeten Anzeigewert - sonst koennte Rundung das
+   Erreichen einen Tick zu frueh oder zu spaet ausloesen. */
+function verbucheLesezeit(profil, ms) {
+  const vorher = Lernmotor.tageszielErreicht(profil.tagesminuten, profil.tagesziel || Lernmotor.TAGESZIEL_STANDARD);
+  Lernmotor.minutenHinzufuegen(profil.tagesminuten, ms);
+  const ziel = profil.tagesziel || Lernmotor.TAGESZIEL_STANDARD;
+  const nachher = Lernmotor.tageszielErreicht(profil.tagesminuten, ziel);
+  if (!vorher && nachher) {
+    Lernmotor.leseSerieAktualisieren(profil.leseSerie);
+    Lernmotor.stickerFreischalten(profil.album, 'tagesziel');
+    if (profil.leseSerie.serie === 3) Lernmotor.stickerFreischalten(profil.album, 'leseserie3');
+  }
 }
 
 function tagesSerie(profil) {
@@ -656,15 +725,20 @@ const STOLPER_MAX = 40;      // mehr Wörter merkt sich niemand
 
 export function merkeStolper(profil, woerter = []) {
   profil.stolper ||= {};
+  profil.kaesten ||= {};   // robust auch fuer nicht ueber migriere() angelegte Profile (siehe Tests)
   /* Erst alles abschmelzen: auch die Wörter, die diesmal NICHT gehakt haben. */
   for (const w of Object.keys(profil.stolper)) {
     profil.stolper[w] *= VERFALL;
     if (profil.stolper[w] < STOLPER_MIN) delete profil.stolper[w];
   }
-  /* Dann die von dieser Lesung dazu. */
+  /* Dann die von dieser Lesung dazu. Stolperwörter fließen zugleich als
+     Lernelement (Kasten 1: "sofort wieder üben") in den Lernmotor, damit sie
+     in Blitzlesen/Wort-Übungen bevorzugt wiederkommen (siehe lesespieleKontext
+     unten und js/lesespiele.js). */
   for (const w of woerter) {
     if (!w || w.length < 3) continue;
     profil.stolper[w] = (profil.stolper[w] || 0) + 1;
+    Lernmotor.kastenVerbuchen(profil.kaesten, 'stolper:' + w, false);
   }
   /* Deckel: nur die hartnäckigsten behalten. */
   const sortiert = Object.entries(profil.stolper).sort((a, b) => b[1] - a[1]);
@@ -772,4 +846,54 @@ export function merkeRennen(profil, spur, punkteDerRunde) {
     speichern();
   }
   return { spur: vorherigeSpur, punkte: vorherigePunkte };
+}
+
+/* --------------------------- Lernmotor (js/lernmotor.js) ---------------------------
+   Duenne Bruecke zwischen dem reinen Rechenmodul und Oberflaeche/Engine:
+   hier wird nur gelesen/geschrieben, gerechnet wird ausschliesslich dort. */
+
+/* Kontext fuer die Lesespiele-Generatoren (js/lesespiele.js): welche
+   Lernelemente sind heute faellig, und welche Woerter stolpern beim Vorlesen?
+   Nur Praefixe, die die Lesespiele auch wirklich kennen (wort/spiegel/silbe/
+   satz/blitz), zaehlen als "faellig" fuer sie - Stolperwoerter (eigenes
+   Praefix) kommen separat als eigene Liste, weil sie kein festes Wortpaar aus
+   den Listen unten sind, sondern frei aus dem Vorlesen stammen. */
+export function lesespieleKontext(profil, jetzt = Date.now()) {
+  const alle = Lernmotor.faelligeSchluessel(profil.kaesten, jetzt);
+  const faellige = new Set(alle.filter(k => /^(wort|spiegel|silbe|satz|blitz):/.test(k)));
+  return { faellige, stolperWoerter: stolperWoerter(profil, 6).map(x => x.wort) };
+}
+
+export function tagesZielSetzen(profil, minuten) {
+  profil.tagesziel = Lernmotor.TAGESZIEL_OPTIONEN.includes(Number(minuten))
+    ? Number(minuten) : Lernmotor.TAGESZIEL_STANDARD;
+  speichern();
+  return profil.tagesziel;
+}
+
+/* Stand fuer den Fortschrittsring auf der Lernen-Seite. */
+export function tagesZielStand(profil) {
+  const ziel = profil.tagesziel || Lernmotor.TAGESZIEL_STANDARD;
+  const minuten = Lernmotor.minutenAn(profil.tagesminuten);
+  return { minuten, ziel, erreicht: minuten >= ziel };
+}
+
+/* Album-Stand fuer die Album-Ansicht: alle Sticker in fester Reihenfolge,
+   dazu ob und wodurch jeder schon freigeschaltet wurde. */
+export function albumStand(profil) {
+  const eintraege = profil.album?.eintraege || [];
+  return Lernmotor.ALBUM_STICKER.map((sticker, i) => ({
+    sticker, freigeschaltet: i < eintraege.length, grund: eintraege[i]?.grund || null
+  }));
+}
+
+/* Für die Eltern-Karte "🧠 Was gerade geübt wird". */
+export function lernStandFuerEltern(profil, jetzt = Date.now()) {
+  return {
+    verteilung: Lernmotor.kaestenVerteilung(profil.kaesten),
+    schwierigste: Lernmotor.schwierigsteSchluessel(profil.kaesten, 8),
+    faelligHeute: Lernmotor.faelligeSchluessel(profil.kaesten, jetzt).length,
+    tagesziel: profil.tagesziel || Lernmotor.TAGESZIEL_STANDARD,
+    minutenVerlauf: Lernmotor.minutenVerlauf(profil.tagesminuten, jetzt, 7)
+  };
 }

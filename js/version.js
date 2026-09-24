@@ -9,11 +9,21 @@
    Bei jeder Änderung: NUMMER hier hochzählen UND in sw.js (CACHE) gleichziehen.
    tests/version.mjs prüft, dass beide übereinstimmen. */
 
-export const NUMMER = 40;
+export const NUMMER = 41;
 export const STAND = '24.09.2026';
 
 /* Neueste zuerst. Kurz und in Alltagssprache – das lesen Eltern, nicht Entwickler. */
 export const VERLAUF = [
+  { nr: 41, stand: '24.09.2026', was: [
+    'Ein Lernweg kam bisher nie dran – behoben: bei fünf möglichen Wegen wählte die App eine Übungsbrücke immer nur aus den zwei schwächsten, nie aus dem mittleren',
+    'Neu: Die App merkt sich jetzt, welches Wort, welcher Satz oder welche Silbe schwerfällt, und bringt genau das in wachsenden Abständen wieder – wie ein Karteikasten',
+    'Wörter, die beim Vorlesen stocken, tauchen später gezielt in Blitzlesen und Wort-Übungen wieder auf',
+    'Die Schwierigkeit pendelt sich jetzt automatisch bei etwa 75–85 % Trefferquote ein – nicht zu leicht, nicht zu schwer',
+    'Neu: Tagesziel Lesen (5/10/15 Minuten) mit einem freundlichen Fortschrittsring auf der Lernen-Seite – ohne Countdown, ohne Strafe',
+    'Neu: 📒 Lese-Album – für jedes erreichte Tagesziel und besondere Meilensteine gibt es einen Sticker, in fester Reihenfolge, nie zufällig',
+    'Beim Vorlesen üben kommt jetzt etwa jede zweite Aufgabe aus einem eigenen Text, falls schon einer gespeichert ist',
+    'Im Eltern-Bereich neu: „Was gerade geübt wird" – wie viele Wörter/Sätze in welcher Übungsstufe stehen, was heute fällig ist, und der Leseminuten-Verlauf'
+  ]},
   { nr: 40, stand: '24.09.2026', was: [
     'Neu: Lesespiele – sechs kurze, farbige Übungen gegen genau die Fehler, die beim stockenden Lesen entstehen',
     'Wort-Detektiv (Bild passt zu welchem Wort?), b/d/p/q-Verwechslung, Silben hören & bauen, Quatschwörter erkennen, Satz-Detektiv und Blitzlesen',

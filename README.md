@@ -297,7 +297,34 @@ stellt eine Etappe höher.
      nach falsch, Grenzen 300–3000 ms), gespeichert je Kind (`p.blitzMs`).
    * Reine Daten und Rechenlogik in `js/lesespiele.js` – DOM-frei, ohne Audio.
 
-10. **Schmierblatt an jeder Aufgabe** 📝 – *die Nebenrechnung zum Mitmalen*
+10. **Lernmotor** 🧠 – *was schwerfällt, kommt wieder – in wachsenden Abständen*
+   Ein Karteikasten (Leitner-Prinzip) je Kind: jedes geübte Wort, jede b/d/p/q-Verwechslung,
+   jede Silbe und jeder Satz aus den Lesespielen bekommt einen eigenen "Kasten" 1–5. Richtig
+   gelöst wandert ein Element einen Kasten weiter (0/1/3/7/14 Tage bis zur nächsten Wiederholung),
+   falsch fällt es zurück auf Kasten 1 – dort kommt es sofort wieder. Stolperwörter aus dem
+   Vorlesen landen ebenfalls direkt in Kasten 1 und tauchen später gezielt in Blitzlesen und
+   Wort-Übungen wieder auf. Rein rechnerisch in `js/lesespiele.js` werden dafür bevorzugt fällige
+   Elemente in die Aufgaben eingebaut (≈ 40 %, wenn welche anstehen) – nie ausschließlich, damit
+   es abwechslungsreich bleibt.
+   * **Lernzone statt Zufall**: ein gleitendes Fenster der letzten 10 Antworten je Lernziel hält
+     die Trefferquote bei etwa 75–85 % – über 90 % hebt das Level, unter 65 % senkt es, dazwischen
+     bleibt es (ergänzt die bestehende "4 richtig in Folge"-Regel als schnellen Aufstieg).
+   * **Tagesziel Lesen** 📖 mit Fortschrittsring auf der Lernen-Seite (5/10/15 Minuten, im
+     Eltern-Bereich einstellbar) – gezählt wird echte Übungszeit in Lautlesen, Meine Texte,
+     Lesespielen und Silben. Kein Countdown, keine Strafe, nur eine kleine Feier beim Erreichen.
+   * **📒 Lese-Album**: für jedes erreichte Tagesziel und für Meilensteine (z. B. 10 Elemente in
+     Kasten 5, 3 Lesetage in Folge) schaltet sich der jeweils nächste von mindestens 40 Stickern
+     frei – feste Reihenfolge, keine Zufallsbelohnung, keine Lootbox.
+   * Beim Vorlesen üben kommt, sobald ein eigener Text gespeichert ist, etwa jede zweite Aufgabe
+     aus einem zufälligen Abschnitt daraus (Titel "📸 …") – derselbe Abschnitt für alle Durchgänge
+     einer Sitzung, damit wiederholtes Lautlesen sinnvoll bleibt.
+   * Im Eltern-Bereich: Karte "🧠 Was gerade geübt wird" mit Kasten-Verteilung, den acht aktuell
+     schwierigsten Elementen in Worten, wie viele heute fällig sind, der Tagesziel-Einstellung und
+     dem Leseminuten-Verlauf der letzten 7 Tage.
+   * Reine Rechenlogik in `js/lernmotor.js` (Leitner-Übergänge/Intervalle, Lernzonen-Regel,
+     Tagesminuten, Sammelalbum, Migration) – ohne Speicherzugriff, ohne DOM, vollständig testbar.
+
+11. **Schmierblatt an jeder Aufgabe** 📝 – *die Nebenrechnung zum Mitmalen*
    „Zeichne eine Skizze" ist die älteste und robusteste Problemlöse-Strategie überhaupt – bei
    Polya ein eigener Schritt, in der Grundschule der übliche Weg von der Sprache zur Rechnung.
    Ein Kind, das bei „Anna hat 3 Tüten mit je 4 Äpfeln" nicht weiterkommt, kommt fast immer
@@ -786,6 +813,7 @@ npm run test:texterkennung # Textaufbereitung für OCR: bereinigen, unsichere W�
 npm run test:eigenetexte # Eigene Texte: Speichern, Löschen, Obergrenze, Migration, Umzugs-Code
 npm run test:lesemodi     # Echo-Lesen/Takt-Lesen: Takt messen/anpassen, Hilfestufe, Zeitplan-Fallback
 npm run test:lesespiele  # Lesespiele: Listen valide, Kunstwörter geprüft, Satz-Detektiv eindeutig, Blitz-Grenzen
+npm run test:lernmotor   # Lernmotor: Leitner-Übergänge/Intervalle, Lernzonen-Regel, Tagesminuten, Album, Migration
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
@@ -817,6 +845,7 @@ js/lesen.js           Lesetexte und Auswertung der Leseflüssigkeit (Tempo, Paus
 js/lesehilfe.js       Lesehilfe bei Legasthenie/LRS: Einstellungen, CSS-Variablen, Zeilenfenster
 js/lesemodi.js        Echo-Lesen und Takt-Lesen: Hilfestufe/Takt anpassen, Zeitplan-Fallback
 js/lesespiele.js      Lesespiele: Wort-Detektiv, b/d/p/q, Silben-Baukasten, Quatschwörter, Satz-Detektiv, Blitzlesen
+js/lernmotor.js       Lernmotor: Leitner-Kästen, Lernzonen-Regel, Tagesminuten, Sammelalbum (reine Logik)
 js/texterkennung.js   Texterkennung (OCR) auf dem Gerät – Tesseract.js, nie ein Server
 js/textaufbereitung.js Aus OCR-Rohtext einen Silben-Lesetext machen: bereinigen, Abschnitte
 js/version.js         Fassung, Datum und Änderungsverlauf – die einzige Stelle dafür

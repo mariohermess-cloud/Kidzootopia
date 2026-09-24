@@ -200,10 +200,14 @@ export const ZIELE = [
     klasse:[2,6], etappe:[1,4], wege:['erzaehlen','entdecken','knobeln'] },
   { id:'lesespiele', fach:'deutsch',  titel:'Lesespiele 🎮',
     kompetenz:'Wörter, Silben und Sätze genau erkennen – gegen Auslassen, Vertauschen und Verwechseln beim Lesen.',
-    /* Bewusst vier statt fünf Wege: Bei fünf Wegen waehlt engine.js immer nur
-       aus den zwei staerksten ODER den zwei schwaechsten Wegen des Kindes
-       (siehe waehleWeg) - der mittlere Weg käme praktisch nie dran. Bei
-       genau vier Wegen sind IMMER alle vier erreichbar. */
+    /* Vier Wege statt aller acht: Wort-Detektiv, Silben-Baukasten, Satz-
+       Detektiv und die Knobel-Gruppe (Quatschwörter/Spiegelbuchstaben/
+       Blitzlesen) sind die vier, die fachlich zu diesem Ziel passen - das ist
+       eine inhaltliche Wahl, keine technische Notlösung. Frueher waehlte
+       engine.js bei fuenf oder mehr Wegen Bruecken nur ueber die zwei
+       schwaechsten statt ueber alle uebrigen (siehe waehleWeg in js/engine.js) -
+       das ist inzwischen behoben, jeder Weg ist unabhaengig von der Anzahl
+       erreichbar. */
     klasse:[1,6], etappe:[1,3], wege:['erzaehlen','bauen','entdecken','knobeln'] },
   { id:'vokabeln',   fach:'englisch', titel:'English Basics',
     kompetenz:'Grundwortschatz verstehen und zuordnen.',

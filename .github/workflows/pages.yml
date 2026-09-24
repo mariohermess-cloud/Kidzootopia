@@ -39,6 +39,7 @@ jobs:
       - run: node tests/eigenetexte.mjs
       - run: node tests/lesemodi.mjs
       - run: node tests/lesespiele.mjs
+      - run: node tests/lernmotor.mjs
 
   deploy:
     needs: test

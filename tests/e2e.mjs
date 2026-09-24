@@ -1304,4 +1304,82 @@ console.log(fehler.length ? 'FEHLER:\n'+fehler.join('\n') : 'keine JS-Fehler ✅
   await b2.close();
 }
 
+// Lernmotor (js/lernmotor.js): Tagesziel-Ring, Lese-Album, Eltern-Karte
+// "Was gerade geübt wird" und eigene Texte im Lautlesen - eigener, frischer
+// Browser, damit die zufällige "50 % eigener Text"-Entscheidung in engine.js
+// (einmal je Sitzung gewürfelt) mehrfach neu gezogen werden kann, ohne den
+// übrigen Testlauf oben zu verändern.
+{
+  const fehler3 = [];
+  const b3 = await chromium.launch(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : {});
+  const p3 = await b3.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+  p3.on('pageerror', e => fehler3.push('pageerror: ' + e.message));
+  p3.on('console', m => { if (m.type() === 'error') fehler3.push('console: ' + m.text()); });
+  p3.on('dialog', d => d.accept().catch(() => {}));
+
+  await p3.goto(`${BASIS}/index.html`);
+  await p3.waitForSelector('#nName');
+  await p3.fill('#nName', 'Ben');
+  await p3.selectOption('#nEtappe', '1');
+  await p3.click('[data-av="🐧"]');
+  await p3.click('#nAnlegen');
+  await p3.reload();                       // Talent-Test überspringen, direkt zur Lernen-Seite
+  await p3.waitForSelector('#mission');
+
+  // Tagesziel-Ring: muss von Anfang an sichtbar sein (0 von x Minuten).
+  await p3.waitForSelector('#zumAlbum');
+  const ringKarte = p3.locator('.card', { has: p3.locator('#zumAlbum') });
+  const ringText = await ringKarte.textContent();
+  if (!/Heute:\s*\d+([.,]\d+)?\s*von\s*\d+\s*Minuten/.test(ringText || ''))
+    throw new Error('Tagesziel-Ring fehlt auf der Lernen-Seite: ' + ringText);
+  console.log('Tagesziel-Ring auf der Lernen-Seite sichtbar ✅');
+  await ringKarte.screenshot({ path: `${S}/lm-8-tagesziel.png` });
+
+  // Lese-Album öffnen
+  await p3.click('#zumAlbum');
+  await p3.waitForSelector('#albumZurueck');
+  await p3.screenshot({ path: `${S}/lm-9-album.png`, fullPage: true });
+  console.log('Lese-Album öffnet sich ✅');
+  await p3.click('#albumZurueck');
+  await p3.waitForSelector('#mission');
+
+  // Eltern-Karte "🧠 Was gerade geübt wird"
+  await p3.click('.nav-btn[data-route="eltern"]');
+  await p3.waitForSelector('#tageszielWahl');
+  const elternKarte = p3.locator('.card', { has: p3.locator('h3', { hasText: 'Was gerade geübt wird' }) });
+  if (await elternKarte.count() === 0) throw new Error('Eltern-Karte "Was gerade geübt wird" fehlt');
+  console.log('Eltern-Karte "Was gerade geübt wird" sichtbar ✅');
+  await elternKarte.screenshot({ path: `${S}/lm-10-eltern.png` });
+
+  // Eigene Texte in normalen Lautlese-Aufgaben: direkt über den Speicher
+  // geseedet (Foto/OCR ist bereits anderswo geprüft), danach so lange
+  // Lautlese-Sitzungen neu gestartet, bis eine Aufgabe mit dem eigenen
+  // Text ("📸 …") erscheint - die Auswahl ist bewusst zufällig (≈ jede
+  // zweite Sitzung), 12 Versuche machen ein Verfehlen praktisch unmöglich.
+  await p3.evaluate(async () => {
+    const S = await import('./js/store.js');
+    S.eigenenTextSpeichern(S.aktiv(), { titel: 'Mein Ausflug', abschnitte: ['Wir waren heute im Wald und haben Pilze gesucht.'] });
+  });
+  await p3.click('.nav-btn[data-route="lernen"]');
+  await p3.waitForSelector('[data-ziel="lautlesen"]');
+  let eigenerTextGefunden = false;
+  for (let versuch = 0; versuch < 12 && !eigenerTextGefunden; versuch++) {
+    await p3.click('[data-ziel="lautlesen"]');
+    await p3.waitForSelector('.task');
+    const frage = await p3.textContent('.task');
+    if ((frage || '').includes('📸')) {
+      eigenerTextGefunden = true;
+      await p3.screenshot({ path: `${S}/lm-11-eigener-text-lautlesen.png`, fullPage: true });
+    }
+    await p3.click('#raus');
+    await p3.waitForSelector('#mission');
+  }
+  if (!eigenerTextGefunden) throw new Error('In 12 Versuchen erschien keine Lautlese-Aufgabe aus dem eigenen Text');
+  console.log('Lautlese-Aufgabe aus eigenem Text erscheint ✅');
+
+  if (fehler3.length) throw new Error('Lernmotor-Block: JS-Fehler:\n' + fehler3.join('\n'));
+  console.log('Lernmotor-Block: keine JS-Fehler ✅');
+  await b3.close();
+}
+
 await b.close();

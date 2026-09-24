@@ -60,6 +60,25 @@ for (let i = 0; i < 200; i++) if (E.waehleWeg(kind, ZIEL_MAP.einmaleins).bruecke
 console.log('Brückenanteil bei 200 Auswahlen:', Math.round(bruecken/2) + ' %');
 if (bruecken < 20 || bruecken > 60) fehler.push('Brückenanteil außerhalb des erwarteten Bereichs');
 
+/* Wegwahl bei fünf Wegen (waehleWeg): Der mittlere Weg (Rang 3) darf nicht
+   dauerhaft unerreichbar sein. Frueher wurden Bruecken immer nur ueber die
+   ZWEI schwaechsten Wege gezogen (rang.slice(-2)) - bei fuenf Wegen kam Rang 3
+   dann nie dran, egal wie oft gewuerfelt wurde. */
+{
+  const rang = E.wegRanking(kind, ZIEL_MAP.einmaleins);
+  if (rang.length !== 5) fehler.push(`Testannahme verletzt: einmaleins hat ${rang.length} statt 5 Wege`);
+  const gesehen = new Set();
+  let bruekenUeberTop2 = 0;
+  for (let i = 0; i < 5000; i++) {
+    const { weg, bruecke } = E.waehleWeg(kind, ZIEL_MAP.einmaleins);
+    gesehen.add(weg);
+    if (bruecke && rang.slice(0, 2).includes(weg)) bruekenUeberTop2++;
+  }
+  console.log(`Wege bei 5 Wegen über 5000 Ziehungen gesehen: ${gesehen.size}/5 (${[...gesehen].join(', ')})`);
+  if (gesehen.size < 5) fehler.push(`Bei fünf Wegen kommt nicht jeder Weg vor (nur ${gesehen.size}/5) – der mittlere Weg bleibt unerreichbar`);
+  if (bruekenUeberTop2) fehler.push(`Brücken laufen ${bruekenUeberTop2}-mal über einen der zwei stärksten Wege statt darüber hinaus`);
+}
+
 /* Auswertung ohne alle Teile muss trotzdem funktionieren */
 const nurProben = auswerten({ proben:[{ t:'raum', richtig:true, ms:3000 }] });
 if (Object.keys(nurProben.werte).length !== 8) fehler.push('Auswertung mit nur einem Teil unvollständig');

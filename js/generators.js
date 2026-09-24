@@ -844,10 +844,18 @@ lautlesen: (() => {
     erzaehlen: 'Lies so vor, als säße jemand vor dir, der die Geschichte noch nicht kennt.',
     bewegen:   'Setz dich gerade hin und atme einmal durch. Dann los.'
   };
-  /* lvl ist hier die Etappe, nicht der Uebungsstand - siehe engine.js. */
-  const bau = (weg) => (lvl) => {
-    const menge = texteFuer(Math.min(5, Math.max(1, lvl)));
-    const t = pick(menge.length ? menge : LESETEXTE);
+  /* lvl ist hier die Etappe, nicht der Uebungsstand - siehe engine.js.
+     kontext.eigenerText: ist im Profil mindestens ein eigener Text vorhanden,
+     entscheidet engine.js EINMAL pro Sitzung per Zufall, ob dieser statt eines
+     der eingebauten Texte drankommt (etwa jede zweite Lautlese-Aufgabe) - und
+     welcher Abschnitt daraus. So bleibt derselbe Abschnitt fuer alle
+     Durchgaenge EINER Sitzung gleich, wie es wiederholtes Lautlesen braucht. */
+  const bau = (weg) => (lvl, kontext) => {
+    const eigener = kontext?.eigenerText;
+    const t = eigener
+      ? { text: eigener.abschnitt, titel: '📸 ' + eigener.titel }
+      : pick((texteFuer(Math.min(5, Math.max(1, lvl))).length
+              ? texteFuer(Math.min(5, Math.max(1, lvl))) : LESETEXTE));
     /* Der Durchgang wird mitgewuerfelt: Beim ersten Mal ist der Text neu,
        beim dritten sitzt er. Die Oberflaeche zeigt "Durchgang n von 3". */
     const durchgang = 1 + Math.floor(Math.random() * 3);
@@ -1476,16 +1484,20 @@ lesespiele: {
   erzaehlen: wortDetektivAufgabe,
   bauen:     silbenBaukastenAufgabe,
   entdecken: satzDetektivAufgabe,
-  knobeln:   (lvl) => pick([quatschAufgabe, spiegelAufgabe, blitzAufgabe])(lvl)
+  knobeln:   (lvl, kontext) => pick([quatschAufgabe, spiegelAufgabe, blitzAufgabe])(lvl, kontext)
 }
 };
 
-/* Aufgabe erzeugen; faellt auf einen vorhandenen Weg zurueck. */
-export function baueAufgabe(zielId, weg, level = 1) {
+/* Aufgabe erzeugen; faellt auf einen vorhandenen Weg zurueck.
+   "kontext" ist optional und wird bisher nur von den Lesespielen genutzt
+   (welche Lernelemente sind laut Lernmotor gerade faellig, siehe
+   js/store.js: lesespieleKontext) - alle anderen Generatoren nehmen nur
+   einen Parameter und ignorieren ihn einfach. */
+export function baueAufgabe(zielId, weg, level = 1, kontext = null) {
   const ziel = GEN[zielId];
   if (!ziel) throw new Error('Unbekanntes Ziel: ' + zielId);
   const fn = ziel[weg] || ziel[Object.keys(ziel)[0]];
-  const a = fn(Math.max(1, Math.min(5, level)));
+  const a = fn(Math.max(1, Math.min(5, level)), kontext);
   return { ...a, zielId, weg, level };
 }
 

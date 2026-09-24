@@ -58,7 +58,7 @@ export function zeige(neu, daten) {
   ({ start:screenStart, lernen:screenLernen, talente:screenTalente, wege:screenWege,
      eltern:screenEltern, test:screenTest, session:screenSession, profile:screenProfile,
      galerie:screenGalerie, ueberraschung:screenUeberraschung, eigenertext:screenEigenerText,
-     meinetexte:screenMeineTexte }[neu] || screenLernen)(p, daten);
+     meinetexte:screenMeineTexte, album:screenAlbum }[neu] || screenLernen)(p, daten);
 }
 
 /* Lesehilfe bei Legasthenie/LRS auf das aktive Profil anwenden: CSS-Variablen
@@ -257,6 +257,53 @@ function echoTaktKarteHtml(p) {
 /* Leseflüssigkeit im Eltern-Bereich. Verglichen werden nur ERSTE Durchgänge –
    der dritte Durchgang eines geübten Textes ist immer besser und würde einen
    Fortschritt vortäuschen, den es nicht gibt. */
+/* "wort:Haus" -> "Haus" (Wort genau lesen), "spiegel:Dach" -> "b/d/p/q: Dach"
+   usw. - roh gespeicherte Lernmotor-Schlüssel (js/lernmotor.js) in einen für
+   Eltern lesbaren Text übersetzen. */
+function elementText(schluessel) {
+  const [art, ...rest] = String(schluessel).split(':');
+  const wert = rest.join(':').replace(/_/g, ' ');
+  const NAMEN = {
+    wort: 'Wort genau lesen', spiegel: 'b/d/p/q', silbe: 'Silben hören & bauen',
+    satz: 'Satz-Detektiv', blitz: 'Blitzlesen', stolper: 'Stolperwort'
+  };
+  return `${NAMEN[art] || art}: „${wert}“`;
+}
+
+/* Eltern-Karte "🧠 Was gerade geübt wird" (Lernmotor, js/lernmotor.js):
+   Kasten-Verteilung, die schwierigsten Elemente, wie viele heute fällig sind,
+   die Tagesziel-Einstellung und der Minuten-Verlauf der letzten 7 Tage. */
+function lernmotorKarte(p) {
+  const lern = S.lernStandFuerEltern(p);
+  const maxK = Math.max(1, ...lern.verteilung);
+  const maxM = Math.max(1, ...lern.minutenVerlauf.map(x => x.minuten));
+  return `
+    <div class="card">
+      <h3>🧠 Was gerade geübt wird</h3>
+      <p class="muted small">Aus den Lesespielen und dem Vorlesen: was sich einprägt, kommt
+        seltener wieder, was noch hakt, kommt bald erneut - ${lern.faelligHeute}
+        Element${lern.faelligHeute === 1 ? '' : 'e'} sind heute fällig.</p>
+      <div class="row" style="align-items:flex-end;height:60px;gap:6px;margin-top:10px">
+        ${lern.verteilung.map((n, i) => `<div style="flex:1;text-align:center">
+          <div style="height:${Math.max(3, n/maxK*46)}px;background:var(--brand);border-radius:4px 4px 0 0"></div>
+          <div class="muted" style="font-size:.6rem">Kasten ${i+1}</div></div>`).join('')}
+      </div>
+      ${lern.schwierigste.length ? `<ul class="clean small" style="margin-top:10px">
+        ${lern.schwierigste.map(x => `<li>${esc(elementText(x.schluessel))} · Kasten ${x.kasten}/5</li>`).join('')}
+      </ul>` : '<p class="small muted" style="margin-top:8px">Noch keine Lesespiele geübt.</p>'}
+      <label class="field" style="margin-top:12px"><span>Tagesziel Lesen</span>
+        <select id="tageszielWahl">${[5,10,15].map(m =>
+          `<option value="${m}" ${m === lern.tagesziel ? 'selected' : ''}>${m} Minuten</option>`).join('')}</select>
+      </label>
+      <h4 style="margin:14px 0 6px">Leseminuten – letzte 7 Tage</h4>
+      <div class="row" style="align-items:flex-end;height:70px;gap:6px">
+        ${lern.minutenVerlauf.map(x => `<div style="flex:1;text-align:center">
+          <div style="height:${Math.max(4, x.minuten/maxM*50)}px;background:var(--brand);border-radius:6px 6px 0 0"></div>
+          <div class="muted" style="font-size:.65rem">${x.tag.slice(8)}.</div></div>`).join('')}
+      </div>
+    </div>`;
+}
+
 function leseProfilKarte(p) {
   const v = S.leseVerlauf(p);
   if (!v || v.anzahl < 3) return `
@@ -2478,6 +2525,30 @@ function screenTest(p) {
 }
 
 /* ------------------------------ Lernen (Start) ------------------------------ */
+/* Fortschrittsring "📖 Heute: x von y Minuten" - kein Countdown, keine Farbe
+   Rot: ein einfacher Kreis (SVG), der sich fuellt, plus ein ruhiger Satz.
+   Bei Erreichen eine kleine, stille Feier statt eines lauten Effekts. */
+function tageszielRing(p) {
+  const stand = S.tagesZielStand(p);
+  const anteil = Math.min(1, stand.minuten / stand.ziel);
+  const umfang = 2 * Math.PI * 26;
+  return `
+    <div class="card" style="text-align:center">
+      <svg width="72" height="72" viewBox="0 0 64 64" style="display:block;margin:0 auto">
+        <circle cx="32" cy="32" r="26" fill="none" stroke="var(--linie,#ddd)" stroke-width="6"></circle>
+        <circle cx="32" cy="32" r="26" fill="none" stroke="var(--brand)" stroke-width="6"
+          stroke-linecap="round" stroke-dasharray="${umfang}"
+          stroke-dashoffset="${umfang * (1 - anteil)}"
+          transform="rotate(-90 32 32)"></circle>
+      </svg>
+      <div style="margin-top:8px;font-weight:700">📖 Heute: ${stand.minuten} von ${stand.ziel} Minuten</div>
+      ${stand.erreicht
+        ? '<div class="muted small">🎉 Geschafft für heute – toll gelesen!</div>'
+        : '<div class="muted small">Lesen zählt in Lautlesen, Meine Texte, Lesespielen und Silben.</div>'}
+      <button class="btn quiet small" id="zumAlbum" style="margin-top:8px">📒 Lese-Album</button>
+    </div>`;
+}
+
 function screenLernen(p) {
   const ziele = S.zieleFuerKlasse(p);
   const heuteAufgaben = p.stats.tage[new Date().toISOString().slice(0,10)] || 0;
@@ -2492,6 +2563,7 @@ function screenLernen(p) {
       <p>8 Aufgaben – auf deinem Weg zusammengestellt.</p>
       <button class="btn" id="mission">Mission starten 🚀</button>
     </div>
+    ${tageszielRing(p)}
     ${ueberraschungsKarte(p)}
     <div class="card" style="border:2px solid var(--brand)">
       <div class="row spread">
@@ -2563,6 +2635,36 @@ function screenLernen(p) {
   view().querySelectorAll('[data-ziel]').forEach(b => b.onclick = () => zeige('session', { zielId:b.dataset.ziel, laenge:8 }));
   view().querySelector('#zurUeberraschung')?.addEventListener('click', () => zeige('ueberraschung'));
   view().querySelector('#meineTexte')?.addEventListener('click', () => zeige('meinetexte'));
+  view().querySelector('#zumAlbum')?.addEventListener('click', () => zeige('album'));
+}
+
+/* ------------------------------ Lese-Album ------------------------------
+   Feste Reihenfolge, keine Zufallsbelohnung (keine Lootbox): jeder Sticker
+   hat einen festen Platz und wird beim Erreichen von Tagesziel oder
+   Meilenstein einfach der naechste freie. Noch nicht erreichte Plaetze
+   werden verdeckt gezeigt (grauer Umriss), aber sie zaehlen sichtbar mit -
+   nichts an dieser Ansicht wird bewertet oder verglichen. */
+const ALBUM_GRUENDE = {
+  tagesziel: 'Tagesziel Lesen erreicht',
+  leseserie3: '3 Tage in Folge gelesen',
+  kasten5: '10 Wörter/Sätze sicher gemeistert'
+};
+function screenAlbum(p) {
+  const stand = S.albumStand(p);
+  const anzahl = stand.filter(s => s.freigeschaltet).length;
+  view().innerHTML = `
+    <h1>📒 Lese-Album</h1>
+    <p class="muted small">${anzahl} von ${stand.length} Stickern gesammelt – fürs Lesen, nicht für Wettbewerb.</p>
+    <div class="card">
+      <div class="tiles" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:8px">
+        ${stand.map(s => `<div title="${s.freigeschaltet ? esc(ALBUM_GRUENDE[s.grund] || 'gesammelt') : 'noch nicht erreicht'}"
+            style="font-size:1.8rem;text-align:center;padding:6px;border-radius:10px;
+              background:${s.freigeschaltet ? 'transparent' : 'var(--card-alt,#eee)'};
+              opacity:${s.freigeschaltet ? '1' : '.35'}">${s.freigeschaltet ? s.sticker : '❔'}</div>`).join('')}
+      </div>
+    </div>
+    <button class="btn quiet" id="albumZurueck" style="margin-top:10px">Zurück</button>`;
+  view().querySelector('#albumZurueck').onclick = () => zeige('lernen');
 }
 
 /* ------------------------------ Meine Texte (Kind) ------------------------------
@@ -2625,7 +2727,10 @@ function meineTexteLesen(p, text, abschnittIndex, durchgang) {
     verarbeiteLesung(p, a, huellkurve, extra, {
       titel: lesetitel, durchgang, vorherigerDurchgang: S.letzteLesung(p, lesetitel, durchgang - 1)
     });
-    S.verbuche(p, { zielId: 'lautlesen', weg: 'erzaehlen', level: p.etappe || 1, richtig: true, ms });
+    /* Tagesziel Lesen: die tatsächlich gemessene Lesedauer zählt, nicht die
+       (hier gar nicht erfasste) Bildschirmzeit - siehe js/store.js: verbuche. */
+    S.verbuche(p, { zielId: 'lautlesen', weg: 'erzaehlen', level: p.etappe || 1, richtig: true, ms,
+                    lesedauerMs: a.leseWerte?.dauerMs ?? null });
     kopfzeile(p);
     meineTexteWeiter(p, text, abschnittIndex, durchgang, a);
   });
@@ -3096,7 +3201,10 @@ function screenSession(p, opts = {}) {
     // Zeit fliesst in die Wirksamkeit eines Weges ein – schnell und sicher zaehlt mehr.
     S.verbuche(p, { zielId:a.ziel.id, weg:a.weg, level:a.level, richtig:ok, bruecke:a.bruecke, ms,
                     tippsGenutzt, knacknuss: !!a.knacknuss, keineWertung: !!a.keineWertung,
-                    skizze: Skizze.benutzt(a.blatt) });
+                    skizze: Skizze.benutzt(a.blatt), element: a.element || null,
+                    /* Tagesziel Lesen: bei Lautlese-Aufgaben zaehlt die tatsächlich
+                       gemessene Lesedauer (Mikrofon), sonst die verstrichene Zeit. */
+                    lesedauerMs: a.typ === 'lesen' ? (a.leseWerte?.dauerMs ?? null) : null });
     /* Ein Satz, der sich auf DIESE Antwort bezieht – nicht ein allgemeines Lob.
        Die App weiß dafür mehr, als aus der Aufgabe allein hervorginge: wie
        lange gebraucht, wie viele Tipps, wie knapp daneben, ob gemalt wurde. */
@@ -3426,6 +3534,7 @@ function screenEltern(p) {
           <div class="muted" style="font-size:.65rem">${x.d.slice(8)}.</div></div>`).join('')}
       </div>
     </div>
+    ${lernmotorKarte(p)}
     <div class="card">
       <h3>Was bei ${esc(p.name)} wirkt</h3>
       <p class="muted small">Gemessen an tatsächlich gelösten Aufgaben – Trefferquote und Tempo.
@@ -3583,6 +3692,9 @@ function screenEltern(p) {
   view().querySelector('#etappeWahl').onchange = e => {
     p.etappe = Number(e.target.value); S.speichern(); zeige('eltern');
   };
+  view().querySelector('#tageszielWahl')?.addEventListener('change', e => {
+    S.tagesZielSetzen(p, e.target.value); zeige('eltern');
+  });
   view().querySelector('#vorleseSchalter').onclick = () => {
     p.vorlesen = !p.vorlesen; S.speichern(); zeige('eltern');
   };

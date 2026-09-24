@@ -55,6 +55,22 @@ function nachLevel(liste, laenge, lvl) {
   return sortiert.slice(0, bis);
 }
 
+/* --------------------------------------------------------------------------
+   Fälligkeits-Bias (Lernmotor, siehe js/store.js: lesespieleKontext und
+   js/lernmotor.js: faelligeSchluessel). Statt jede Aufgabe komplett zufällig
+   zu ziehen, kommt - wenn fällige Elemente vorliegen - mit ~40 % Chance eines
+   davon dran; sonst bleibt die Auswahl wie zuvor rein zufällig. So bleiben
+   die Übungen weiterhin abwechslungsreich, aber das, was gerade wieder fällig
+   ist, kommt spürbar häufiger vor als durch reinen Zufall. */
+const FAELLIG_ANTEIL = 0.4;
+function bevorzugtFaellig(menge, schluessel, faellige) {
+  if (faellige && faellige.size && Math.random() < FAELLIG_ANTEIL) {
+    const treffer = menge.filter(x => faellige.has(schluessel(x)));
+    if (treffer.length) return pick(treffer);
+  }
+  return pick(menge);
+}
+
 /* ============================================================================
    1. WORT-DETEKTIV: Bild <-> Wort
    Großes Emoji, vier Wörter zur Auswahl - drei davon optisch/akustisch
@@ -116,14 +132,15 @@ export const WORT_DETEKTIV = [
 ];
 registriere(WORT_DETEKTIV.map(e => e.wort), WORT_DETEKTIV.flatMap(e => e.ablenker));
 
-export function wortDetektivAufgabe(lvl) {
+export function wortDetektivAufgabe(lvl, kontext = null) {
   const menge = nachLevel(WORT_DETEKTIV, e => e.wort.length, lvl);
-  const e = pick(menge.length ? menge : WORT_DETEKTIV);
+  const pool = menge.length ? menge : WORT_DETEKTIV;
+  const e = bevorzugtFaellig(pool, x => 'wort:' + x.wort, kontext?.faellige);
   return {
     typ: 'choice', bild: e.bild,
     frage: `🔍 Welches Wort passt zum Bild?`,
     optionen: shuffle([e.wort, ...e.ablenker]),
-    antwort: e.wort,
+    antwort: e.wort, element: 'wort:' + e.wort,
     hilfe: 'Schau erst genau aufs Bild, dann sprich jedes Wort einmal laut aus.',
     quelle: 'Wort-Detektiv übt, ein Wortbild wirklich zu Ende zu lesen, statt am Anfang zu raten.'
   };
@@ -195,15 +212,16 @@ function spiegelKandidaten(wort) {
   return uniq(ausgewaehlt).filter(k => k !== klein).map(gross);
 }
 
-export function spiegelAufgabe(lvl) {
+export function spiegelAufgabe(lvl, kontext = null) {
   const menge = nachLevel(SPIEGEL_WOERTER, w => w.length, lvl);
-  const wort = pick(menge.length ? menge : SPIEGEL_WOERTER);
+  const pool = menge.length ? menge : SPIEGEL_WOERTER;
+  const wort = bevorzugtFaellig(pool, w => 'spiegel:' + w, kontext?.faellige);
   const ablenker = uniqCI(spiegelKandidaten(wort)).filter(a => a.toLowerCase() !== wort.toLowerCase()).slice(0, 3);
   return {
     typ: 'choice', hoertext: wort, titel: '🔊 Hör genau hin',
     frage: '👂 Welches Wort hast du gehört? Achte auf b, d, p und q.',
     optionen: shuffle([wort, ...ablenker]),
-    antwort: wort,
+    antwort: wort, element: 'spiegel:' + wort,
     hilfe: 'b, d, p und q sehen gespiegelt fast gleich aus - sprich das Wort erst laut nach, dann schau genau hin.',
     quelle: 'b/d/p/q-Verwechslungen sind bei Legasthenie besonders häufig; genaues Hinsehen nach dem Hören trainiert das gezielt.'
   };
@@ -219,15 +237,16 @@ const eindeutig = w => {
   return new Set(s).size === s.length;
 };
 
-export function silbenBaukastenAufgabe(lvl) {
+export function silbenBaukastenAufgabe(lvl, kontext = null) {
   const basis = uebwoerterBis(lvl).filter(w => silben(w).length >= 3 && eindeutig(w));
   const ersatz = uebwoerterBis(5).filter(w => silben(w).length >= 3 && eindeutig(w));
-  const wort = pick(basis.length ? basis : ersatz);
+  const pool = basis.length ? basis : ersatz;
+  const wort = bevorzugtFaellig(pool, w => 'silbe:' + w, kontext?.faellige);
   const teile = silben(wort);
   return {
     typ: 'ordnen', hoertext: wort, titel: '🔊 Hör genau hin',
     frage: '🧩 Hör dir das Wort an und lege die Silben in der richtigen Reihenfolge.',
-    elemente: shuffle([...teile]), antwort: teile.join(' → '),
+    elemente: shuffle([...teile]), antwort: teile.join(' → '), element: 'silbe:' + wort,
     hilfe: 'Hör dir das Wort noch einmal an und sprich es dabei leise mit - dann hörst du die Silben einzeln.',
     quelle: `${wort} = ${teile.join('-')}. Silben aus dem Gehör zu bauen trainiert genau die Zerlegung, die auch das Lesen leichter macht.`
   };
@@ -304,9 +323,13 @@ function bautKunstwort(anzahlSilben) {
   return null;
 }
 
-export function quatschAufgabe(lvl) {
+export function quatschAufgabe(lvl, kontext = null) {
   const menge = nachLevel(QUATSCH_BASIS, w => w.length, lvl);
-  const echtesWort = pick(menge.length ? menge : QUATSCH_BASIS);
+  const pool = menge.length ? menge : QUATSCH_BASIS;
+  /* Teilt sich den Namensraum "wort:" mit dem Wort-Detektiv - beides sind
+     einzelne Wörter, die genau gelesen werden müssen; ein fälliges Wort darf
+     hier genauso wiederkommen wie dort. */
+  const echtesWort = bevorzugtFaellig(pool, w => 'wort:' + w, kontext?.faellige);
   const nSilben = silben(echtesWort).length;
   const kunst = new Set();
   let guard = 0;
@@ -318,7 +341,7 @@ export function quatschAufgabe(lvl) {
     typ: 'choice',
     frage: '🔎 Welches ist ein echtes Wort? Lies alle vier laut.',
     optionen: shuffle([echtesWort, ...kunst]),
-    antwort: echtesWort,
+    antwort: echtesWort, element: 'wort:' + echtesWort,
     hilfe: 'Lies jedes Wort laut vor - nur eines ergibt wirklich einen Sinn.',
     quelle: 'Kunstwörter zu erkennen trainiert das genaue Lesen der Buchstabenfolge, statt am Wortbild zu raten.'
   };
@@ -395,7 +418,7 @@ export function satzMitFehler(satz, art, erzwingeIndex = null) {
       typ: 'choice', hoertext: original.join(' ') + '.', angezeigt,
       titel: '🔊 Hör genau hin',
       frage: `🕵️ Genau ein Wort fehlt in diesem Satz. Welches Wort fehlt?\n„${angezeigt}.“`,
-      optionen: shuffle([fehlend, ...falsche]), antwort: fehlend,
+      optionen: shuffle([fehlend, ...falsche]), antwort: fehlend, element: 'satz:' + original.join('_'),
       hilfe: 'Hör dir den Satz noch einmal an und achte darauf, welches Wort dabei nicht dasteht.',
       quelle: 'Wörter zu überlesen oder auszulassen ist ein typischer Lesefehler - genaues Lesen bis zum Satzende beugt vor.'
     };
@@ -409,7 +432,7 @@ export function satzMitFehler(satz, art, erzwingeIndex = null) {
       typ: 'choice', hoertext: original.join(' ') + '.', angezeigt: gezeigt.join(' '),
       titel: '🔊 Hör genau hin',
       frage: `🕵️ In diesem Satz ist ein Wort zu viel. Welches Wort gehört hier NICHT hinein?\n„${gezeigt.join(' ')}.“`,
-      optionen: shuffle([zusatz, ...andere]), antwort: zusatz,
+      optionen: shuffle([zusatz, ...andere]), antwort: zusatz, element: 'satz:' + original.join('_'),
       hilfe: 'Vergleiche den gezeigten Satz mit dem, was du gehört hast - ein Wort ist zusätzlich dazugekommen.',
       quelle: 'Ein zusätzliches Wort zu bemerken trainiert genaues, nicht nur sinngemäßes Lesen.'
     };
@@ -426,7 +449,7 @@ export function satzMitFehler(satz, art, erzwingeIndex = null) {
       typ: 'choice', hoertext: original.join(' ') + '.', angezeigt: gezeigt.join(' '),
       titel: '🔊 Hör genau hin',
       frage: `🕵️ Zwei Wörter haben in diesem Satz die Plätze getauscht. Welches Wort stand ursprünglich weiter vorne?\n„${gezeigt.join(' ')}.“`,
-      optionen: shuffle([original[i], original[i + 1], ...andere]), antwort: original[i],
+      optionen: shuffle([original[i], original[i + 1], ...andere]), antwort: original[i], element: 'satz:' + original.join('_'),
       hilfe: 'Sprich den Satz einmal so, wie er dasteht, und einmal so, wie du ihn gehört hast - wo klingt es anders?',
       quelle: 'Vertauschte Wörter zu erkennen trainiert die Reihenfolge im Satz, nicht nur einzelne Wörter.'
     };
@@ -440,15 +463,16 @@ export function satzMitFehler(satz, art, erzwingeIndex = null) {
     typ: 'choice', hoertext: original.join(' ') + '.', angezeigt: gezeigt.join(' '),
     titel: '🔊 Hör genau hin',
     frage: `🕵️ Ein Wort wurde durch ein ähnlich aussehendes Wort ersetzt. Welches Wort stimmt hier nicht?\n„${gezeigt.join(' ')}.“`,
-    optionen: shuffle([wort, ...andere]), antwort: wort,
+    optionen: shuffle([wort, ...andere]), antwort: wort, element: 'satz:' + original.join('_'),
     hilfe: 'Vergleiche jedes Wort im Satz mit dem, was du gehört hast.',
     quelle: 'Genau solche Verwechslungen (ähnlich aussehendes statt gehörtes Wort) sind typisch - genaues Nachlesen deckt sie auf.'
   };
 }
 
-export function satzDetektivAufgabe(lvl) {
+export function satzDetektivAufgabe(lvl, kontext = null) {
   const menge = nachLevel(SAETZE, s => s.woerter.length, lvl);
-  const satz = pick(menge.length ? menge : SAETZE);
+  const pool = menge.length ? menge : SAETZE;
+  const satz = bevorzugtFaellig(pool, s => 'satz:' + s.woerter.join('_'), kontext?.faellige);
   const art = pick(fehlerartenFuer(satz));
   return satzMitFehler(satz, art);
 }
@@ -494,11 +518,17 @@ function aehnlicheAblenker(pool, ziel, n) {
   return uniq(bewertet.map(x => x.w)).slice(0, n);
 }
 
-export function blitzAufgabe(lvl) {
+export function blitzAufgabe(lvl, kontext = null) {
   const pool = lvl <= 2 ? BLITZ_SILBEN : lvl === 3 ? BLITZ_WOERTER_KURZ
     : (BLITZ_WOERTER_LANG.length ? BLITZ_WOERTER_LANG : BLITZ_WOERTER_KURZ);
-  const ziel = pick(pool);
-  const ablenker = aehnlicheAblenker(pool, ziel, 3);
+  /* Ein Stolperwort aus dem Vorlesen (js/store.js: merkeStolper) wird selbst
+     zum Blitzwort, mit ähnlichen Ablenkern aus dem normalen Pool - genau das
+     Wort, an dem es beim Lesen hakt, kommt so auch hier wieder. */
+  const stolperZiel = (kontext?.stolperWoerter?.length && Math.random() < FAELLIG_ANTEIL)
+    ? pick(kontext.stolperWoerter) : null;
+  const ziel = stolperZiel || pick(pool);
+  const ablenkerPool = stolperZiel ? uniq([...pool, stolperZiel]) : pool;
+  const ablenker = aehnlicheAblenker(ablenkerPool, ziel, 3);
   while (ablenker.length < 3) {
     const ersatz = pick(pool.filter(w => w !== ziel && !ablenker.includes(w)));
     if (ersatz) ablenker.push(ersatz); else break;
@@ -507,7 +537,7 @@ export function blitzAufgabe(lvl) {
     typ: 'blitz', blitzText: ziel,
     frage: '⚡ Schau genau hin - gleich verschwindet es wieder! Was hast du gesehen?',
     optionen: shuffle([ziel, ...ablenker]),
-    antwort: ziel,
+    antwort: ziel, element: (stolperZiel ? 'stolper:' : 'blitz:') + ziel,
     hilfe: 'Wenn du unsicher bist, tippe auf „Nochmal zeigen" - das kostet nichts.',
     quelle: 'Blitzlesen trainiert den Sichtwortschatz: häufige Wörter auf einen Blick erkennen, statt sie jedes Mal neu zu erlesen.'
   };
