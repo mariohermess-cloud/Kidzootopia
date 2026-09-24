@@ -261,6 +261,11 @@ details.card ol{margin:8px 0}
 .choices.bildwahl .choice{font-size:2.6rem;padding:20px 8px;line-height:1}
 @keyframes schlafen{0%,100%{transform:scale(1) rotate(-6deg)}50%{transform:scale(1.05) rotate(-6deg)}}
 
+/* Blitzlesen: kurz zeigen, dann verschwinden - groß und ruhig, kein Blinken */
+.blitz-flash{font-size:2.6rem;font-weight:800;text-align:center;letter-spacing:.02em;
+  margin:18px 0;padding:20px 10px;border-radius:16px;background:var(--card-2,#f4f4f8)}
+@media (prefers-reduced-motion: reduce){ .blitz-flash.pop{animation:none} }
+
 /* Zeichenbrett */
 .brett-huelle{margin-top:14px;display:flex;flex-direction:column;align-items:center}
 .brett{touch-action:none;border:2px solid var(--line);border-radius:18px;background:var(--card);

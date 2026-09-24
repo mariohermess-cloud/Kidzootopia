@@ -27,7 +27,8 @@
     "test:lesehilfe": "node tests/lesehilfe.mjs",
     "test:texterkennung": "node tests/texterkennung.mjs",
     "test:eigenetexte": "node tests/eigenetexte.mjs",
-    "test:lesemodi": "node tests/lesemodi.mjs"
+    "test:lesemodi": "node tests/lesemodi.mjs",
+    "test:lesespiele": "node tests/lesespiele.mjs"
   },
   "devDependencies": {
     "playwright": "^1.49.1"

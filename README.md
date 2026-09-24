@@ -271,6 +271,32 @@ stellt eine Etappe höher.
      Wortes zwischen zwei `boundary`-Ereignissen) – ohne DOM und ohne Audio, dadurch
      vollständig ohne Browser testbar.
 
+   **Lesespiele** 🎮 – *sechs kurze, farbige Übungen gegen genau die Fehler beim stockenden Lesen*
+   Ein eigenes Lernziel „Lesespiele“, zugeschnitten auf ein Kind, das Wörter ausfallen lässt,
+   vertauscht oder durch optisch/akustisch ähnliche Wörter ersetzt – bei starkem Gehör und
+   sicherem lautgetreuem Schreiben. Ohne Zeitdruck-Anzeige, ohne Punktabzüge (dieselbe
+   Punktelogik wie überall sonst: 0 oder volle Punkte, nie ein Abzug).
+   * **🔍 Wort-Detektiv** – ein großes Emoji-Bild, vier Wörter zur Auswahl, drei davon optisch
+     oder akustisch ähnlich (z. B. Haus/Maus/Laus/Hose) – aber keines passt ebenfalls zum Bild.
+   * **👂 b/d/p/q & Spiegelbuchstaben** – das Wort wird nur GEHÖRT, gewählt wird unter
+     Spiegel-Varianten (Dach/Bach, Puppe/Buppe …). Ablenker dürfen Kunstwörter sein, sehen aber
+     klar „falsch geschrieben“ aus.
+   * **🧩 Silben-Baukasten** – das Wort wird gehört, nicht gezeigt; die Silben werden in der
+     richtigen Reihenfolge angetippt (Wörter mit zwei gleichen Silben scheiden aus, sonst gäbe
+     es zwei richtige Lösungen).
+   * **🔎 Quatschwörter** – ein echtes Wort unter drei aussprechbaren Kunstwörtern, die aus
+     Silben echter Wörter neu gemischt sind. Jedes Kunstwort wird gegen eine Wortliste geprüft
+     (Übungswörter aus `js/silben.js`, Wörter aus den Lesetexten, eigene Listen) – kein
+     Kunstwort darf zufällig ein echtes Wort sein.
+   * **🕵️ Satz-Detektiv** – ein kurzer Satz wird korrekt vorgelesen, angezeigt wird er mit
+     GENAU einem Fehler: ein Wort fehlt, eines ist zu viel, zwei sind vertauscht, oder eines
+     wurde durch ein ähnlich aussehendes Wort ersetzt – genau die Fehlerarten des Kindes.
+   * **⚡ Blitzlesen** – eine Silbe oder ein häufiges Wort erscheint groß, verschwindet wieder,
+     dann kommen vier Antworten („Was hast du gesehen?“). „👀 Nochmal zeigen“ kostet nichts. Die
+     Anzeigedauer startet bei 1,5 Sekunden und passt sich adaptiv an (−10 % nach richtig, +15 %
+     nach falsch, Grenzen 300–3000 ms), gespeichert je Kind (`p.blitzMs`).
+   * Reine Daten und Rechenlogik in `js/lesespiele.js` – DOM-frei, ohne Audio.
+
 10. **Schmierblatt an jeder Aufgabe** 📝 – *die Nebenrechnung zum Mitmalen*
    „Zeichne eine Skizze" ist die älteste und robusteste Problemlöse-Strategie überhaupt – bei
    Polya ein eigener Schritt, in der Grundschule der übliche Weg von der Sprache zur Rechnung.
@@ -759,6 +785,7 @@ npm run test:lesehilfe    # Lesehilfe bei LRS: Einstellungen, Migration, Silbier
 npm run test:texterkennung # Textaufbereitung für OCR: bereinigen, unsichere Wörter, Abschnitte
 npm run test:eigenetexte # Eigene Texte: Speichern, Löschen, Obergrenze, Migration, Umzugs-Code
 npm run test:lesemodi     # Echo-Lesen/Takt-Lesen: Takt messen/anpassen, Hilfestufe, Zeitplan-Fallback
+npm run test:lesespiele  # Lesespiele: Listen valide, Kunstwörter geprüft, Satz-Detektiv eindeutig, Blitz-Grenzen
 npm start &             # Server für den Durchklick-Test
 npm run test:e2e        # Talent-Test → Mission → Puzzle/Hörgeschichte → Umzugs-Code → Neustart
 ```
@@ -789,6 +816,7 @@ js/silben.js          Deutsche Silbentrennung – Grundlage der Silbenfärbung
 js/lesen.js           Lesetexte und Auswertung der Leseflüssigkeit (Tempo, Pausen, Betonung)
 js/lesehilfe.js       Lesehilfe bei Legasthenie/LRS: Einstellungen, CSS-Variablen, Zeilenfenster
 js/lesemodi.js        Echo-Lesen und Takt-Lesen: Hilfestufe/Takt anpassen, Zeitplan-Fallback
+js/lesespiele.js      Lesespiele: Wort-Detektiv, b/d/p/q, Silben-Baukasten, Quatschwörter, Satz-Detektiv, Blitzlesen
 js/texterkennung.js   Texterkennung (OCR) auf dem Gerät – Tesseract.js, nie ein Server
 js/textaufbereitung.js Aus OCR-Rohtext einen Silben-Lesetext machen: bereinigen, Abschnitte
 js/version.js         Fassung, Datum und Änderungsverlauf – die einzige Stelle dafür

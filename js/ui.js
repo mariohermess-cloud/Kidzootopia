@@ -224,22 +224,32 @@ function screenProfile() {
    drei erste Durchgänge für die Leseflüssigkeits-Karte vorliegen: der Takt
    wird nach JEDER Lesung mit Mikrofon gemessen, in jedem Modus. */
 function echoTaktKarteHtml(p) {
+  /* Blitzlesen (js/lesespiele.js): die Anzeigedauer passt sich pro Kind an -
+     unabhaengig davon, ob schon Echo-/Takt-Daten vorliegen, deshalb eine
+     eigene Zeile statt in den fruehen Abbruch unten verwoben. */
+  const blitzZeile = `<p class="small" style="margin:4px 0 0">⚡ Blitzlesen: zurzeit
+    <b>${(( (p.blitzMs ?? 1500) / 1000 ).toFixed(1)).replace('.', ',')} s</b> Anzeigezeit</p>`;
+
   const z = S.echoZustand(p);
   const takt = (z.verlauf || []).slice(-10);
-  if (!takt.length) return '';
+  if (!takt.length) return `<div class="card flat" style="background:var(--bg);margin-top:12px">
+    <p class="small" style="margin:0 0 6px"><b>🔊🥁⚡ Echo-Lesen, Takt-Lesen und Blitzlesen</b></p>
+    ${blitzZeile}
+  </div>`;
   const erste = takt.slice(0, Math.max(1, Math.floor(takt.length / 2)));
   const letzte = takt.slice(Math.floor(takt.length / 2));
   const schnitt = (liste, feld) => Math.round(liste.reduce((s, x) => s + (x[feld] || 0), 0) / liste.length);
   return `<div class="card flat" style="background:var(--bg);margin-top:12px">
-    <p class="small" style="margin:0 0 6px"><b>🔊🥁 Echo-Lesen und Takt-Lesen</b></p>
+    <p class="small" style="margin:0 0 6px"><b>🔊🥁⚡ Echo-Lesen, Takt-Lesen und Blitzlesen</b></p>
     <p class="small" style="margin:0">Echo-Stufe: <b>${esc(Lesemodi.echoStufeName(z.echoStufe))}</b></p>
     <p class="small" style="margin:4px 0 0">Aktuelle Takt-Vorgabe: <b>${Lesemodi.taktVorgabe(z)} Silben/Minute</b></p>
+    ${blitzZeile}
     <p class="small muted" style="margin:6px 0 0">Zuletzt gemessener Takt: ${schnitt(letzte, 'silbenProMin')}
       Silben/Minute, Gleichmaß ${schnitt(letzte, 'gleichmass')}
       ${erste.length < takt.length ? `(vorher ${schnitt(erste, 'silbenProMin')} Silben/Minute)` : ''}.</p>
-    <p class="small muted" style="margin:6px 0 0">Die Hilfestufe beim Echo-Lesen und das Takt-Tempo
-      passen sich von selbst an – nach guten Lesungen wird schrittweise weniger geholfen bzw.
-      etwas zügiger vorgegeben, nach schwächeren wieder mehr Hilfe bzw. etwas ruhiger.
+    <p class="small muted" style="margin:6px 0 0">Die Hilfestufe beim Echo-Lesen, das Takt-Tempo und die
+      Blitzlesen-Anzeigezeit passen sich von selbst an – nach guten Lesungen/Antworten wird schrittweise
+      weniger geholfen bzw. etwas zügiger vorgegeben, nach schwächeren wieder mehr Hilfe bzw. etwas ruhiger.
       Kein Zeitdruck, kein Punktabzug.</p>
   </div>`;
 }
@@ -2916,6 +2926,43 @@ function screenSession(p, opts = {}) {
       };
       zeichnen();
 
+    } else if (a.typ === 'blitz') {
+      /* Blitzlesen: das Wort/die Silbe erscheint groß, verschwindet nach
+         p.blitzMs wieder, dann kommen die vier Antworten. "Nochmal zeigen"
+         kostet nichts - kein Zeitdruck, keine Abzüge. Bei
+         prefers-reduced-motion wird die Anzeigedauer stark verkürzt statt
+         mit Effekten zu arbeiten - das Prinzip (erst sehen, dann erkennen)
+         bleibt, ohne jemanden zu stören, der bewegte/blinkende Inhalte meiden will. */
+      const reduziert = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      bereich.innerHTML = `
+        <div class="blitz-flash pop" id="blitzFlash">${textAnzeige(a.blitzText)}</div>
+        <div class="choices" id="blitzOptionen" hidden>${a.optionen.map(o =>
+          `<button class="choice" data-o="${esc(o)}">${textAnzeige(o)}</button>`).join('')}</div>
+        ${ergebnis === null ? '<button class="btn quiet small" id="blitzNochmal" hidden style="margin-top:10px">👀 Nochmal zeigen</button>' : ''}`;
+      const zeigen = () => {
+        const flash = bereich.querySelector('#blitzFlash');
+        const opts = bereich.querySelector('#blitzOptionen');
+        const nochmal = bereich.querySelector('#blitzNochmal');
+        flash.hidden = false; opts.hidden = true; if (nochmal) nochmal.hidden = true;
+        const dauer = reduziert ? 120 : (p.blitzMs || a.dauerMs || 1500);
+        setTimeout(() => {
+          flash.hidden = true; opts.hidden = false; if (nochmal) nochmal.hidden = false;
+        }, dauer);
+      };
+      zeigen();
+      if (ergebnis === null) {
+        bereich.querySelector('#blitzNochmal')?.addEventListener('click', zeigen);
+        bereich.querySelectorAll('[data-o]').forEach(b => b.onclick = () => auswerten(a, b.dataset.o));
+      } else {
+        bereich.querySelector('#blitzFlash').hidden = true;
+        bereich.querySelector('#blitzOptionen').hidden = false;
+        bereich.querySelectorAll('[data-o]').forEach(b => {
+          const ok = pruefe(a, b.dataset.o);
+          b.classList.add(ok ? 'correct' : (b.dataset.o === eingabe ? 'wrong' : 'dim'));
+          b.disabled = true;
+        });
+      }
+
     } else {
       /* Eigenes Tastenfeld statt der Systemtastatur, sobald eine Zahl gefragt
          ist. Grund: inputmode="numeric" zeigt auf dem iPad einen Ziffernblock
@@ -3030,6 +3077,10 @@ function screenSession(p, opts = {}) {
              : okDirekt !== null ? okDirekt
              : pruefe(a, eingabe);
     if (messwerte) a.messwerte = messwerte;
+    /* Blitzlesen: die Anzeigedauer passt sich an - kürzer nach richtig,
+       länger nach falsch, siehe S.blitzNachAntwortAnpassen. Kein Abzug,
+       nur die Dauer der NÄCHSTEN Aufgabe ändert sich. */
+    if (a.typ === 'blitz') S.blitzNachAntwortAnpassen(p, ok);
     status[sess.index] = a.keineWertung ? 'denk' : (ok ? 'done' : 'miss');
     sess.index++;
     if (a.keineWertung) sess.laenge--;          // zählt nicht in die Quote der Runde

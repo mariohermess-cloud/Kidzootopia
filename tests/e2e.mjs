@@ -62,6 +62,13 @@ async function loeseAufgabe(p) {
     return;
   }
   if (await p.$('.teil[data-e]')) { let n=0; while (await p.$('.teil[data-e]') && n++<12) await p.click('.teil[data-e]'); return; }
+  if (await p.$('#blitzFlash')) {
+    /* Blitzlesen: erst verschwindet die Anzeige, dann kommen die Optionen -
+       bis dahin warten statt sofort zu klicken. */
+    await p.waitForSelector('#blitzOptionen:not([hidden])', { timeout: 6000 });
+    await p.click('#blitzOptionen .choice');
+    return;
+  }
   if (await p.$('#eingabe')) {
     if (await p.$('#zahlfeld')) {                 // eigenes Tastenfeld statt Systemtastatur
       await p.click('[data-k="4"]'); await p.click('[data-k="2"]');
@@ -965,7 +972,7 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
     S.echoNachLesungAnpassen(p, { stufe: 4, stockungen: 0, tempo: 150 });
   }));
   await p.click('.nav-btn[data-route="eltern"]');
-  await p.waitForSelector('text=Echo-Lesen und Takt-Lesen', { timeout: 5000 });
+  await p.waitForSelector('text=Echo-Lesen, Takt-Lesen und Blitzlesen', { timeout: 5000 });
   await p.screenshot({ path: `${S}/lm-6-eltern.png`, fullPage: true });
   console.log('Eltern-Bereich: Echo-Stufe und Takt-Vorgabe bei der Leseflüssigkeit sichtbar ✅');
   await p.click('.nav-btn[data-route="lernen"]');
@@ -1121,6 +1128,67 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   await p.click('#pruefenAbbrechen');
   await p.waitForSelector('#neuerText');
   await p.click('.nav-btn[data-route="lernen"]');
+  await p.waitForSelector('#mission');
+}
+
+// Lesespiele: gezielt starten und mindestens einmal jeden Spieltyp lösen.
+// Vier statt fünf Wege (siehe js/data.js), damit engine.js (waehleWeg wählt
+// bei fünf Wegen nur aus den beiden staerksten ODER den beiden schwaechsten -
+// der mittlere käme nie dran) auf Dauer wirklich alle vier anbietet. "knobeln"
+// mischt zusätzlich zwischen Quatschwörtern, Spiegelbuchstaben und Blitzlesen -
+// dafür wird über genug Runden gespielt, bis alle sechs Spielarten dran waren.
+{
+  await bannerWeg(p);
+  await p.click('[data-ziel="lesespiele"]');
+  const gesehen = new Set();
+  const erkenneSpiel = async () => {
+    const a = await p.evaluate(() => window.__aufgabe);
+    if (!a) return null;
+    if (a.typ === 'blitz') return 'blitz';
+    if (a.typ === 'ordnen') return 'silbenbaukasten';
+    if (a.bild) return 'wortdetektiv';
+    if (a.typ === 'choice' && a.hoertext && /🕵️/.test(a.frage || '')) return 'satzdetektiv';
+    if (a.typ === 'choice' && a.hoertext) return 'spiegel';
+    if (a.typ === 'choice') return 'quatsch';
+    return null;
+  };
+  const ALLE_SPIELE = ['wortdetektiv', 'silbenbaukasten', 'satzdetektiv', 'spiegel', 'quatsch', 'blitz'];
+  /* Satz-Detektiv hat vier Fehlerarten (fehlt/zusatz/vertauscht/ersetzt) -
+     "fehlt" bekommt zusätzlich einen eigenen Screenshot, weil genau dort die
+     Lücken-Position gezielt geprüft werden soll (Chef-Review). Best-effort:
+     blockiert die Runde nicht, falls sie in den gespielten Runden nicht dran war. */
+  let fehltGesehen = false;
+  let runden = 0;
+  while ((gesehen.size < ALLE_SPIELE.length || !fehltGesehen) && runden < 16) {
+    runden++;
+    for (let i = 0; i < 8; i++) {
+      await p.waitForSelector('.task');
+      const spiel = await erkenneSpiel();
+      if (spiel && !gesehen.has(spiel)) {
+        console.log(`Lesespiele: „${spiel}" erscheint, wird gelöst …`);
+        await p.screenshot({ path: `${S}/ls-${spiel}.png`, fullPage: true });
+      }
+      if (spiel === 'satzdetektiv' && !fehltGesehen) {
+        const frage = await p.textContent('.task').catch(() => '');
+        if (/Welches Wort fehlt/.test(frage || '')) {
+          fehltGesehen = true;
+          console.log('Lesespiele: Satz-Detektiv „fehlt" erscheint, wird gelöst …');
+          await p.screenshot({ path: `${S}/ls-satzdetektiv-fehlt.png`, fullPage: true });
+        }
+      }
+      if (spiel) gesehen.add(spiel);
+      await loeseAufgabe(p);
+      await p.waitForSelector('#weiter');
+      await p.click('#weiter');
+    }
+    await p.waitForSelector('#nochmal', { timeout: 8000 });
+    const wirdWeitergespielt = (gesehen.size < ALLE_SPIELE.length || !fehltGesehen) && runden < 16;
+    if (wirdWeitergespielt) await p.click('#nochmal'); else await p.click('#heim');
+  }
+  if (!fehltGesehen) console.log('Lesespiele: Hinweis - Satz-Detektiv "fehlt" kam in den gespielten Runden nicht vor (kein Fehler, nur kein Extra-Screenshot).');
+  const fehlend = ALLE_SPIELE.filter(s => !gesehen.has(s));
+  if (fehlend.length) throw new Error(`Lesespiele: nach ${runden} Runden fehlen noch: ${fehlend.join(', ')}`);
+  console.log(`Lesespiele: alle sechs Spielarten mindestens einmal gelöst (${runden} Runden) ✅`);
   await p.waitForSelector('#mission');
 }
 

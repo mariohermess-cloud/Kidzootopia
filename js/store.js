@@ -6,6 +6,7 @@ import { TALENTE, WEGE, ZIELE, ABZEICHEN, ETAPPEN } from './data.js';
 import { auswerten } from './talenttest.js';
 import { LRS_VOREINSTELLUNG, normalisiere as lesehilfeNormalisieren } from './lesehilfe.js';
 import * as Lesemodi from './lesemodi.js';
+import { blitzAnpassen, BLITZ_MS_START } from './lesespiele.js';
 
 const KEY = 'kidzootopia.v1';
 const heute = () => new Date().toISOString().slice(0,10);
@@ -124,6 +125,10 @@ function migriere(p) {
      Echo-Lesen gerade passt, die zuletzt gemessenen Takt-Werte. Rein additiv,
      ganz alte Profile hatten das Feld noch nicht. */
   p.lesemodus ||= Lesemodi.neuerLesemodusZustand();
+  /* Blitzlesen (siehe js/lesespiele.js): wie lange ein Wort/eine Silbe
+     angezeigt wird, bevor sie verschwindet. Passt sich pro Kind an -
+     schneller nach richtig, langsamer nach falsch, siehe blitzAnpassen(). */
+  p.blitzMs ??= BLITZ_MS_START;
   return p;
 }
 
@@ -610,6 +615,14 @@ export function taktNachRundeAnpassen(profil, vorgabe, messung) {
   z.takt = neu;
   speichern();
   return neu;
+}
+
+/* Blitzlesen: nach jeder Antwort die Anzeigedauer fürs nächste Mal anpassen
+   (siehe js/lesespiele.js: blitzAnpassen). Rein additiv im Profil. */
+export function blitzNachAntwortAnpassen(profil, richtig) {
+  profil.blitzMs = blitzAnpassen(profil.blitzMs, richtig);
+  speichern();
+  return profil.blitzMs;
 }
 
 /* Wo hilft eine Skizze? Fuer den Eltern-Bereich. Es geht nicht darum, ob viel

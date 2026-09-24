@@ -12,6 +12,8 @@ import { HAUPTWERKE } from './hauptwerke.js';
 import { TEXTE as LESETEXTE, texteFuer } from './lesen.js';
 import { silben, uebwoerterBis } from './silben.js';
 import { DENKFEHLER, FEHLSCHLUESSE, STILMITTEL, WORTWURZELN, SYLLOGISMEN } from './fortgeschritten.js';
+import { wortDetektivAufgabe, spiegelAufgabe, silbenBaukastenAufgabe,
+         quatschAufgabe, satzDetektivAufgabe, blitzAufgabe } from './lesespiele.js';
 
 const r = (a,b) => a + Math.floor(Math.random()*(b-a+1));
 const pick = a => a[r(0,a.length-1)];
@@ -1462,6 +1464,19 @@ code: {
       fehlend, ['Fernseher anschalten','Schuhe anziehen','Fenster öffnen'],
       'Geh die Reihenfolge im Kopf durch.');
   }
+},
+
+/* ---------------- Lesespiele: kurz, farbig, ohne Zeitdruck ----------------
+   Sechs Übungen gegen genau die Fehler, die beim stockenden Lesen entstehen:
+   Wort-Detektiv (Bild<->Wort), b/d/p/q-Spiegelbuchstaben, Silben-Baukasten
+   (hören & bauen), Quatschwörter, Satz-Detektiv und Blitzlesen. Reine Daten
+   und Logik stehen in js/lesespiele.js - hier wird nur zugeordnet, welcher
+   Weg welches Spiel bekommt. */
+lesespiele: {
+  erzaehlen: wortDetektivAufgabe,
+  bauen:     silbenBaukastenAufgabe,
+  entdecken: satzDetektivAufgabe,
+  knobeln:   (lvl) => pick([quatschAufgabe, spiegelAufgabe, blitzAufgabe])(lvl)
 }
 };
 
