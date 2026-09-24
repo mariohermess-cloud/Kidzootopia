@@ -48,7 +48,12 @@ async function loeseAufgabe(p) {
   }
   if (await p.$('#leseStart')) {
     /* Lesepult: Im Test gibt es kein Mikrofon. Geprueft wird, dass die
-       Silbenfaerbung steht und der Weg ohne Mikrofon sauber weitergeht. */
+       Silbenfaerbung steht und der Weg ohne Mikrofon sauber weitergeht.
+       Modus "Allein" erzwungen, damit dieser allgemeine Durchlauf nicht bei
+       jeder Leseaufgabe die (langsamere) Echo-/Takt-Vorphase durchläuft -
+       Echo und Takt haben eigene, gezielte Prüfungen weiter unten. */
+    const allein = await p.$('[data-modus="allein"]');
+    if (allein) await allein.click();
     const silben = await p.$$eval('#leseText .sil', els => els.length);
     if (silben < 10) throw new Error(`Lesetext kaum in Silben zerlegt: ${silben} Silben`);
     const gefaerbt = await p.$$eval('#leseText .sil.s1', els => els.length);
@@ -783,6 +788,28 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   await p.click('#leseZeileVor');
   await p.screenshot({ path: `${S}/lh-3-lesepult.png`, fullPage: true });
   console.log('Lesehilfe: Lesefenster-Knöpfe im Lesepult vorhanden ✅');
+
+  /* Lesemodi: Echo/Takt/Allein - die drei Knöpfe müssen sichtbar und
+     wechselbar sein. Danach bleibt "Im Takt" ausgewählt: Der spätere Klick
+     auf "Ohne Mikrofon lesen" (unten) prüft dann, dass der Takt-Ball über
+     mehrere Silben wandert und auch ohne Mikrofon zu Ende (Fertig) kommt. */
+  const modiSichtbar = await p.$$eval('[data-modus]', els => els.map(e => e.dataset.modus));
+  if (!['echo', 'takt', 'allein'].every(m => modiSichtbar.includes(m)))
+    throw new Error('Modus-Knöpfe (Echo/Takt/Allein) fehlen im Lesepult: ' + modiSichtbar.join(','));
+  await p.screenshot({ path: `${S}/lm-1-modus-wahl.png`, fullPage: true });
+  /* Ein paar schnelle Takt-Messungen "vorspielen", damit die Vorgabe nicht
+     beim sehr ruhigen Start-Tempo (60 Silben/Minute ohne jede Erfahrung)
+     bleibt - sonst dauert die folgende Mitklatsch-Übung bei einem ganzen
+     Lesetext unnötig lange. Die Logik selbst (taktVorgabe) wird bereits in
+     tests/lesemodi.mjs geprüft; hier geht es nur um eine zügige Demo. */
+  await p.evaluate(() => import('./js/store.js').then(S => {
+    const p = S.aktiv();
+    for (let i = 0; i < 5; i++) S.merkeTakt(p, { silbenProMin: 260, gleichmass: 90, modus: 'takt' });
+  }));
+  await p.click('[data-modus="takt"]');
+  await p.screenshot({ path: `${S}/lm-2-takt.png`, fullPage: true });
+  console.log('Lesemodi: Echo/Takt/Allein-Knöpfe sichtbar und wechselbar ✅');
+
   /* Die Faerbung darf keinen Buchstaben verlieren. */
   const originale = await p.evaluate(async () => {
     const L = await import('./js/lesen.js');
@@ -828,8 +855,52 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   if (bild.farben[0] !== 'gruen')
     throw new Error('flüssige Silbe wird nicht grün: ' + bild.farben.join(', '));
   console.log(`Silben eingefärbt: ${bild.farben.join(' · ')} ✅`);
+
+  /* "Im Takt" ohne Mikrofon: reine Mitklatsch-Übung. Zuerst zählt die App
+     sichtbar ein ("1 - 2 - 3 - los"), danach hüpft der Ball über mehrere
+     Silben, bevor die Aufgabe von selbst zu Ende geht ("Fertig" ist hier
+     also der Klick auf "Ohne Mikrofon lesen" selbst gewesen). */
   await p.click('#leseOhne');
-  await p.waitForSelector('#weiter', { timeout: 5000 });
+  /* Start-Knöpfe dürfen während "Im Takt" nicht mehr sichtbar sein - die
+     Übung läuft von selbst durch, es gibt nichts mehr anzutippen. */
+  const startReiheImTakt = await p.$eval('#leseStartReihe', el => !el.hidden).catch(() => false);
+  if (startReiheImTakt) throw new Error('Start-Knöpfe ("Los"/"Ohne Mikrofon") bleiben während "Im Takt" sichtbar');
+  console.log('Im Takt: Start-Knöpfe während der Übung ausgeblendet ✅');
+  await p.waitForSelector('#einzaehlAnzeige:not([hidden])', { timeout: 3000 });
+  await p.screenshot({ path: `${S}/lm-3-takt-einzaehlen.png`, fullPage: true });
+  await p.waitForSelector('#einzaehlAnzeige', { state: 'hidden', timeout: 5000 });
+  const ballPos1 = await p.$eval('#taktBall', el => el.style.left);
+  /* Lesehilfe/Lesefenster ist hier noch eingeschaltet (siehe oben) - die
+     aktive Zeile muss der Ballposition folgen, nicht irgendeiner anderen
+     Zeile (gemeldeter Fehler: Ball in Zeile 1, hell aber Zeile 2). Die
+     Ballposition kommt exakt vom offsetTop/offsetLeft EINER Silbe
+     (ballZuSilbeBewegen in js/ui.js) - also erst genau diese Silbe wieder
+     finden (ein Vergleich mit dem offsetTop des .wort selbst wäre falsch:
+     Silbe und umschließendes Wort haben aus Zeilenhöhe/Feinsatz-Gründen
+     leicht unterschiedliche offsetTop-Werte, auch auf derselben Zeile). */
+  const zeileFolgtBall = await p.evaluate(() => {
+    const ball = document.querySelector('#taktBall');
+    const left = parseFloat(ball.style.left), top = parseFloat(ball.style.top);
+    if (Number.isNaN(left) || Number.isNaN(top)) return false;
+    const treffer = [...document.querySelectorAll('#leseText [data-sil]')].find(f =>
+      Math.abs(f.offsetTop - top) < 1 && Math.abs((f.offsetLeft + f.offsetWidth / 2) - left) < 1);
+    const wort = treffer?.closest('.wort');
+    return !!wort && wort.classList.contains('zeile-aktiv');
+  });
+  if (!zeileFolgtBall) throw new Error('Lesefenster folgt dem Takt-Ball nicht (aktive Zeile passt nicht zur Ballposition)');
+  console.log('Im Takt: das Lesefenster folgt der Ballposition ✅');
+  await p.screenshot({ path: `${S}/lm-4-takt-ball.png`, fullPage: true });
+  await p.waitForTimeout(500);
+  const ballPos2 = await p.$eval('#taktBall', el => el.style.left).catch(() => ballPos1);
+  if (ballPos1 === '' && ballPos2 === '')
+    throw new Error('Takt-Ball hat sich nie bewegt (kein style.left gesetzt)');
+  if (ballPos1 !== '' && ballPos2 !== '' && ballPos1 === ballPos2)
+    console.log('Hinweis: Takt-Ball-Position nach 500ms unverändert (kann bei kurzem Text vorkommen)');
+  console.log(`Takt-Lesen: Ball bewegt sich über die Silben (${ballPos1} -> ${ballPos2}) ✅`);
+  /* Die Start-Taktvorgabe ist bewusst sehr ruhig (60 Silben/Minute ohne
+     jede vorherige Messung) - bei einem ganzen Lesetext dauert die reine
+     Mitklatsch-Übung deshalb regulär eine ganze Weile. */
+  await p.waitForSelector('#weiter', { timeout: 90000 });
   await p.click('#weiter');
   /* Die angefangene Runde zu Ende spielen - waehrend einer Runde ist die
      untere Navigationsleiste ausgeblendet. */
@@ -882,6 +953,25 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   console.log('Teaser zeigt danach korrekt "heute schon gelöst" ✅');
 }
 
+// Eltern-Bereich: Echo-Stufe und Takt-Vorgabe bei der Leseflüssigkeit.
+// Ein paar Messwerte vorgespielt, weil im Test nie ein echtes Mikrofon
+// zur Verfügung steht (siehe Kommentare weiter oben) - taktMessen()/
+// echoAnpassen() selbst sind bereits in tests/lesemodi.mjs geprüft.
+{
+  await p.evaluate(() => import('./js/store.js').then(S => {
+    const p = S.aktiv();
+    for (let i = 0; i < 4; i++) S.merkeTakt(p, { silbenProMin: 90 + i * 5, gleichmass: 70, modus: 'takt' });
+    S.echoNachLesungAnpassen(p, { stufe: 4, stockungen: 0, tempo: 150 });
+    S.echoNachLesungAnpassen(p, { stufe: 4, stockungen: 0, tempo: 150 });
+  }));
+  await p.click('.nav-btn[data-route="eltern"]');
+  await p.waitForSelector('text=Echo-Lesen und Takt-Lesen', { timeout: 5000 });
+  await p.screenshot({ path: `${S}/lm-6-eltern.png`, fullPage: true });
+  console.log('Eltern-Bereich: Echo-Stufe und Takt-Vorgabe bei der Leseflüssigkeit sichtbar ✅');
+  await p.click('.nav-btn[data-route="lernen"]');
+  await p.waitForSelector('#mission');
+}
+
 // Eigene Texte (Text einfügen, ohne OCR): Eltern-Bereich -> prüfen -> speichern,
 // danach beim Kind unter "Meine Texte" lesen.
 {
@@ -919,14 +1009,41 @@ console.log('Profil nach Reload:', kopf, '| ServiceWorker registriert:', sw);
   if (kindSilben < 3) throw new Error('Eigener Text ist im Lesepult kaum in Silben zerlegt');
   await p.screenshot({ path: `${S}/et-4-lesepult.png`, fullPage: true });
   await p.click('#ersAnhoeren');           // darf nicht abstürzen, auch ohne Sprachausgabe im Test
+
+  /* Echo-Lesen: "Ohne Mikrofon" muss die App trotzdem erst Satz für Satz
+     vorlesen/mitlaufen lassen (Zeitplan-Fallback ohne Stimme im Headless-
+     Chromium) - geprüft wird, dass ".sil.jetzt" während dieser Vorphase
+     wirklich wandert, bevor die Aufgabe zu Ende geht. */
+  await p.click('[data-modus="echo"]');
   await p.click('#leseOhne');
-  await p.waitForSelector('#mtWeiter');
+  /* Engmaschig abfragen statt an zwei festen Zeitpunkten zu schauen - der
+     eigene Text ist kurz, die Vorphase kann daher schnell durchlaufen.
+     Beobachtet werden ALLE Positionen, an denen ".sil.jetzt" gesehen wurde;
+     ohne mindestens eine gesehene Position (und ohne echte Bewegung, falls
+     mehr als eine gesehen wurde) ist der Zeitplan-Fallback nicht bewiesen. */
+  const gesehen = [];
+  for (let i = 0; i < 20; i++) {
+    const pos = await p.$eval('#leseText', el =>
+      [...el.querySelectorAll('.sil')].findIndex(s => s.classList.contains('jetzt'))).catch(() => -1);
+    if (pos >= 0) gesehen.push(pos);
+    if (i === 2) await p.screenshot({ path: `${S}/lm-5-echo.png`, fullPage: true });
+    await p.waitForTimeout(120);
+  }
+  if (!gesehen.length)
+    throw new Error('Echo-Lesen: die Silbenmarkierung (.sil.jetzt) war während der Vorphase nie sichtbar');
+  const bewegtSich = gesehen.some(pos => pos !== gesehen[0]);
+  if (gesehen.length > 3 && !bewegtSich)
+    throw new Error('Echo-Lesen: die Silbenmarkierung blieb die ganze Zeit an derselben Stelle stehen: ' + gesehen.join(','));
+  console.log(`Echo-Lesen: Silbenmarkierung wandert im Zeitplan-Fallback (${gesehen.join(' -> ')}) ✅`);
+  await p.waitForSelector('#mtWeiter', { timeout: 15000 });
   await p.click('#mtWeiter');              // Durchgang 2 von 3
   await p.waitForSelector('#leseStart');
+  await p.click('[data-modus="allein"]');  // Echo schon oben geprüft - hier zügig weiter
   await p.click('#leseOhne');
   await p.waitForSelector('#mtWeiter');
   await p.click('#mtWeiter');              // Durchgang 3 von 3
   await p.waitForSelector('#leseStart');
+  await p.click('[data-modus="allein"]');
   await p.click('#leseOhne');
   await p.waitForSelector('#mtWeiter');
   const weiterText = await p.textContent('#mtWeiter');
@@ -1024,4 +1141,99 @@ const restCaches = await p.evaluate(async () => (await caches.keys()).length);
 console.log(`Offline-Speicher geleert: Fortschritt erhalten (${nachHartemLaden} Aufgaben), Speicher danach: ${restCaches}`);
 
 console.log(fehler.length ? 'FEHLER:\n'+fehler.join('\n') : 'keine JS-Fehler ✅');
+
+// Echo-Lesen, Stufe 1, WIRKLICH mit Mikrofon: die Phasen "hören" -> "Jetzt
+// du" müssen wechseln, und "Weiter ➜" muss zum nächsten Satz führen. Das
+// braucht eine echte (wenn auch simulierte) Mikrofon-Freigabe - dafür ein
+// EIGENER, zweiter Browser mit Fake-Gerät. Der Hauptbrowser oben bleibt
+// bei "kein Mikrofon" (das ist der realistischere Regelfall im Test) und
+// prüft alle übrigen ~30 Lese-Aufgaben schnell und unverändert.
+{
+  const fehler2 = [];
+  const b2 = await chromium.launch({
+    executablePath: process.env.CHROME_PATH || undefined,
+    args: ['--use-fake-device-for-media-stream', '--use-fake-ui-for-media-stream']
+  });
+  const ctx2 = await b2.newContext({ viewport: { width: 390, height: 844 }, permissions: ['microphone'] });
+  const p2 = await ctx2.newPage();
+  p2.on('pageerror', e => fehler2.push('pageerror: ' + e.message));
+  p2.on('console', m => { if (m.type() === 'error') fehler2.push('console: ' + m.text()); });
+  p2.on('dialog', d => d.accept().catch(() => {}));
+
+  await p2.goto(`${BASIS}/index.html`);
+  await p2.waitForSelector('#nName');
+  await p2.fill('#nName', 'Timo');
+  await p2.selectOption('#nEtappe', '1');
+  await p2.click('[data-av="🐢"]');
+  await p2.click('#nAnlegen');
+  // Talent-Test überspringen: das Profil ist schon angelegt und aktiv,
+  // ein Neuladen zeigt direkt die Lernen-Seite (siehe js/app.js).
+  await p2.reload();
+  await p2.waitForSelector('#zeichnenStart');   // generisches Zeichen fuer "Lernen-Seite da" -
+                                                 // "Meine Texte" gibt es erst NACH dem Seeden unten
+
+  // Einen ganz kurzen eigenen Text mit genau zwei Sätzen seeden - direkt
+  // über den Speicher, ohne Umweg über Foto/OCR (die sind schon anderswo
+  // geprüft). Zwei kurze Sätze reichen, um Hören -> Jetzt du -> Weiter
+  // zweimal durchzuspielen, ohne den Test unnötig zu verlängern.
+  await p2.evaluate(async () => {
+    const S = await import('./js/store.js');
+    S.eigenenTextSpeichern(S.aktiv(), { titel: 'Echo-Test', abschnitte: ['Die Katze schläft. Der Hund spielt.'] });
+  });
+  await p2.click('.nav-btn[data-route="lernen"]');
+  await p2.waitForSelector('#meineTexte');
+  await p2.click('#meineTexte');
+  await p2.waitForSelector('[data-text]');
+  await p2.click('[data-text]');
+  await p2.waitForSelector('#leseStart');
+  await p2.click('[data-modus="echo"]');
+
+  await p2.click('#leseStart');
+  // Phase 1: "hören" - danach muss "Jetzt du!" erscheinen (Zeitplan-
+  // Fallback sorgt notfalls auch ohne Stimme für ein Ende, siehe
+  // hoereSatz/js/ui.js - großzügiges Zeitbudget für Sprachausgabe + Fallback).
+  await p2.waitForSelector('#echoJetztDu:not([hidden])', { timeout: 10000 });
+  const hinweis1 = (await p2.textContent('#leseHinweis')) || '';
+  if (!/Jetzt du/.test(await p2.textContent('#echoJetztDu')))
+    throw new Error('Echo Stufe 1: "Jetzt du"-Hinweis fehlt nach der ersten Hör-Phase');
+  const gedimmtVorher = await p2.$$eval('#leseText .wort.satz-dim', els => els.length);
+  if (gedimmtVorher === 0) throw new Error('Echo Stufe 1: kein Satz wird gedimmt - "Jetzt du" hebt sich nicht ab');
+  /* Start-Knöpfe ("Los"/"Ohne Mikrofon") dürfen während der ganzen Satz-für-
+     Satz-Übung nicht sichtbar sein - gemeldeter Fehler: beide blieben neben
+     "Jetzt du!" stehen und antippbar. */
+  const startReiheBeiJetztDu = await p2.$eval('#leseStartReihe', el => !el.hidden).catch(() => false);
+  if (startReiheBeiJetztDu) throw new Error('Start-Knöpfe bleiben während Echo Stufe 1 ("Jetzt du!") sichtbar');
+  console.log('Echo Stufe 1: Start-Knöpfe während der Übung ausgeblendet ✅');
+  /* "Weiter ➜" muss tatsächlich im sichtbaren Bereich stehen - nicht unter
+     der unteren Navigationsleiste (die liegt als fixe Leiste über dem
+     unteren Rand, "im Fenster" reicht als Prüfung deshalb nicht) - siehe
+     scrollIntoView in echoSatzFuerSatz/js/ui.js. */
+  const weiterSichtbar = await p2.evaluate(() => {
+    const r = document.querySelector('#echoWeiter').getBoundingClientRect();
+    const nav = document.getElementById('nav');
+    const navTop = (nav && !nav.hidden) ? nav.getBoundingClientRect().top : window.innerHeight;
+    return r.height > 0 && r.top >= 0 && r.bottom <= Math.min(window.innerHeight, navTop);
+  });
+  if (!weiterSichtbar) throw new Error('"Weiter ➜" liegt außerhalb des sichtbaren Bereichs (z. B. unter der Navigationsleiste)');
+  console.log('Echo Stufe 1: "Weiter ➜" ist vollständig sichtbar ✅');
+  await p2.screenshot({ path: `${S}/lm-7-echo-jetztdu.png`, fullPage: true });
+  console.log(`Echo Stufe 1 (mit Mikrofon): Phase "hören" -> "Jetzt du!" erreicht (Hinweis zuvor: "${hinweis1.trim()}") ✅`);
+
+  // "Weiter ➜" führt zum nächsten Satz - wieder erst "hören", dann wieder
+  // "Jetzt du!" (der zweite und letzte Satz des Testtexts).
+  await p2.click('#echoWeiter');
+  await p2.waitForSelector('#echoJetztDu:not([hidden])', { timeout: 10000 });
+  console.log('Echo Stufe 1: "Weiter ➜" hat zum nächsten Satz geführt ("hören" -> "Jetzt du!" ein zweites Mal) ✅');
+
+  // Letzter Satz fertig: "Weiter ➜" muss jetzt die ganze Übung beenden und
+  // zur Rückmeldung (Meine Texte: "Weiter") führen.
+  await p2.click('#echoWeiter');
+  await p2.waitForSelector('#mtWeiter', { timeout: 10000 });
+  console.log('Echo Stufe 1: letztes "Weiter ➜" beendet die Satz-für-Satz-Übung ✅');
+
+  if (fehler2.length) throw new Error('Echo Stufe 1 (mit Mikrofon): JS-Fehler:\n' + fehler2.join('\n'));
+  console.log('Echo Stufe 1 (mit Mikrofon): keine JS-Fehler ✅');
+  await b2.close();
+}
+
 await b.close();

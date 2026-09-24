@@ -37,6 +37,7 @@ jobs:
       - run: node tests/lesehilfe.mjs
       - run: node tests/texterkennung.mjs
       - run: node tests/eigenetexte.mjs
+      - run: node tests/lesemodi.mjs
 
   deploy:
     needs: test
