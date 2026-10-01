@@ -13,6 +13,17 @@
        Seite 31 = Zyklus 3, Seite 32 = Zyklus 4, jeweils „Mathématiques“,
        Niveau socle und niveau avancé). Die Aufgaben werden berechnet, nie
        abgeschrieben; Unterrichtssprache Mathe in Luxemburg ist Deutsch.
+       Auch die Bereiche „Daten“, „Symmetrie“ und „Problemlösen / Algorithmen“
+       sind abgedeckt (ohne Grafik, als Text, Kästchen-Zeilen oder Tabelle):
+         Z2 (S. 30): Muster fortsetzen, Symmetrie, Weg beschreiben (links/rechts),
+            Strichliste, Größen mit gleicher Einheit, Einheit schätzen (1 m, 1 kg, 1 l).
+         Z3 (S. 31): Flächeneinheiten (mm², cm², m², km²), Tonne, Dezimaldarstellung
+            („2 km 500 m = 2,5 km“), Säulendiagramm mit Skala lesen und Skala wählen,
+            Spiegelachsen, Roboter-Befehle auf dem Gitter, Kombinatorik mit 3 Elementen.
+         Z4 (S. 32): Zahlengerade mit Dezimalzahlen und Brüchen, Brüche addieren und
+            subtrahieren, Algorithmen mit Bedingung und Wiederholung, Maßstab und
+            Verhältnis, Verschieben und Spiegeln im Koordinatengitter, Häufigkeit und
+            Prozent aus Diagrammen, cm³ und Liter, zusammengesetzte Flächen, Oberfläche.
      * DEUTSCH und FRANZÖSISCH: ABGELEITET. Der Plan nennt dafür nur
        Kompetenzen (Druckseite 20–27), keine Themenlisten. Die Fragen sind
        eine Auslegung dieser Kompetenzen und müssen von einer Fachperson
@@ -74,6 +85,16 @@ const Z2_WAHRSCH = [
   ['Im Sommer sind einige Tage warm.','wahrscheinlich']
 ];
 
+/* Einheit schätzen (Plan Z2: « 1 m, 1 kg, 1 l » ; dazu Stunden). Keine Zahl in den Optionen. */
+const Z2_EINHEIT = [
+  ['Welche Einheit passt? Ein Tisch ist ungefähr 1 ___ lang.','m',['kg','l','h'],'Ein Meter ist etwa so lang wie ein Tisch breit ist. Kilogramm misst Gewicht, Liter misst Flüssigkeit, Stunden messen Zeit.'],
+  ['Welche Einheit passt? Ein Brot wiegt ungefähr 1 ___.','kg',['m','l','h'],'Das Gewicht misst man in Kilogramm.'],
+  ['Welche Einheit passt? In eine große Wasserflasche passt 1 ___.','l',['m','kg','h'],'Wie viel in ein Gefäß passt, misst man in Litern.'],
+  ['Welche Einheit passt? Ein Film dauert ungefähr 2 ___.','h',['m','kg','l'],'Zeit misst man in Stunden und Minuten.'],
+  ['Welche Einheit passt? Die Tür im Klassenzimmer ist ungefähr 2 ___ hoch.','m',['kg','l','h'],'Eine Tür ist etwa zwei Meter hoch – das ist die Länge von zwei Tischen.'],
+  ['Welche Einheit passt? Ein Eimer Wasser fasst ungefähr 10 ___.','l',['m','kg','h'],'Wie viel in einen Eimer passt, misst man in Litern.']
+];
+
 /* ======================== FESTE FRAGEN: Mathe (Zyklus 3) ======================== */
 
 /* Einheit wählen (Plan Z3: g, kg, t; mm, cm, m, km; s, min, h; €, Cent) */
@@ -84,7 +105,17 @@ const Z3_EINHEIT = [
   ['Welche Einheit passt zum Gewicht einer Tafel Schokolade?','g',['kg','cm','h'],'Eine Tafel Schokolade wiegt etwa 100 Gramm. Kilogramm wäre viel zu groß.'],
   ['Welche Einheit passt zur Dauer eines Kinofilms?','h',['s','mm','g'],'Ein Film dauert etwa ein bis zwei Stunden.'],
   ['Welche Einheit passt zur Dicke einer Münze?','mm',['m','km','kg'],'Eine Münze ist nur ein paar Millimeter dick.'],
+  ['Welche Einheit passt zum Gewicht eines voll beladenen Lastwagens?','t',['g','mm','min'],'Ein Lastwagen wiegt viele tausend Kilogramm. Dafür nimmt man die Tonne: 1 t = 1000 kg.'],
   ['Welche Einheit passt zur Länge eines Klassenzimmers?','m',['mm','km','g'],'Ein Klassenzimmer ist etwa 8 Meter lang. Zentimeter wären eine sehr große Zahl.']
+];
+
+/* Flächeneinheit wählen (Plan Z3: mm², cm², m², km²). Immer alle vier Einheiten als Optionen, keine Zahl. */
+const Z3_FLAECHE = [
+  ['Welche Einheit passt zur Fläche eines Klassenzimmers?','m²','Ein Klassenzimmer ist etwa 60 Quadratmeter groß. Quadratzentimeter wären eine riesige Zahl.'],
+  ['Welche Einheit passt zur Fläche eines ganzen Landes?','km²','Länder messen viele Quadratkilometer, Quadratmeter wären riesige Zahlen.'],
+  ['Welche Einheit passt zur Fläche einer Heftseite?','cm²','Eine Heftseite hat einige hundert Quadratzentimeter.'],
+  ['Welche Einheit passt zur Fläche eines Stecknadelkopfs?','mm²','Ein Stecknadelkopf ist nur ein paar Quadratmillimeter groß.'],
+  ['Welche Einheit passt zur Fläche eines Fußballfelds?','m²','Ein Fußballfeld hat etwa 7000 Quadratmeter. Quadratkilometer wären viel zu groß.']
 ];
 
 /* Körper und Netze (Plan Z3: Würfel, Quader, Pyramide, Zylinder, Kegel und ihre Netze) */
@@ -599,6 +630,18 @@ export function luGen(h) {
   /* Emoji des Weges vor die Frage setzen (wie bei den übrigen Zielen). */
   const prefix = (emoji, a) => ({ ...a, frage: emoji + ' ' + a.frage });
 
+  /* Auswahlaufgabe mit genau 3 Ablenkern aus einer Kandidatenliste (gleiche Werte wie die Lösung fallen weg). */
+  const opt3 = (frage, richtig, kand, hilfe) =>
+    wahl(frage, richtig, [...new Set(kand.map(String))].filter(k => k !== String(richtig)).slice(0, 3), hilfe);
+  /* Zahl-Auswahl: Ablenker aus Kandidaten, bei Bedarf mit Nachbarzahlen aufgefüllt (nie negativ, nie die Lösung). */
+  const zahlOpt = (frage, loesung, kand, hilfe) => {
+    const m = new Set();
+    for (const k of kand) if (k !== loesung && k >= 0 && m.size < 3) m.add(k);
+    for (let d = 1; m.size < 3; d++) for (const v of [loesung + d, loesung - d]) if (v >= 0 && v !== loesung && m.size < 3) m.add(v);
+    return wahl(frage, String(loesung), [...m].map(String), hilfe);
+  };
+  const schritte = k => `${k} Schritt${k === 1 ? '' : 'e'}`;
+
   /* Feste Fragen: eine zufällige aus der Liste ziehen. */
   const fest = (liste, emoji = '') => () => {
     const [frage, richtig, falsche, erklaerung] = pick(liste);
@@ -704,6 +747,97 @@ export function luGen(h) {
     const j = (i + 1) % 4;
     return zT(kopf + `Wie viele Kinder haben „${kat[i]}“ und „${kat[j]}“ zusammen gewählt?`, werte[i] + werte[j], 'Beide Zeilen zählen und zusammenzählen.');
   };
+
+  /* ---- Zyklus 2, weitere Aufgabentypen (Plan Seite 30): Muster, Symmetrie, Weg, Strichliste, Größen ---- */
+  const SYMBOLE = ['🔴', '🔵', '🟢', '🟡', '🟣', '🟠'];
+  const z2Muster = lvl => {
+    const typ = r(1, lvl >= 3 ? 3 : 2);
+    if (typ === 1) {
+      const d = pick([1, 2, 5, 10, 3, 4].filter(x => 5 * x <= maxZ2(lvl))), runter = Math.random() < .35;
+      const start = r(0, Math.max(0, maxZ2(lvl) - 5 * d));
+      const f = Array.from({ length: 5 }, (_, i) => runter ? start + (4 - i) * d : start + i * d);
+      return zT(`Setze das Muster fort: ${f.slice(0, 4).join(', ')}, __`, f[4],
+        runter ? `Die Zahlen werden immer um ${d} kleiner. Also ${f[3]} − ${d} = ${f[4]}.` : `Die Zahlen werden immer um ${d} größer. Also ${f[3]} + ${d} = ${f[4]}.`);
+    }
+    if (typ === 2) {
+      const len = r(2, lvl <= 2 ? 2 : 3), bausteine = shuffle(SYMBOLE).slice(0, len), n = 2 * len + r(1, len - 1);
+      const gezeigt = Array.from({ length: n }, (_, i) => bausteine[i % len]).join(' ');
+      const loes = bausteine[n % len];
+      return wahl(`Welches Zeichen kommt als nächstes?\n${gezeigt} __`, loes, shuffle(SYMBOLE.filter(x => x !== loes)).slice(0, 3),
+        `Das Muster ${bausteine.join(' ')} wiederholt sich immer wieder. Nach ${gezeigt.split(' ').pop()} geht es mit ${loes} weiter.`);
+    }
+    const s0 = r(1, 5), f = [s0, s0 + 1, s0 + 3, s0 + 6];
+    return zT(`Der Abstand zwischen den Zahlen wird immer um 1 größer. Setze fort: ${f.join(', ')}, __`, s0 + 10,
+      `Die Abstände sind 1, 2, 3 – als nächstes 4. Also ${f[3]} + 4 = ${s0 + 10}.`);
+  };
+  const SYM_JA = ['A', 'H', 'I', 'M', 'O', 'T', 'U', 'V', 'W', 'X'], SYM_NEIN = ['F', 'G', 'J', 'L', 'P', 'R', 'S', 'Z'];
+  const z2Symmetrie = lvl => {
+    const typ = r(1, 3);
+    if (typ === 1) {
+      const ja = Math.random() < .5, loes = pick(ja ? SYM_JA : SYM_NEIN);
+      return wahl(`Welcher Buchstabe ist ${ja ? '' : 'NICHT '}symmetrisch? Symmetrisch heißt: Man kann ihn in der Mitte an einer senkrechten Linie falten und beide Hälften liegen genau aufeinander.`,
+        loes, shuffle(ja ? SYM_NEIN : SYM_JA).slice(0, 3),
+        `${ja ? loes + ' sieht links und rechts von der Mittellinie gleich aus.' : loes + ' sieht links und rechts von der Mittellinie verschieden aus, die Hälften passen nicht aufeinander.'}`);
+    }
+    if (typ === 2) {
+      const a = r(1, 3 + lvl);
+      return opt3(`Du faltest ein Blatt an einer senkrechten Linie. Ein Punkt liegt ${a} Kästchen links von der Linie. Wo liegt der Punkt, der beim Falten genau auf ihm landet (sein Spiegelpunkt)?`,
+        `${a} Kästchen rechts von der Linie`,
+        [`${a} Kästchen links von der Linie`, `${2 * a} Kästchen rechts von der Linie`, `${a + 1} Kästchen rechts von der Linie`, `${a} Kästchen unter der Linie`],
+        'Das Spiegelbild liegt genauso weit von der Faltlinie entfernt, aber auf der anderen Seite.');
+    }
+    const a = r(2, 4 + lvl * 2);
+    return zT(`Ein Schmetterling ist symmetrisch. Auf dem linken Flügel sind ${a} Punkte. Wie viele Punkte hat er insgesamt auf beiden Flügeln?`, 2 * a,
+      `Der rechte Flügel ist das Spiegelbild und hat auch ${a} Punkte: ${a} + ${a} = ${2 * a}.`);
+  };
+  const z2Weg = lvl => {
+    const n = name();
+    if (r(1, 2) === 1) {
+      const a = r(2, 3 + lvl), b = r(2, 3 + lvl), c = r(1, a - 1), d = lvl >= 3 ? r(1, b - 1) : 0;
+      const befehle = [`${schritte(a)} nach rechts`, `${schritte(b)} nach oben`, `${schritte(c)} nach links`];
+      if (d) befehle.push(`${schritte(d)} nach unten`);
+      const rechts = Math.random() < .5;
+      return zT(`📖 ${n} spielt Roboter auf einem Gitter. ${n} geht: ${befehle.join(', dann ')}. Wie viele Schritte ist ${n} am Ende vom Start aus nach ${rechts ? 'rechts' : 'oben'} entfernt?`,
+        rechts ? a - c : b - d,
+        rechts ? `Nach rechts ${a} Schritte, dann ${c} zurück nach links: ${a} − ${c} = ${a - c}.`
+          : `Nach oben ${b} Schritte${d ? `, dann ${d} nach unten: ${b} − ${d}` : ''} = ${b - d}.`);
+    }
+    const t = r(2, lvl <= 2 ? 3 : 5), folge = Array.from({ length: t }, () => pick(['links', 'rechts']));
+    const q = folge.reduce((x, f) => (x + (f === 'rechts' ? 1 : 3)) % 4, 0);
+    const ANTW = ['geradeaus, wie am Anfang', 'nach rechts', 'zurück, in die Gegenrichtung', 'nach links'];
+    return wahl(`📖 ${n} steht und schaut geradeaus. Dann macht ${n} nacheinander diese Vierteldrehungen (eine Vierteldrehung ist wie eine Ecke): ${folge.join(', ')}. Wohin schaut ${n} jetzt, vom Anfang aus gesehen?`,
+      ANTW[q], ANTW.filter((_, i) => i !== q), 'Rechts und links heben sich auf. Zwei gleiche Drehungen hintereinander drehen einen ganz um (zurück). Drehe Schritt für Schritt nach.');
+  };
+  const strich = k => [...Array(Math.floor(k / 5)).fill('||||/'), k % 5 ? '|'.repeat(k % 5) : ''].filter(Boolean).join(' ');
+  const z2Strichliste = lvl => {
+    const THEMEN = [['Haustiere der Klasse', ['Hunde', 'Katzen', 'Fische', 'Hasen']], ['Lieblingsspiel', ['Fußball', 'Verstecken', 'Fangen', 'Seilspringen']],
+      ['Lieblingsfarbe', ['rot', 'blau', 'grün', 'gelb']]];
+    const [thema, kat] = pick(THEMEN), max = lvl <= 2 ? 12 : lvl <= 4 ? 20 : 25;
+    const w = shuffle(Array.from({ length: max }, (_, i) => i + 1)).slice(0, 4);
+    const kopf = `Strichliste „${thema}“ (ein Bündel ||||/ sind 5 Striche):\n${kat.map((k, i) => `${k}: ${strich(w[i])}`).join('\n')}\n\n`;
+    const typ = r(1, 3);
+    if (typ === 1) { const i = r(0, 3);
+      return zT(kopf + `Wie viele Striche stehen bei „${kat[i]}“?`, w[i], 'Zähle die Bündel in Fünferschritten (5, 10, 15 …) und die einzelnen Striche dazu.'); }
+    if (typ === 2) { const iMax = w.indexOf(Math.max(...w));
+      return wahl(kopf + 'Was wurde am häufigsten genannt?', kat[iMax], kat.filter((_, j) => j !== iMax), 'Die meisten Striche hat die längste Zeile.'); }
+    let [i, j] = shuffle([0, 1, 2, 3]).slice(0, 2); if (w[i] < w[j]) [i, j] = [j, i];
+    return zT(kopf + `Wie viele Striche hat „${kat[i]}“ mehr als „${kat[j]}“?`, w[i] - w[j], `Beide Zeilen zählen (${w[i]} und ${w[j]}) und den Unterschied rechnen.`);
+  };
+  const z2Groessen = lvl => {
+    const n = name(), m = Math.min(50, maxZ2(lvl)), plus = Math.random() < .5;
+    const [u, tp, tm, mx] = pick([
+      ['€', (a, b) => `${n} kauft ein Eis für ${a} € und eine Brezel für ${b} €. Wie viele € kostet das zusammen?`, (a, b) => `${n} hat ${a} € und kauft ein Buch für ${b} €. Wie viele € bleiben übrig?`, m],
+      ['kg', (a, b) => `${n} trägt einen Sack mit ${a} kg und einen mit ${b} kg. Wie viele kg sind das zusammen?`, (a, b) => `Ein Korb Äpfel wiegt ${a} kg. ${n} nimmt ${b} kg heraus. Wie viele kg bleiben im Korb?`, m],
+      ['l', (a, b) => `In einem Eimer sind ${a} l Wasser, in einem zweiten ${b} l. Wie viele l sind das zusammen?`, (a, b) => `Ein Kanister fasst ${a} l. ${b} l sind schon herausgeflossen. Wie viele l sind noch drin?`, m],
+      ['m', (a, b) => `Ein Seil ist ${a} m lang, ein zweites ${b} m. Wie viele m sind beide Seile zusammen?`, (a, b) => `${n} hat ein Band mit ${a} m und schneidet ${b} m ab. Wie viele m bleiben?`, m],
+      ['h', (a, b) => `${n} spielt ${a} h am Samstag und ${b} h am Sonntag. Wie viele h sind das zusammen?`, (a, b) => `Ein Ausflug dauert ${a} h. Schon ${b} h sind vorbei. Wie viele h dauert er noch?`, Math.min(m, 12)]
+    ]);
+    if (plus) { const a = r(3, mx - 3), b = r(2, mx - a);
+      return zT('📖 ' + tp(a, b), a + b, `Gleiche Einheit (${u}) – du darfst einfach rechnen: ${a} + ${b} = ${a + b}.`); }
+    const a = r(5, mx), b = r(2, a - 1);
+    return zT('📖 ' + tm(a, b), a - b, `Gleiche Einheit (${u}) – du darfst einfach rechnen: ${a} − ${b} = ${a - b}.`);
+  };
+  const z2Einheit = fest(Z2_EINHEIT);
 
   const z2Erz = {
     plus: lvl => { const [a, b] = ueberZehner(maxZ2(lvl) < 30 ? 20 : maxZ2(lvl)), n = name();
@@ -862,6 +996,123 @@ export function luGen(h) {
     return zT(`📖 Ein Eis kostet ${e} €. Du bezahlst mit einem 10-€-Schein. Wie viel Rückgeld bekommst du in Cent?`, (10 - e) * 100, `Rückgeld: ${10 - e} €, und 1 € sind 100 Cent.`);
   };
 
+  /* ---- Zyklus 3, weitere Aufgabentypen (Plan Seite 31): Flächeneinheiten, Tonne, Diagramm mit Skala,
+         Symmetrie, Gitter-Befehle, Kombinatorik ---- */
+  const z3Flaeche = lvl => {
+    const typ = pick(lvl <= 1 ? [1, 4, 6] : lvl === 2 ? [1, 2, 4, 6] : [1, 2, 3, 4, 5, 6]), n = r(2, lvl <= 2 ? 9 : 25);
+    if (typ === 1) return zT(`${n} cm² = __ mm²`, n * 100, '1 cm² ist ein Quadrat mit 1 cm Seitenlänge, also 10 mm · 10 mm = 100 mm².');
+    if (typ === 2) return zT(`${n} m² = __ cm²`, n * 10000, '1 m² ist ein Quadrat mit 100 cm Seitenlänge: 100 · 100 = 10 000 cm².');
+    if (typ === 3) return zT(`${n} km² = __ m²`, n * 1000000, '1 km² ist ein Quadrat mit 1000 m Seitenlänge: 1000 · 1000 = 1 000 000 m².');
+    if (typ === 4) return zT(`${gross(n * 100)} mm² = __ cm²`, n, '100 mm² sind 1 cm². Darum durch 100 teilen.');
+    if (typ === 5) return zT(`${gross(n * 10000)} cm² = __ m²`, n, '10 000 cm² sind 1 m². Darum durch 10 000 teilen.');
+    const [frage, richtig, hilfe] = pick(Z3_FLAECHE);
+    return wahl(frage, richtig, ['mm²', 'cm²', 'm²', 'km²'].filter(x => x !== richtig), hilfe);
+  };
+  const z3Masse = lvl => {
+    const typ = r(1, 6), n = r(2, lvl <= 2 ? 9 : 25);
+    if (typ === 1) return zT(`${n} t = __ kg`, n * 1000, '1 Tonne hat 1000 Kilogramm.');
+    if (typ === 2) return zT(`${gross(n * 1000)} kg = __ t`, n, '1000 kg sind 1 Tonne. Darum durch 1000 teilen.');
+    if (typ === 3) { const k = r(1, 9) * 100;
+      return zT(`${n} t ${k} kg = __ kg`, n * 1000 + k, `${n} t sind ${gross(n * 1000)} kg, dazu ${k} kg.`); }
+    if (typ === 4) { const km = r(1, 9), m = r(1, 9) * 100;
+      return zT(`${km} km ${m} m = __ km`, dez(km * 100 + m / 10), `${km} km ${m} m = ${km * 1000 + m} m = ${dez(km * 100 + m / 10)} km. Dieselbe Länge, nur anders geschrieben.`); }
+    if (typ === 5) { const a = r(1, 9), c = r(1, 9) * 10;
+      return zT(`${a} m ${c} cm = __ m`, dez(a * 100 + c), `${a} m ${c} cm = ${a * 100 + c} cm = ${dez(a * 100 + c)} m.`); }
+    const a = r(1, 9), g = r(1, 9) * 100;
+    return zT(`${a} kg ${g} g = __ kg`, dez(a * 100 + g / 10), `${a} kg ${g} g = ${a * 1000 + g} g = ${dez(a * 100 + g / 10)} kg.`);
+  };
+  const skala = lvl => pick(lvlWahl(lvl, [2, 5, 10], [5, 10, 20], [10, 20, 50], [100, 200, 500], [1000, 5000, 10000]));
+  const z3Saeulen = lvl => {
+    const s = skala(lvl);
+    const [thema, kat] = pick([['Besucher im Zoo', ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag']], ['verkaufte Eiskugeln', ['Mai', 'Juni', 'Juli', 'August']],
+      ['Bücher in der Bibliothek', ['Regal A', 'Regal B', 'Regal C', 'Regal D']]]);
+    const k = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 4);
+    const kopf = `Säulendiagramm „${thema}“ – ein Kästchen steht für ${gross(s)}:\n${kat.map((x, i) => `${x}: ${'█'.repeat(k[i])}`).join('\n')}\n\n`;
+    const typ = r(1, 4);
+    let [i, j] = shuffle([0, 1, 2, 3]).slice(0, 2);
+    if (typ === 1) return zT(kopf + `Wie groß ist der Wert bei „${kat[i]}“?`, k[i] * s, `${k[i]} Kästchen · ${gross(s)} = ${gross(k[i] * s)}. Immer erst die Skala beachten.`);
+    if (typ === 2) { if (k[i] < k[j]) [i, j] = [j, i];
+      return zT(kopf + `Wie groß ist der Unterschied zwischen „${kat[i]}“ und „${kat[j]}“?`, (k[i] - k[j]) * s, `Die Säulen unterscheiden sich um ${k[i] - k[j]} Kästchen: ${k[i] - k[j]} · ${gross(s)}.`); }
+    if (typ === 3) return zT(kopf + `Wie groß ist der Wert von „${kat[i]}“ und „${kat[j]}“ zusammen?`, (k[i] + k[j]) * s, `${k[i]} + ${k[j]} = ${k[i] + k[j]} Kästchen, mal ${gross(s)}.`);
+    return zT(kopf + 'Wie groß ist der höchste Wert?', Math.max(...k) * s, `Die längste Säule hat ${Math.max(...k)} Kästchen: ${Math.max(...k)} · ${gross(s)}.`);
+  };
+  const SKALEN = [1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 60, 100, 200, 250, 300, 500, 1000, 2000, 2500, 5000, 10000, 20000, 50000];
+  const z3Skala = lvl => {
+    for (let t = 0; t < 100; t++) {
+      const s0 = skala(lvl), ks = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 4), w = ks.map(x => x * s0);
+      const hoechst = Math.max(...w), gueltig = x => w.every(v => v % x === 0) && hoechst / x <= 10;
+      const falsch = SKALEN.filter(x => !gueltig(x)), nah = falsch.filter(x => x >= s0 / 5 && x <= s0 * 5);
+      if (falsch.length < 3) continue;
+      const tab = w.map((v, i) => `Wert ${i + 1}: ${gross(v)}`).join('\n');
+      return wahl(`Ein Säulendiagramm soll diese Werte zeigen:\n${tab}\n\nWelche Skala („ein Kästchen steht für …“) passt? Alle Werte sollen genau auf ganze Kästchen passen, und die höchste Säule soll höchstens 10 Kästchen hoch sein.`,
+        String(s0), shuffle(nah.length >= 3 ? nah : falsch).slice(0, 3).map(String),
+        `Jeder Wert muss durch die Skala teilbar sein, und der höchste Wert geteilt durch die Skala darf höchstens 10 sein. Bei ${gross(s0)}: ${gross(hoechst)} : ${gross(s0)} = ${hoechst / s0} Kästchen.`);
+    }
+    return wahl('Ein Säulendiagramm soll die Werte 20, 40, 60 und 100 zeigen. Welche Skala („ein Kästchen steht für …“) passt? Alle Werte sollen genau auf ganze Kästchen passen, und die höchste Säule soll höchstens 10 Kästchen hoch sein.',
+      '10', ['3', '4', '1'], 'Bei 10 sind es 2, 4, 6 und 10 Kästchen. Bei 1 wäre die Säule viel zu hoch, bei 3 und 4 passt nicht jeder Wert genau.');
+  };
+  const FIG = [
+    ['ein Quadrat', 4, 'Zwei Achsen durch die Mitten gegenüberliegender Seiten und zwei durch die Ecken: 4.'],
+    ['ein Rechteck, das kein Quadrat ist', 2, 'Zwei Achsen durch die Mitten gegenüberliegender Seiten. Die Diagonalen sind keine Achsen.'],
+    ['ein gleichseitiges Dreieck', 3, 'Von jeder Ecke eine Achse zur Mitte der gegenüberliegenden Seite: 3.'],
+    ['eine Raute, die kein Quadrat ist', 2, 'Die beiden Diagonalen sind die Achsen: 2.'],
+    ['ein Parallelogramm, das weder Rechteck noch Raute ist', 0, 'Man kann es nirgends so falten, dass beide Hälften genau aufeinander liegen: 0 Achsen.'],
+    ['ein gleichschenkliges Dreieck, das nicht gleichseitig ist', 1, 'Nur die Achse durch die Spitze und die Mitte der Grundseite: 1.']
+  ];
+  const z3Symmetrie = lvl => {
+    const typ = r(1, 3);
+    if (typ === 1) { const [f, k, h] = pick(FIG);
+      return wahl(`Eine Spiegelachse ist eine Faltlinie, bei der beide Hälften genau aufeinander liegen. Wie viele Spiegelachsen hat ${f}?`, String(k),
+        shuffle([0, 1, 2, 3, 4, 5].filter(x => x !== k)).slice(0, 3).map(String), h); }
+    if (typ === 2) { const u = lvl <= 2 ? 1 : lvl <= 4 ? 10 : 100, a = r(6, 20) * u, d = r(1, 5) * u;
+      return zT(`Auf der Zahlengeraden liegt die Spiegelachse bei ${gross(a)}. Die Zahl ${gross(a - d)} wird an dieser Achse gespiegelt. Bei welcher Zahl liegt das Spiegelbild?`, a + d,
+        `Das Spiegelbild liegt genauso weit auf der anderen Seite: ${gross(a)} − ${gross(a - d)} = ${gross(d)}, also ${gross(a)} + ${gross(d)} = ${gross(a + d)}.`); }
+    const reihen = [r(1, 5), r(1, 5), r(1, 5)];
+    const summe = reihen.reduce((x, y) => x + y, 0);
+    return zT(`Ein Muster aus Kästchen ist symmetrisch zu einer senkrechten Achse, die zwischen den Kästchen verläuft (kein Kästchen liegt auf der Achse). Links der Achse sind in der oberen Reihe ${reihen[0]}, in der mittleren ${reihen[1]} und in der unteren ${reihen[2]} Kästchen schwarz. Wie viele schwarze Kästchen hat die ganze Figur?`,
+      2 * summe, `Links sind ${reihen.join(' + ')} = ${summe} Kästchen schwarz. Rechts spiegelt sich dasselbe: ${summe} + ${summe} = ${2 * summe}.`);
+  };
+  const RICHT = [['nach rechts', 1, 0], ['nach links', -1, 0], ['nach oben', 0, 1], ['nach unten', 0, -1]];
+  const z3Roboter = lvl => {
+    const typ = lvl <= 1 ? r(1, 2) : r(1, 3);
+    const kopf = 'Ein Roboter startet auf einem Gitter bei (0|0). Die erste Zahl zählt die Schritte nach rechts, die zweite die Schritte nach oben.\n';
+    if (typ === 1) {
+      const n = lvl <= 2 ? 3 : lvl <= 4 ? 4 : 5, cmds = []; let x = 0, y = 0;
+      while (cmds.length < n) {
+        const [wort, dx, dy] = pick(RICHT), k = r(1, 4), nx = x + dx * k, ny = y + dy * k;
+        if (nx < 0 || ny < 0 || nx > 12 || ny > 12) continue;
+        cmds.push(`${schritte(k)} ${wort}`); x = nx; y = ny;
+      }
+      return opt3(kopf + `Befehle: ${cmds.join(', ')}.\nWo steht der Roboter am Ende?`, `(${x}|${y})`,
+        [`(${y}|${x})`, `(${x + 1}|${y})`, `(${x}|${y + 1})`, `(${x + 2}|${y})`], 'Rechne links/rechts und oben/unten getrennt: nach rechts zählt plus, nach links minus, nach oben plus, nach unten minus.');
+    }
+    if (typ === 2) { const a = r(3, 7), c = r(1, a - 1), k = r(2, 8);
+      return zT(kopf + `Befehle: ${schritte(a)} nach rechts, __ Schritte nach oben, ${schritte(c)} nach links. Er soll bei (${a - c}|${k}) ankommen. Welche Zahl gehört in die Lücke?`, k,
+        `Nach rechts und links ergibt sich ${a} − ${c} = ${a - c} (passt). Die zweite Zahl des Ziels ist ${k}, also muss der Roboter ${k} Schritte nach oben gehen.`); }
+    const t = r(2, 4), a = r(1, 3), b = r(1, 3), c = lvl >= 4 ? r(1, t * a) : 0;
+    return opt3(kopf + `Befehle: Wiederhole ${t}-mal: ${schritte(a)} nach rechts, ${schritte(b)} nach oben.${c ? ` Danach: ${schritte(c)} nach links.` : ''}\nWo steht der Roboter am Ende?`,
+      `(${t * a - c}|${t * b})`, [`(${t * b}|${t * a - c})`, `(${a - c}|${b})`, `(${t * a}|${t * b})`, `(${t * a - c + 1}|${t * b})`],
+      `Jede Runde bringt ${a} nach rechts und ${b} nach oben, ${t} Runden: ${t * a} und ${t * b}${c ? `. Dann ${c} nach links: ${t * a} − ${c} = ${t * a - c}` : ''}.`);
+  };
+  const z3Kombi = lvl => {
+    const g = lvl <= 2 ? 4 : 5, a = r(2, g), b = r(2, g), n = name(), typ = r(1, lvl <= 2 ? 4 : 5);
+    const hilfeMal = (x, y) => `Jede der ${x} Möglichkeiten lässt sich mit jeder der ${y} anderen verbinden: ${x} · ${y} = ${x * y}. Eine Tabelle oder ein Baum macht das sichtbar.`;
+    if (typ === 1) return zahlOpt(`📖 ${n} hat ${a} verschiedene Hosen und ${b} verschiedene Shirts. Wie viele verschiedene Outfits (eine Hose und ein Shirt) sind möglich?`, a * b,
+      [a + b, a * b + a, a * b - 1, a * b + b], hilfeMal(a, b));
+    if (typ === 2) return zahlOpt(`📖 In der Eisdiele gibt es ${a} Eissorten und ${b} Soßen. ${n} nimmt eine Eissorte und eine Soße. Wie viele verschiedene Möglichkeiten gibt es?`, a * b,
+      [a + b, a * b + 1, a * b - 1, a * b + a], hilfeMal(a, b));
+    if (typ === 3) { const [x, y, z] = shuffle(NAMEN).slice(0, 3);
+      return zahlOpt(`📖 ${x}, ${y} und ${z} stellen sich in eine Reihe. Wie viele verschiedene Reihenfolgen gibt es?`, 6, [3, 9, 12, 8],
+        'Für den ersten Platz gibt es 3 Kinder, für den zweiten noch 2, für den dritten 1: 3 · 2 · 1 = 6. Probiere es mit einem Baumdiagramm.'); }
+    if (typ === 4) { const gleich = Math.random() < .5;
+      return zahlOpt(`📖 Eine Flagge hat zwei Streifen übereinander. Es gibt die Farben rot, blau und grün. ${gleich ? 'Beide Streifen dürfen dieselbe Farbe haben.' : 'Die beiden Streifen müssen verschiedene Farben haben.'} Wie viele verschiedene Flaggen gibt es?`,
+        gleich ? 9 : 6, gleich ? [6, 3, 12, 8] : [9, 3, 5, 12],
+        gleich ? 'Oben 3 Farben, unten wieder 3 Farben: 3 · 3 = 9.' : 'Oben 3 Farben, unten nur noch die 2 anderen: 3 · 2 = 6.'); }
+    const c = r(2, 3);
+    return zahlOpt(`📖 Beim Mittagessen kann ${n} zwischen ${a} Vorspeisen, ${b} Hauptspeisen und ${c} Nachspeisen wählen (je eine). Wie viele verschiedene Menüs gibt es?`, a * b * c,
+      [a + b + c, a * b + c, a * b * c + a, a * b * c - 1], `Erst Vorspeise und Hauptspeise: ${a} · ${b} = ${a * b}. Dazu jeweils ${c} Nachspeisen: ${a * b} · ${c} = ${a * b * c}.`);
+  };
+
   /* ---------------- Mathe, Zyklus 4 (Plan Seite 32) ---------------- */
 
   const z4WahrschText = () => prefix('📖', z4Wahrsch());
@@ -1005,24 +1256,167 @@ export function luGen(h) {
   const z4Lueck = () => { const x = r(11, 99) * 10, y = r(11, 99) * 10;
     return zT(`__ + ${dez(y)} = ${dez(x + y)}`, dez(x), `Umkehren: ${dez(x + y)} − ${dez(y)} = ${dez(x)}.`); };
 
+  /* ---- Zyklus 4, weitere Aufgabentypen (Plan Seite 32): Zahlengerade, Brüche addieren, Algorithmen, Maßstab,
+         Verschieben/Spiegeln, Häufigkeit und Prozent, cm³ und Liter, zusammengesetzte Flächen ---- */
+  const FR = [[1, 2], [1, 4], [3, 4], [1, 5], [2, 5], [3, 5], [1, 10], [3, 10], [7, 10], [9, 10]];
+  const z4Zahlengerade = lvl => {
+    const typ = pick(lvl <= 2 ? [1, 2, 4] : [1, 2, 3, 4]);
+    if (typ === 1) {
+      const u = lvl <= 2 ? 10 : 1, a = lvl <= 2 ? r(0, 7) * 10 : r(10, 80), d = 2 * u * r(1, lvl <= 2 ? 1 : 5) * (lvl <= 2 ? 1 : 1), mid = a + d / 2;
+      return opt3(`Welche Zahl liegt genau in der Mitte zwischen ${dez(a)} und ${dez(a + d)}?`, dez(mid), [dez(mid + u), dez(mid - u), dez(mid + 2 * u), dez(a + d + u)],
+        `Die Mitte ist der Mittelwert: (${dez(a)} + ${dez(a + d)}) : 2 = ${dez(mid)}. Du kannst auch den Abstand halbieren: ${dez(d)} : 2 = ${dez(d / 2)}.`);
+    }
+    if (typ === 2) {
+      if (lvl <= 2) { const p = r(1, 8) * 10;
+        return opt3(`Welche Zahl liegt zwischen ${dez(p)} und ${dez(p + 10)}?`, dez(p + 5), [dez(p - 5), dez(p + 15), dez(p + 20), dez(p - 15)],
+          `Zwischen ${dez(p)} und ${dez(p + 10)} liegen die Hundertstel, zum Beispiel ${dez(p + 5)}.`); }
+      const p = r(10, 80);
+      return opt3(`Welche Zahl liegt zwischen ${dez(p)} und ${dez(p + 2)}?`, dez(p + 1), [dez(p - 1), dez(p + 3), dez(p + 4), dez(p - 2)],
+        `Von ${dez(p)} aus ein Hundertstel weiter: ${dez(p + 1)}. Das ist größer als ${dez(p)} und kleiner als ${dez(p + 2)}.`);
+    }
+    if (typ === 3) {
+      const [k, n] = pick(FR), fh = 100 * k / n;
+      let dh = fh + pick([-20, -10, -5, 5, 10, 20]); if (dh <= 0 || dh === fh) dh = fh + 10;
+      const bruch = `${k}/${n}`, dz = dez(dh), loes = fh > dh ? bruch : dz;
+      return wahl(`Welche Zahl ist größer: ${bruch} oder ${dz}?`, loes, [fh > dh ? dz : bruch, 'beide gleich groß'],
+        `${bruch} = ${dez(fh)} (Zähler durch Nenner). Vergleiche ${dez(fh)} und ${dz} Stelle für Stelle.`);
+    }
+    const R = pick([1, 2]), P = pick(R === 1 ? [4, 5, 10] : [4, 5, 8, 10]), k = r(1, P - 1);
+    return zT(`Eine Zahlengerade von 0 bis ${R} ist in ${P} gleich große Abschnitte geteilt. Welche Zahl steht beim ${k}. Strich? (Der Anfang bei 0 ist der Strich Nummer 0.)`,
+      dez(k * R * 100 / P), `Ein Abschnitt ist ${R} : ${P} = ${dez(R * 100 / P)} lang. Beim ${k}. Strich: ${k} · ${dez(R * 100 / P)} = ${dez(k * R * 100 / P)}.`);
+  };
+  const z4Brueche = lvl => {
+    const typ = pick(lvl <= 2 ? [1, 2] : [1, 2, 3, 4]);
+    if (typ <= 2) {
+      const n = r(4, lvl <= 2 ? 8 : 12), plus = typ === 1;
+      if (plus) { const a = r(1, n - 2), b = r(1, n - 1 - a);
+        return opt3(`${a}/${n} + ${b}/${n} = ?`, `${a + b}/${n}`, [`${a + b}/${2 * n}`, `${a + b + 1}/${n}`, `${Math.max(1, a + b - 1)}/${n}`, `${a * b}/${n}`],
+          `Gleiche Nenner: nur die Zähler addieren (${a} + ${b} = ${a + b}), der Nenner bleibt ${n}. Man darf noch kürzen, wenn es geht.`); }
+      const a = r(3, n - 1), b = r(1, a - 1);
+      return opt3(`${a}/${n} − ${b}/${n} = ?`, `${a - b}/${n}`, [`${a - b}/${2 * n}`, `${a - b + 1}/${n}`, `${a - b}/${n - 1}`, `${a + b}/${n}`],
+        `Gleiche Nenner: nur die Zähler subtrahieren (${a} − ${b} = ${a - b}), der Nenner bleibt ${n}.`);
+    }
+    if (typ === 3) {
+      const n = r(2, 5), kmax = 2 * n - 3, k = r(1, kmax), num = 2 + k;
+      return opt3(`1/${n} + ${k}/${2 * n} = ?`, `${num}/${2 * n}`, [`${1 + k}/${3 * n}`, `${1 + k}/${2 * n}`, `${num}/${n}`, `${num + 1}/${2 * n}`],
+        `Erst gleichnamig machen: 1/${n} = 2/${2 * n}. Dann addieren: 2/${2 * n} + ${k}/${2 * n} = ${num}/${2 * n}.`);
+    }
+    const [k, n] = pick(FR), fh = 100 * k / n, dh = r(1, 9) * 5 + (Math.random() < .5 ? 0 : 10);
+    if (Math.random() < .5) return zT(`${k}/${n} + ${dez(dh)} = ? (als Dezimalzahl)`, dez(fh + dh), `${k}/${n} = ${dez(fh)}. Dann ${dez(fh)} + ${dez(dh)} = ${dez(fh + dh)}.`);
+    const gr = fh + dh;
+    return zT(`${dez(gr)} − ${k}/${n} = ? (als Dezimalzahl)`, dez(dh), `${k}/${n} = ${dez(fh)}. Dann ${dez(gr)} − ${dez(fh)} = ${dez(dh)}.`);
+  };
+  const z4Algorithmus = lvl => {
+    const typ = pick(lvl <= 2 ? [1, 2] : [1, 2, 3, 4]);
+    if (typ === 1) { const t = r(3, 5 + lvl), a = r(2, 9), s0 = r(1, 20);
+      return zT(`Ein Programm startet mit x = ${s0}. Es wiederholt ${t}-mal: „x wird um ${a} größer“. Wie groß ist x am Ende?`, s0 + t * a, `${t} Wiederholungen mit je +${a}: ${s0} + ${t} · ${a} = ${s0 + t * a}.`); }
+    if (typ === 2) { const t = r(3, 5), a = r(1, 4), s0 = r(1, 20); let x = s0;
+      for (let i = 0; i < t; i++) x = x % 2 === 0 ? x / 2 : x + a;
+      return zT(`Ein Programm startet mit x = ${s0}. Es wiederholt ${t}-mal: „Wenn x gerade ist, wird x halbiert. Sonst wird x um ${a} größer.“ Wie groß ist x am Ende?`, x,
+        `Rechne Schritt für Schritt und prüfe jedes Mal die Bedingung (gerade oder ungerade), bis alle ${t} Wiederholungen durch sind.`); }
+    if (typ === 3) { const s0 = pick([1, 2, 3]), k = pick([2, 3]), g = pick([20, 50, 100]); let x = s0;
+      while (x < g) x *= k;
+      return zT(`Ein Programm startet mit x = ${s0}. „Solange x kleiner als ${g} ist: x wird mit ${k} malgenommen.“ Wie groß ist x am Ende?`, x,
+        `Rechne weiter, solange x noch kleiner als ${g} ist. Sobald x mindestens ${g} ist, hört das Programm auf.`); }
+    const t = r(4, 8), a = r(1, 5), b = r(2, 9); let x = 0;
+    for (let i = 1; i <= t; i++) x += i % 2 === 0 ? a : b;
+    return zT(`Ein Programm startet mit x = 0. Für jede Zahl i von 1 bis ${t} gilt: „Ist i gerade, wird x um ${a} größer. Sonst wird x um ${b} größer.“ Wie groß ist x am Ende?`, x,
+      `Unter den Zahlen von 1 bis ${t} sind ${Math.floor(t / 2)} gerade und ${Math.ceil(t / 2)} ungerade: ${Math.floor(t / 2)} · ${a} + ${Math.ceil(t / 2)} · ${b} = ${x}.`);
+  };
+  const z4Massstab = lvl => {
+    const n = name(), typ = r(1, lvl <= 2 ? 2 : 3);
+    if (typ === 1) {
+      const [sc, einheit, cmPro] = pick([[10, 'cm', 1], [50, 'cm', 1], [100, 'm', 100], [200, 'm', 100], [1000, 'm', 100], [50000, 'km', 100000], [100000, 'km', 100000]]);
+      let len = r(2, 12); while ((len * sc) % cmPro !== 0) len++;
+      return zT(`📖 ${n} misst auf einer Zeichnung oder Karte im Maßstab 1 : ${gross(sc)} eine Strecke von ${len} cm. Wie lang ist die Strecke in Wirklichkeit (in ${einheit})?`, len * sc / cmPro,
+        `Maßstab 1 : ${gross(sc)} heißt: 1 cm auf dem Plan sind ${gross(sc)} cm in Wirklichkeit. ${len} · ${gross(sc)} = ${gross(len * sc)} cm${einheit === 'cm' ? '' : ` = ${gross(len * sc / cmPro)} ${einheit}`}.`);
+    }
+    if (typ === 2) { const sc = pick([20, 50, 100]), m = r(2, 9);
+      return zT(`📖 ${n} zeichnet ein Zimmer, das in Wirklichkeit ${m} m lang ist, im Maßstab 1 : ${sc}. Wie lang ist die Zeichnung (in cm)?`, m * 100 / sc,
+        `${m} m sind ${m * 100} cm. Im Maßstab 1 : ${sc} wird durch ${sc} geteilt: ${m * 100} : ${sc} = ${m * 100 / sc}.`); }
+    const a = r(1, 3), b = r(a + 1, 5), t = r(2, 6);
+    return zT(`📖 ${n} mischt Saft und Wasser im Verhältnis ${a} : ${b}. Es sind ${a * t} Gläser Saft. Wie viele Gläser Wasser gehören dazu?`, b * t,
+      `${a * t} Gläser Saft sind ${t}-mal so viel wie ${a}. Dann braucht man auch ${t}-mal so viel Wasser: ${b} · ${t} = ${b * t}.`);
+  };
+  const z4Verschieben = lvl => {
+    const typ = r(1, lvl <= 2 ? 2 : 4), x = r(1, 6), y = r(1, 6), P = (a, b) => `(${a}|${b})`;
+    if (typ === 1) { const dx = r(1, 5), dy = r(1, 5);
+      return opt3(`Der Punkt A liegt bei ${P(x, y)}. Er wird um ${dx} Kästchen nach rechts und ${dy} Kästchen nach oben verschoben. Wo liegt er danach?`, P(x + dx, y + dy),
+        [P(y + dy, x + dx), P(x + dx, y), P(x, y + dy), P(x + dy, y + dx)], 'Nach rechts verändert nur die erste Zahl (x), nach oben nur die zweite (y).'); }
+    if (typ === 2) { const a = x + r(1, 4);
+      return opt3(`Der Punkt A liegt bei ${P(x, y)}. Er wird an der senkrechten Geraden x = ${a} gespiegelt. Wo liegt das Spiegelbild?`, P(2 * a - x, y),
+        [P(a, y), P(a + x, y), P(x, y + (a - x)), P(2 * a - x + 1, y)], `Der Punkt ist ${a - x} Kästchen von der Geraden entfernt. Das Spiegelbild liegt ${a - x} Kästchen auf der anderen Seite, die Höhe y bleibt gleich: x = ${a} + ${a - x} = ${2 * a - x}.`); }
+    if (typ === 3) { const b = r(2, 5), c = r(0, b), h = r(2, 4), dx = r(1, 5), dy = r(1, 5);
+      return opt3(`Ein Dreieck hat die Ecken A${P(x, y)}, B${P(x + b, y)} und C${P(x + c, y + h)}. Es wird um ${dx} Kästchen nach rechts und ${dy} Kästchen nach oben verschoben. Wie lauten die Koordinaten von C′?`,
+        P(x + c + dx, y + h + dy), [P(x + b + dx, y + dy), P(x + dx, y + dy), P(x + c + dx, y + h), P(x + c, y + h + dy)],
+        `Jede Ecke wird gleich verschoben: C ${P(x + c, y + h)} ergibt x = ${x + c} + ${dx} und y = ${y + h} + ${dy}.`); }
+    const dx = r(1, 6), dy = r(1, 6), nach = Math.random() < .5;
+    return zT(`Der Punkt A liegt bei ${P(x, y)}. Nach einer Verschiebung liegt er bei A′${P(x + dx, y + dy)}. Um wie viele Kästchen wurde er ${nach ? 'nach rechts' : 'nach oben'} verschoben?`, nach ? dx : dy,
+      nach ? `Die erste Zahl ist von ${x} auf ${x + dx} gewachsen: ${dx} Kästchen nach rechts.` : `Die zweite Zahl ist von ${y} auf ${y + dy} gewachsen: ${dy} Kästchen nach oben.`);
+  };
+  const z4Raum = lvl => {
+    const typ = pick(lvl <= 2 ? [1, 2, 4, 6] : [1, 2, 3, 4, 5, 6, 7]), n = r(2, 9);
+    if (typ === 1) return zT(`${n} l = __ cm³`, n * 1000, '1 Liter ist genauso viel wie 1000 cm³ (ein Würfel mit 10 cm Kantenlänge).');
+    if (typ === 2) return zT(`${gross(n * 1000)} cm³ = __ l`, n, '1000 cm³ sind 1 Liter. Darum durch 1000 teilen.');
+    if (typ === 3) {
+      let d = [40, 25, 20];
+      for (let i = 0; i < 200; i++) { const c = [pick([2, 4, 5, 10, 20, 25, 40, 50]), pick([2, 4, 5, 10, 20, 25, 40, 50]), pick([2, 4, 5, 10, 20, 25, 40, 50])];
+        if (c[0] * c[1] * c[2] % 1000 === 0 && c[0] * c[1] * c[2] <= 100000) { d = c; break; } }
+      const v = d[0] * d[1] * d[2];
+      return zT(`Ein Aquarium ist ${d[0]} cm lang, ${d[1]} cm breit und ${d[2]} cm hoch. Wie viele Liter Wasser passen hinein, wenn es bis zum Rand voll ist?`, v / 1000,
+        `Volumen = ${d[0]} · ${d[1]} · ${d[2]} = ${gross(v)} cm³. 1000 cm³ sind 1 Liter: ${gross(v)} : 1000 = ${v / 1000}.`); }
+    if (typ === 4) { const a = r(3, 9), b = r(3, 9), c = r(2, 6), d = r(2, 6);
+      return zT(`Ein Teppich besteht aus zwei Rechtecken, die sich nicht überlappen: ${a} cm × ${b} cm und ${c} cm × ${d} cm. Wie groß ist seine Fläche (in cm²)?`, a * b + c * d,
+        `Beide Flächen einzeln rechnen und addieren: ${a} · ${b} + ${c} · ${d} = ${a * b} + ${c * d}.`); }
+    if (typ === 5) { const c = r(2, 4), a = r(c + 2, 10), b = r(c + 2, 10);
+      return zT(`Ein Rechteck ist ${a} cm lang und ${b} cm breit. Aus einer Ecke wird ein Quadrat mit ${c} cm Seitenlänge herausgeschnitten. Wie groß ist die Fläche der übrigen Figur (in cm²)?`, a * b - c * c,
+        `Ganzes Rechteck minus Ausschnitt: ${a} · ${b} − ${c} · ${c} = ${a * b} − ${c * c}.`); }
+    if (typ === 6) { const a = r(2, 9);
+      return zT(`Ein Würfel hat die Kantenlänge ${a} cm. Wie groß ist seine Oberfläche (in cm²)?`, 6 * a * a, `Ein Würfel hat 6 gleich große Quadrate als Flächen: 6 · ${a} · ${a} = ${6 * a * a}.`); }
+    const a = r(2, 6), b = r(2, 6), c = r(2, 6);
+    return zT(`Ein Quader ist ${a} cm lang, ${b} cm breit und ${c} cm hoch. Wie groß ist seine Oberfläche (in cm²)?`, 2 * (a * b + b * c + a * c),
+      `Drei Paare gleicher Rechtecke: 2 · (${a} · ${b} + ${b} · ${c} + ${a} · ${c}) = 2 · ${a * b + b * c + a * c}.`);
+  };
+  const z4Chart = lvl => {
+    const typ = r(1, 3);
+    if (typ === 3) { const p = [r(2, 6) * 5, r(2, 5) * 5, r(1, 4) * 5], rest = 100 - p[0] - p[1] - p[2];
+      return zT(`Ein Kreisdiagramm zeigt die Lieblingsfrüchte: Äpfel ${p[0]} %, Bananen ${p[1]} %, Birnen ${p[2]} %, der Rest sind Erdbeeren. Wie viel Prozent sind Erdbeeren?`, rest,
+        `Das ganze Diagramm sind 100 %: 100 − ${p[0]} − ${p[1]} − ${p[2]} = ${rest}.`); }
+    const T = pick(lvl <= 2 ? [10, 20] : [10, 20, 25]), schnitt = shuffle(Array.from({ length: T - 1 }, (_, i) => i + 1)).slice(0, 3).sort((a, b) => a - b);
+    const c = [schnitt[0], schnitt[1] - schnitt[0], schnitt[2] - schnitt[1], T - schnitt[2]];
+    const [thema, kat] = pick([['Haustiere', ['Hunde', 'Katzen', 'Fische', 'Hasen']], ['Lieblingsfach', ['Mathe', 'Sport', 'Kunst', 'Musik']], ['Lieblingsfarbe', ['rot', 'blau', 'grün', 'gelb']]]);
+    const i = r(0, 3), h = c[i] * 100 / T;
+    const kopf = `Säulendiagramm „${thema}“ – ein Kästchen steht für 1 Kind, insgesamt ${T} Kinder:\n${kat.map((k, j) => `${k}: ${'█'.repeat(c[j])}`).join('\n')}\n\n`;
+    if (typ === 1) return zT(kopf + `Wie viel Prozent der Kinder haben „${kat[i]}“ gewählt?`, h, `${c[i]} von ${T} Kindern: ${c[i]} : ${T} = ${dez(h)}, das sind ${h} von 100, also ${h} %.`);
+    return zT(kopf + `Wie groß ist der Anteil von „${kat[i]}“ als Dezimalzahl?`, dez(h), `${c[i]} von ${T}: ${c[i]} : ${T} = ${dez(h)}.`);
+  };
+  const z4HText = () => {
+    const T = pick([4, 5, 10, 20, 25, 50]), c = r(1, T - 1), n = name(), w = pick([['eine Münze', 'Kopf', 'Kopf'], ['einen Würfel', 'die 6', 'die 6']]);
+    const h = c * 100 / T;
+    if (Math.random() < .5) return zT(`📖 ${n} wirft ${T}-mal ${w[0]}. ${c}-mal kommt ${w[1]}. Wie groß ist die relative Häufigkeit für ${w[2]} in Prozent?`, h,
+      `Relative Häufigkeit = ${c} von ${T} = ${c} : ${T} = ${dez(h)}, das sind ${h} %.`);
+    return zT(`📖 ${n} wirft ${T}-mal ${w[0]}. ${c}-mal kommt ${w[1]}. Wie viel Prozent der Würfe waren NICHT ${w[2]}?`, 100 - h,
+      `${T - c} von ${T} Würfen waren anders: ${T - c} : ${T} = ${dez(100 - h)}, das sind ${100 - h} %. Oder: 100 % − ${h} %.`);
+  };
+
   /* Gesamtauswahl pro Weg: eine Aufgabe aus den passenden Bausteinen ziehen. */
   const aus = (...fns) => lvl => pick(fns)(lvl);
 
   return {
     lu_mathe_z2: {
-      knobeln: lvl => prefix('🧠', aus(z2Zehner, z2VorNach, z2Plus, z2Minus, z2Mal, z2Uhr, z2Kalender, z2Luecke)(lvl)),
-      erzaehlen: lvl => aus(z2Erz.plus, z2Erz.minus, z2Erz.mal, z2Erz.tag, z2Erz.kommutativ)(lvl),
-      bauen: lvl => prefix('🧱', aus(z2Zehnerstangen, z2Formen, z2Wahrsch, () => diagramm(lvl <= 2 ? 6 : 9))(lvl))
+      knobeln: lvl => prefix('🧠', aus(z2Zehner, z2VorNach, z2Plus, z2Minus, z2Mal, z2Uhr, z2Kalender, z2Luecke, z2Muster, z2Einheit)(lvl)),
+      erzaehlen: lvl => aus(z2Erz.plus, z2Erz.minus, z2Erz.mal, z2Erz.tag, z2Erz.kommutativ, z2Groessen, z2Weg)(lvl),
+      bauen: lvl => prefix('🧱', aus(z2Zehnerstangen, z2Formen, z2Wahrsch, () => diagramm(lvl <= 2 ? 6 : 9), z2Symmetrie, z2Strichliste)(lvl))
     },
     lu_mathe_z3: {
-      knobeln: lvl => prefix('🧠', aus(z3Zahlen, z3Rechnen, z3Einmaleins, z3Luecke, z3Einheit, z3Umrechnen)(lvl)),
-      erzaehlen: lvl => aus(z3Text, z3ErzEinheit, z3BruecheText)(lvl),
-      bauen: lvl => prefix('🧱', aus(z3Brueche, z3Pizza, z3Rechteck, z3Koerper, z3Fliesen, z3Tabelle)(lvl))
+      knobeln: lvl => prefix('🧠', aus(z3Zahlen, z3Rechnen, z3Einmaleins, z3Luecke, z3Einheit, z3Umrechnen, z3Flaeche, z3Masse)(lvl)),
+      erzaehlen: lvl => aus(z3Text, z3ErzEinheit, z3BruecheText, z3Kombi)(lvl),
+      bauen: lvl => prefix('🧱', aus(z3Brueche, z3Pizza, z3Rechteck, z3Koerper, z3Fliesen, z3Tabelle, z3Saeulen, z3Skala, z3Symmetrie, z3Roboter)(lvl))
     },
     lu_mathe_z4: {
-      knobeln: lvl => prefix('🧠', aus(z4Dezimal, z4Aequivalenz, z4Mittelwert, z4Prozent, z4Umrechnen, z4Lueck)(lvl)),
-      erzaehlen: lvl => aus(z4Text, z4WahrschText)(lvl),
-      bauen: lvl => prefix('🧱', aus(z4Flaeche, z4Volumen, z4Koordinaten, z4Winkel, z4Wahrsch)(lvl))
+      knobeln: lvl => prefix('🧠', aus(z4Dezimal, z4Aequivalenz, z4Mittelwert, z4Prozent, z4Umrechnen, z4Lueck, z4Zahlengerade, z4Brueche, z4Algorithmus)(lvl)),
+      erzaehlen: lvl => aus(z4Text, z4WahrschText, z4Massstab, z4HText)(lvl),
+      bauen: lvl => prefix('🧱', aus(z4Flaeche, z4Volumen, z4Koordinaten, z4Winkel, z4Wahrsch, z4Verschieben, z4Raum, z4Chart)(lvl))
     },
     lu_deutsch_z2: { knobeln: fest(D2_KNOBELN, '🧠'), erzaehlen: fest(D2_ERZAEHLEN, '📖') },
     lu_deutsch_z3: { knobeln: fest(D3_KNOBELN, '🧠'), erzaehlen: fest(D3_ERZAEHLEN, '📖') },

@@ -591,6 +591,11 @@ verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
      avancé): Zahlenraum, Rechnen, Einmaleins samt Umkehrung, Lückenaufgaben, Größen,
      Brüche, Dezimalzahlen, Formen und Körper, Umfang und Fläche, Winkel, Volumen,
      Koordinaten, Diagramme, Mittelwert, Wahrscheinlichkeit, mehrstufige Textaufgaben.
+     Dazu je Zyklus weitere Typen aus Daten, Symmetrie und Problemlösen: Z2 Muster, Symmetrie,
+     Wege (links/rechts), Strichliste, Größen; Z3 Flächeneinheiten (mm² bis km²), Tonne,
+     Säulendiagramm mit Skala, Spiegelachsen, Roboter-Befehle auf dem Gitter, Kombinatorik;
+     Z4 Zahlengerade, Brüche addieren, Algorithmen mit Bedingung/Wiederholung, Maßstab,
+     Verschieben und Spiegeln, Prozent aus Diagrammen, cm³ und Liter, zusammengesetzte Flächen.
      Die Aufgaben werden **berechnet** (Level 1–5, Wege Knobeln, Geschichten, Bauen),
      nicht abgeschrieben; jede hat eine Erklärung. Unterrichtssprache Mathe in Luxemburg
      ist Deutsch.
