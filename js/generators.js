@@ -12,6 +12,7 @@ import { HAUPTWERKE } from './hauptwerke.js';
 import { TEXTE as LESETEXTE, texteFuer } from './lesen.js';
 import { silben, uebwoerterBis } from './silben.js';
 import { DENKFEHLER, FEHLSCHLUESSE, STILMITTEL, WORTWURZELN, SYLLOGISMEN } from './fortgeschritten.js';
+import { luGen } from './luxemburg.js';
 
 const r = (a,b) => a + Math.floor(Math.random()*(b-a+1));
 const pick = a => a[r(0,a.length-1)];
@@ -1462,7 +1463,10 @@ code: {
       fehlend, ['Fernseher anschalten','Schuhe anziehen','Fenster öffnen'],
       'Geh die Reihenfolge im Kopf durch.');
   }
-}
+},
+
+/* Lernziele nach dem luxemburgischen Lehrplan (Plan d'études 2026), siehe js/luxemburg.js */
+...luGen({ r, pick, shuffle, uniq, wahl, zahlText, zahlChoice })
 };
 
 /* Aufgabe erzeugen; faellt auf einen vorhandenen Weg zurueck. */

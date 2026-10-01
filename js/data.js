@@ -37,6 +37,7 @@ export const FAECHER = {
   mathe:    { name:'Mathe',           emoji:'🔢' },
   deutsch:  { name:'Deutsch',         emoji:'✏️' },
   englisch: { name:'Englisch',        emoji:'🇬🇧' },
+  franzoesisch:{ name:'Französisch',   emoji:'🇫🇷' },
   sach:     { name:'Allgemeinwissen', emoji:'🌍' },
   technik:  { name:'Technik & Code',  emoji:'💡' },
   raetsel:  { name:'Rätsel & Puzzle',  emoji:'🧩' },
@@ -275,7 +276,37 @@ export const ZIELE = [
     klasse:[3,13], etappe:[1,5], wege:['erzaehlen','entdecken','knobeln','team'] },
   { id:'code',       fach:'technik',  titel:'Erste Programmier-Ideen',
     kompetenz:'Befehlsfolgen lesen, Ergebnis vorhersagen, Fehler finden.',
-    klasse:[2,6], etappe:[1,4], wege:['code','bauen','bewegen','knobeln'] }
+    klasse:[2,6], etappe:[1,4], wege:['code','bauen','bewegen','knobeln'] },
+  /* --- Luxemburgischer Lehrplan (École fondamentale, Plan d'études 2026) ---
+     Pro Fach und Zyklus ein Ziel. Zyklus 2 = Klasse 1–2, 3 = Klasse 3–4, 4 = Klasse 5–6.
+     Mathe direkt aus dem Plan, Deutsch/Französisch abgeleitet (siehe js/luxemburg.js). */
+  { id:'lu_mathe_z2', fach:'mathe', titel:'Mathe · Zyklus 2 (Klasse 1–2)',
+    kompetenz:'Zahlen bis 100, Plus und Minus über die Zehner, Malreihen 2/5/10, Uhr, Formen und Körper, Diagramme lesen, sicher/wahrscheinlich/unmöglich.',
+    klasse:[1,2], etappe:[1,1], wege:['knobeln','erzaehlen','bauen'] },
+  { id:'lu_mathe_z3', fach:'mathe', titel:'Mathe · Zyklus 3 (Klasse 3–4)',
+    kompetenz:'Zahlen bis 1 000 000, Rechnen bis 100 000, Einmaleins und Umkehrung, Lückenaufgaben, Größen umrechnen, Brüche, Umfang und Fläche, Körper und Netze, Textaufgaben.',
+    klasse:[3,4], etappe:[1,2], wege:['knobeln','erzaehlen','bauen'] },
+  { id:'lu_mathe_z4', fach:'mathe', titel:'Mathe · Zyklus 4 (Klasse 5–6)',
+    kompetenz:'Dezimalzahlen und Brüche, Winkel, Volumen, Fläche, Koordinaten, Mittelwert, Prozent, Wahrscheinlichkeit als Bruch, mehrstufige Textaufgaben.',
+    klasse:[5,6], etappe:[2,2], wege:['knobeln','erzaehlen','bauen'] },
+  { id:'lu_deutsch_z2', fach:'deutsch', titel:'Deutsch · Zyklus 2 (Klasse 1–2)',
+    kompetenz:'Buchstaben und Laute, Silben, Wörter abschreiben, einfache Rechtschreibung, kurze Sätze lesen, Informationen im Text finden.',
+    klasse:[1,2], etappe:[1,1], wege:['knobeln','erzaehlen'] },
+  { id:'lu_deutsch_z3', fach:'deutsch', titel:'Deutsch · Zyklus 3 (Klasse 3–4)',
+    kompetenz:'Rechtschreibregeln, Wortarten, Satzzeichen, Wortschatz mit Gegenteilen und Oberbegriffen, Leseverstehen.',
+    klasse:[3,4], etappe:[1,2], wege:['knobeln','erzaehlen'] },
+  { id:'lu_deutsch_z4', fach:'deutsch', titel:'Deutsch · Zyklus 4 (Klasse 5–6)',
+    kompetenz:'Zeitformen, Satzglieder, Wortfamilien, Satzzeichen, Textarten, Zusammenfassen und Schlussfolgern.',
+    klasse:[5,6], etappe:[2,2], wege:['knobeln','erzaehlen'] },
+  { id:'lu_franzoesisch_z2', fach:'franzoesisch', titel:'Französisch · Zyklus 2 (Klasse 1–2)',
+    kompetenz:'Begrüßen, sich vorstellen, Farben, Zahlen, Familie und Alltagsgegenstände auf Französisch.',
+    klasse:[1,2], etappe:[1,1], wege:['knobeln','erzaehlen'] },
+  { id:'lu_franzoesisch_z3', fach:'franzoesisch', titel:'Französisch · Zyklus 3 (Klasse 3–4)',
+    kompetenz:'Wortschatz zu Schule, Familie, Essen und Zeit, Artikel, einfache Sätze, être und avoir im Präsens.',
+    klasse:[3,4], etappe:[1,2], wege:['knobeln','erzaehlen'] },
+  { id:'lu_franzoesisch_z4', fach:'franzoesisch', titel:'Französisch · Zyklus 4 (Klasse 5–6)',
+    kompetenz:'Präsens häufiger Verben, Verneinung, passé composé (einfach), erweiterter Wortschatz, kurze Lesetexte.',
+    klasse:[5,6], etappe:[2,2], wege:['knobeln','erzaehlen'] }
 ];
 
 export const ZIEL_MAP = Object.fromEntries(ZIELE.map(z => [z.id, z]));
