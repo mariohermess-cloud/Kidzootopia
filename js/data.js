@@ -306,7 +306,17 @@ export const ZIELE = [
     klasse:[3,4], etappe:[1,2], wege:['knobeln','erzaehlen'] },
   { id:'lu_franzoesisch_z4', fach:'franzoesisch', titel:'Französisch · Zyklus 4 (Klasse 5–6)',
     kompetenz:'Präsens häufiger Verben, Verneinung, passé composé (einfach), erweiterter Wortschatz, kurze Lesetexte.',
-    klasse:[5,6], etappe:[2,2], wege:['knobeln','erzaehlen'] }
+    klasse:[5,6], etappe:[2,2], wege:['knobeln','erzaehlen'] },
+  /* Sachunterricht („Éveil aux sciences…“, Plan Seite 34–38): aus den Kompetenzen abgeleitet, von Fachkraft zu prüfen. */
+  { id:'lu_sach_z2', fach:'sach', titel:'Sachunterricht · Zyklus 2 (Klasse 1–2)',
+    kompetenz:'Lebensbedürfnisse und Sinne, Jahreszeiten, einfache Werkzeuge und Teile von Gegenständen, Orte, Plan und Regeln, Tag und Nacht, früher und heute.',
+    klasse:[1,2], etappe:[1,1], wege:['knobeln','erzaehlen','entdecken'] },
+  { id:'lu_sach_z3', fach:'sach', titel:'Sachunterricht · Zyklus 3 (Klasse 3–4)',
+    kompetenz:'Lebenszyklus und Lebensfunktionen, Hypothese und Experiment, einfache Maschinen und Fehlersuche, Orientierung mit Plan und Kompass, Karten, Zeitleiste, Veränderungen.',
+    klasse:[3,4], etappe:[1,2], wege:['knobeln','erzaehlen','entdecken'] },
+  { id:'lu_sach_z4', fach:'sach', titel:'Sachunterricht · Zyklus 4 (Klasse 5–6)',
+    kompetenz:'Vielfalt und Körpersysteme, Ökosystem, Experimente mit Protokoll, Werkzeugwahl und Algorithmen, Landschaften, Karten und Maßstab, Epochen, Quellen prüfen.',
+    klasse:[5,6], etappe:[2,2], wege:['knobeln','erzaehlen','entdecken'] }
 ];
 
 export const ZIEL_MAP = Object.fromEntries(ZIELE.map(z => [z.id, z]));

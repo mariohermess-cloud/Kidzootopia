@@ -5,7 +5,8 @@
 
    ZUSCHNITT: Pro Fach und Zyklus ein Lernziel.
      Zyklus 2 = Klasse 1–2, Zyklus 3 = Klasse 3–4, Zyklus 4 = Klasse 5–6.
-     Ziele: lu_mathe_z2/z3/z4, lu_deutsch_z2/z3/z4, lu_franzoesisch_z2/z3/z4.
+     Ziele: lu_mathe_z2/z3/z4, lu_deutsch_z2/z3/z4, lu_franzoesisch_z2/z3/z4,
+            lu_sach_z2/z3/z4 (Fach „Allgemeinwissen“).
 
    WAS IST WOHER – bitte beim Prüfen beachten:
      * MATHE: DIREKT aus dem Plan d'études 2026 (Druckseite 30 = Zyklus 2,
@@ -19,6 +20,12 @@
        Zyklus 2 Französisch ist laut Plan nur mündlich/Alltag (Seite 22);
        die Fragen hier sind trotzdem Lesefragen mit kurzen Wörtern, weil die
        App nichts anderes kann – das ist eine Vereinfachung.
+     * SACHUNTERRICHT („Éveil aux sciences, sciences humaines et naturelles“):
+       ABGELEITET aus den Kompetenzen des Plans (Druckseite 34–38; vier Bereiche
+       je Zyklus: Nature et homme, Technologie et objets techniques, Terre et
+       espace, Temps et évolution). Der Plan nennt keine Themenlisten; die
+       Fragen sind eine Auslegung und müssen von einer Fachperson geprüft
+       werden. Bewusst allgemein gehalten, ohne luxemburg-spezifische Fakten.
 
    Aufbau: luGen(h) bekommt die Helfer aus generators.js (r, pick, shuffle,
    wahl, zahlText, zahlChoice) und liefert die Generatoren GEN[id][weg](level).
@@ -308,6 +315,278 @@ const F4_ERZAEHLEN = [
     '„Quelle heure“ heißt „welche Uhrzeit“.'],
   ['Was bedeutet „Où habites-tu ?“','Wo wohnst du?',['Wie alt bist du?','Wie heißt du?','Was machst du?'],'„Où“ heißt wo, „habiter“ wohnen.'],
   ['Wie sagt man „Ich habe Hunger“?','J\'ai faim.',['Je suis faim.','Je fais faim.','Je veux faim.'],'Auf Französisch „hat“ man Hunger: „avoir faim“.']
+];
+
+/* ======================== FESTE FRAGEN: Sachunterricht ======================== */
+
+/* ABGELEITET aus „Éveil aux sciences, sciences humaines et naturelles“ (Plan Seite 34–38):
+   vier Bereiche je Zyklus – Nature et homme, Technologie et objets techniques, Terre et espace,
+   Temps et évolution. Der Plan nennt Kompetenzen, keine Themenlisten; die Fragen sind eine
+   Auslegung und müssen von einer Fachperson geprüft werden. Bewusst allgemein gehalten:
+   keine luxemburg-spezifischen Orts- oder Geschichtsfakten. */
+
+/* Zyklus 2 (Seite 36): Lebensbedürfnisse, Sinne, Jahreszeiten, Werkzeuge und Teile von Gegenständen,
+   Orte und Regeln, Plan/Schulweg, Zeitkreisläufe, früher und heute. */
+const S2_KNOBELN = [
+  ['Was braucht ein Mensch unbedingt, um zu leben?','Luft zum Atmen',['einen Fernseher','Spielzeug','Süßigkeiten'],
+    'Zu den Lebensbedürfnissen gehören atmen, essen, trinken und schlafen. Fernseher, Spielzeug und Süßigkeiten sind schön, aber nicht lebensnotwendig.'],
+  ['Was passiert, wenn ein Mensch lange nichts trinkt?','Er bekommt Durst und wird schwach',['Er wird immer stärker','Er braucht dann weniger Luft','Er bekommt neue Haare'],
+    'Der Körper braucht regelmäßig Wasser. Fehlt es, bekommt man Durst und fühlt sich schlapp.'],
+  ['Nach dem Rennen atmest du ganz schnell. Warum?','Dein Körper braucht jetzt mehr Luft',['Die Luft ist plötzlich dünner geworden','Du hast Hunger','Du willst singen'],
+    'Bei Anstrengung braucht der Körper mehr Luft, darum atmest du schneller. Danach hilft es, sich auszuruhen.'],
+  ['Womit riechst du den Duft einer Blume?','mit der Nase',['mit den Ohren','mit den Augen','mit den Fingern'],'Zum Riechen hat der Mensch die Nase.'],
+  ['Womit hörst du Musik?','mit den Ohren',['mit der Nase','mit den Augen','mit der Zunge'],'Die Ohren fangen den Schall auf. Das ist der Hörsinn.'],
+  ['Womit spürst du, ob etwas weich oder rau ist?','mit der Haut',['mit den Ohren','mit der Nase','mit den Zähnen'],
+    'Der Tastsinn sitzt in der Haut, besonders an den Fingerspitzen.'],
+  ['Wie viele Jahreszeiten gibt es?','4',['3','5','6'],'Frühling, Sommer, Herbst und Winter.'],
+  ['Welche Jahreszeit kommt nach dem Winter?','Frühling',['Sommer','Herbst','Winter'],'Die Reihenfolge ist Frühling, Sommer, Herbst, Winter – und dann wieder Frühling.'],
+  ['In welcher Jahreszeit verlieren viele Bäume ihre Blätter?','im Herbst',['im Frühling','im Sommer','in der Nacht'],
+    'Im Herbst werden die Blätter bunt und fallen ab.'],
+  ['Welches Tier hält bei uns im Winter Winterschlaf?','der Igel',['der Hase','die Kuh','der Fuchs'],
+    'Der Igel schläft den Winter in einem Versteck. Hase und Fuchs bleiben auch im Winter wach.'],
+  ['Welche zwei Tage bilden das Wochenende?','Samstag und Sonntag',['Freitag und Samstag','Sonntag und Montag','Montag und Dienstag'],
+    'Das Wochenende besteht aus Samstag und Sonntag.']
+];
+const S2_ERZAEHLEN = [
+  ['Wozu ist der Schulhof da?','zum Spielen und Ausruhen in der Pause',['zum Schlafen','zum Kochen','zum Rechnen mit dem Heft'],
+    'Orte haben Aufgaben: Im Klassenzimmer lernt man, auf dem Schulhof spielt man und ruht sich aus.'],
+  ['Im Flur rennen viele Kinder. Jemand stolpert fast. Welche Regel hilft?','Im Flur langsam gehen',
+    ['Im Flur noch schneller rennen','Im Flur laut singen','Im Flur Bälle werfen'],
+    'Regeln sorgen dafür, dass sich im gemeinsamen Raum niemand wehtut. Im Flur geht man ruhig und langsam.'],
+  ['Nach dem Basteln liegen überall Papierschnipsel. Was ist richtig?','Alles aufräumen, damit der Platz sauber ist',
+    ['Liegen lassen, die anderen machen das schon','Alles in die Ecke kicken','Zum Spielplatz mitnehmen'],
+    'Wer einen Raum zusammen nutzt, räumt hinterher auf, damit der nächste ihn gut benutzen kann.'],
+  ['Die Klasse ist sehr laut, und Ben kann sich nicht konzentrieren. Was hilft?','Leiser sprechen',
+    ['Noch lauter sprechen','Ben soll rausgehen','Die Musik lauter machen'],'In einem gemeinsamen Raum nimmt man Rücksicht: Zum Lernen braucht man Ruhe.'],
+  ['Auf dem Schulweg-Plan siehst du: Haus – Bäckerei – Ampel – Schule. Was kommt direkt vor der Schule?','die Ampel',
+    ['das Haus','die Bäckerei','der Spielplatz'],'Man liest den Plan in der Reihenfolge des Weges: erst Haus, dann Bäckerei, dann Ampel, dann Schule.'],
+  ['Wann gehst du über eine Fußgängerampel?','wenn sie grün zeigt',['wenn sie rot zeigt','wenn sie gelb leuchtet','wenn ein Auto hupt'],
+    'Bei Grün dürfen Fußgänger gehen. Bei Rot bleibt man stehen und schaut sich trotzdem noch um.'],
+  ['Womit waren Menschen vor sehr langer Zeit unterwegs, als es noch keine Motoren gab?','zu Fuß, mit Pferden und Kutschen',
+    ['mit Flugzeugen','mit Autos','mit Elektrorollern'],'Motoren wurden erst vor etwa 150 Jahren erfunden. Davor ging man zu Fuß oder nutzte Tiere und Wagen.'],
+  ['Was gab es in der Schule von Oma und Opa als Kinder noch nicht?','Tablets',['Tafeln','Hefte','Bleistifte'],
+    'Tafeln, Hefte und Bleistifte gab es schon lange. Tablets sind erst viel später erfunden worden.'],
+  ['Früher wuschen die Menschen Wäsche oft von Hand. Was erledigt das heute meist?','die Waschmaschine',
+    ['der Kühlschrank','der Staubsauger','der Toaster'],'Technik verändert den Alltag: Die Waschmaschine nimmt uns viel Handarbeit ab.'],
+  ['Welcher Satz erzählt von früher?','Als ich klein war, konnte ich noch nicht lesen.',
+    ['Ich lese gerade ein Buch.','Morgen gehe ich zum Zahnarzt.','Ich habe jetzt Hunger.'],
+    'Was früher war, steht in der Vergangenheit: „war“, „konnte“. Die anderen Sätze handeln von jetzt oder von morgen.']
+];
+const S2_ENTDECKEN = [
+  ['Wofür benutzt du eine Schere?','zum Schneiden von Papier',['zum Kleben','zum Messen','zum Malen'],'Eine Schere hat zwei scharfe Klingen, mit denen man schneidet.'],
+  ['Was kannst du mit einer Lupe tun?','kleine Dinge größer sehen',['Dinge leiser hören','Dinge schneller machen','Dinge schwerer machen'],
+    'Eine Lupe vergrößert, zum Beispiel einen Käfer oder die Ader eines Blattes.'],
+  ['Welcher Teil sorgt dafür, dass ein Fahrrad rollt?','die Räder',['der Sattel','die Klingel','der Lenker'],'Räder drehen sich und rollen über den Boden. Der Lenker steuert nur.'],
+  ['Wie heißt der Teil eines Regenschirms, an dem du ihn festhältst?','der Griff',['der Stoff','die Spitze','die Feder'],
+    'Gegenstände haben Teile mit Aufgaben: Am Griff hält man fest, der Stoff schützt vor Regen.'],
+  ['Du willst Saft in eine enge Flasche füllen, ohne zu kleckern. Was nimmst du?','einen Trichter',['eine Schere','einen Besen','eine Lupe'],
+    'Ein Trichter leitet die Flüssigkeit durch die enge Öffnung.'],
+  ['Was ziehst du an, wenn es regnet?','Regenjacke und Gummistiefel',['eine Badehose','eine Sonnenbrille','Skistiefel'],
+    'Bei Regen schützt man sich vor Nässe mit wasserdichter Kleidung.'],
+  ['Der Himmel ist voller dunkler, grauer Wolken. Was kommt wahrscheinlich?','Regen',
+    ['ein heißer, wolkenloser Tag','Sonnenschein den ganzen Tag','ein Sternenhimmel'],'Dicke dunkle Wolken sind oft ein Zeichen für Regen.'],
+  ['Was ist KEIN Lebewesen?','ein Stein',['ein Baum','eine Schnecke','eine Blume'],
+    'Lebewesen wachsen, brauchen Nahrung oder Licht und können sich vermehren. Ein Stein tut das nicht.'],
+  ['Was braucht eine Pflanze zum Wachsen?','Wasser und Licht',['Süßigkeiten und Musik','nur Dunkelheit','Fernsehen'],
+    'Pflanzen nehmen Wasser auf und brauchen Licht, um zu wachsen.'],
+  ['Wie findest du heraus, ob eine Pflanze Durst hat?','Die Erde anfassen: Ist sie ganz trocken, braucht sie Wasser',
+    ['Sie fragen','Ihre Blätter zählen','Das Fenster schließen'],'Durch Fühlen und Beobachten kann man prüfen, ob die Erde trocken ist.']
+];
+
+/* Zyklus 3 (Seite 37): Lebenszyklus, Lebensfunktionen, Vergleich Frosch/Schmetterling, Hypothese,
+   einfache Maschinen, Fehlersuche, Orte und Orientierung, Karten, Zeitleiste, Veränderungen. */
+const S3_KNOBELN = [
+  ['Welche Reihenfolge stimmt für das Leben vieler Lebewesen?','Geburt, Wachstum, Fortpflanzung, Tod',
+    ['Wachstum, Geburt, Tod, Fortpflanzung','Tod, Geburt, Wachstum, Fortpflanzung','Fortpflanzung, Geburt, Tod, Wachstum'],
+    'Ein Lebewesen wird geboren, wächst, bekommt Nachkommen und stirbt irgendwann. Das nennt man Lebenszyklus.'],
+  ['Wie nennt man es, wenn Lebewesen Nachkommen bekommen?','Fortpflanzung',['Verdauung','Atmung','Ernährung'],
+    'Durch Fortpflanzung entstehen neue Lebewesen derselben Art.'],
+  ['Welches Organ nimmt beim Atmen Sauerstoff aus der Luft auf?','die Lunge',['der Magen','das Herz','die Leber'],
+    'In der Lunge geht der Sauerstoff aus der Atemluft ins Blut. Das Herz pumpt das Blut weiter.'],
+  ['Wo beginnt die Verdauung der Nahrung?','im Mund',['in der Lunge','im Herzen','in der Nase'],
+    'Schon beim Kauen zerkleinern die Zähne die Nahrung, und der Speichel beginnt sie aufzuspalten.'],
+  ['Welche Teile des Körpers lassen dich bewegen?','Muskeln',['Haare','Fingernägel','Zähne'],
+    'Muskeln ziehen sich zusammen und bewegen so die Knochen.'],
+  ['Was haben Frosch und Schmetterling gemeinsam?','Beide verwandeln sich nach dem Schlüpfen stark',
+    ['Beide legen keine Eier','Beide leben immer im Wasser','Beide haben ein Fell'],
+    'Der Frosch wird aus dem Ei zur Kaulquappe, dann zum Frosch. Der Schmetterling wird aus dem Ei zur Raupe, zur Puppe und dann zum Falter.'],
+  ['Wie atmet eine kleine Kaulquappe?','mit Kiemen',['mit einem Fell','durch ein Blasloch wie ein Wal','mit Federn'],
+    'Kaulquappen leben im Wasser und atmen mit Kiemen. Erst der erwachsene Frosch atmet mit Lungen Luft.'],
+  ['Wie heißt das Stadium zwischen Raupe und Schmetterling?','Puppe',['Kaulquappe','Ei','Falter'],
+    'In der Puppe verwandelt sich die Raupe zum Schmetterling.'],
+  ['Was ist eine Hypothese?','eine begründete Vermutung, die man prüfen kann',
+    ['ein sicheres Ergebnis','ein Messgerät','ein Tagebuch'],'Man vermutet etwas und prüft dann mit einem Versuch, ob es stimmt.'],
+  ['Du vermutest, dass Pflanzen ohne Licht schlechter wachsen. Wie prüfst du das?','Eine Pflanze ins Licht und eine ins Dunkle stellen und vergleichen',
+    ['Alle Pflanzen ins Licht stellen','Eine Pflanze anschauen und raten','Die Pflanze umtopfen'],
+    'Für einen Vergleich braucht man zwei gleiche Pflanzen, die sich nur in einer Sache unterscheiden: dem Licht.'],
+  ['Welches ist ein Beispiel für einen Hebel?','eine Wippe',['ein Spiegel','ein Ball','ein Kissen'],
+    'Eine Wippe dreht sich um einen Punkt in der Mitte. Das ist das Prinzip des Hebels.'],
+  ['Wozu dient ein Flaschenzug?','um schwere Lasten leichter zu heben',['um Wasser zu erhitzen','um Töne lauter zu machen','um Licht zu bündeln'],
+    'Mit Seil und Rollen verteilt der Flaschenzug die Kraft, sodass man weniger Kraft braucht (dafür zieht man ein längeres Seil).']
+];
+const S3_ERZAEHLEN = [
+  ['Du stehst morgens mit dem Gesicht zur aufgehenden Sonne. In welche Himmelsrichtung schaust du?','nach Osten',
+    ['nach Westen','nach Norden','nach Süden'],'Die Sonne geht im Osten auf und im Westen unter.'],
+  ['Wohin zeigt die Nadel eines Kompasses?','nach Norden',['nach Süden','zur Sonne','nach oben'],
+    'Die Kompassnadel richtet sich nach dem Magnetfeld der Erde und zeigt nach Norden.'],
+  ['Welche Himmelsrichtung liegt dem Norden gegenüber?','Süden',['Osten','Westen','Nordosten'],'Norden und Süden liegen sich gegenüber, ebenso Osten und Westen.'],
+  ['Wozu dient die Legende auf einer Karte?','Sie erklärt die Zeichen und Farben',
+    ['Sie erzählt eine Sage','Sie zeigt das Wetter von morgen','Sie nennt den Namen des Zeichners'],
+    'In der Legende steht, was zum Beispiel ein blaues Band oder ein kleines Kreuz bedeutet.'],
+  ['Aus welcher Sicht zeichnet man einen Plan?','von oben',['von vorne','von der Seite','von unten'],
+    'Ein Plan zeigt alles wie ein Foto aus der Luft von oben.'],
+  ['Wo leben die meisten Menschen eng zusammen, mit vielen Häusern, Geschäften und Straßen?','in einer Stadt',
+    ['im Wald','auf dem Feld','am Flussufer'],'Eine Stadt ist ein großer Ort mit vielen Einwohnern. Ein Dorf ist kleiner.'],
+  ['Welcher Ort ist ein Lebensraum für Rehe und Füchse?','der Wald',['die Innenstadt','der Parkplatz','der Bahnhof'],
+    'Im Wald finden Wildtiere Nahrung und Verstecke.'],
+  ['Wie viele Jahre hat ein Jahrhundert?','100',['10','50','1000'],'„Hundert Jahre“ sind ein Jahrhundert.'],
+  ['Was zeigt eine Zeitleiste?','Ereignisse in der Reihenfolge, in der sie geschehen sind',
+    ['Orte auf einer Karte','das Wetter der letzten Woche','nur Geburtstage von Tieren'],
+    'Auf einer Zeitleiste stehen ältere Ereignisse links und jüngere rechts.'],
+  ['Wie viele Tage hat ein normales Jahr (kein Schaltjahr)?','365',['360','364','400'],'Ein Jahr hat 365 Tage. Alle vier Jahre gibt es ein Schaltjahr mit 366 Tagen.'],
+  ['Woher wissen wir etwas über früher?','aus Quellen wie Fotos, Briefen, Gebäuden und Erzählungen',
+    ['nur durch Raten','aus dem Wetterbericht','aus der Speisekarte von heute'],
+    'Historiker sammeln Hinweise aus alten Dingen und Berichten, so wie Detektive Spuren.'],
+  ['Wie hat die Erfindung des Autos das Leben verändert?','Menschen konnten schneller und weiter reisen',
+    ['Es gab keine Straßen mehr','Menschen brauchten nie mehr zu schlafen','Alle zogen in Höhlen'],
+    'Veränderungen wirken sich auf das Leben aus: Mit dem Auto wurden Wege kürzer, aber es entstanden auch neue Straßen und Abgase.']
+];
+const S3_ENTDECKEN = [
+  ['Welcher Teil lässt eine Tür aufschwingen?','das Scharnier',['das Schloss','der Türspion','die Fußmatte'],
+    'Ein Scharnier ist ein drehbares Gelenk an Tür oder Deckel.'],
+  ['Wie hilft ein Rad bei einem schweren Karren?','Er rollt, statt zu schleifen',
+    ['Er macht die Last leichter','Er erzeugt Strom','Er macht Geräusche'],
+    'Rollen reibt viel weniger als Schleifen. Die Last bleibt aber gleich schwer.'],
+  ['Wie hält eine Schraube zwei Holzteile zusammen?','Ihr Gewinde greift ins Holz und zieht die Teile zusammen',
+    ['Sie klebt die Teile','Sie schmilzt das Holz','Sie zieht die Teile magnetisch an'],
+    'Das schraubenförmige Gewinde dreht sich ins Holz und hält fest.'],
+  ['Wo musst du bei einem langen Hebel drücken, damit es leichter geht?','weit weg vom Drehpunkt',
+    ['direkt am Drehpunkt','nah am Drehpunkt','Es ist immer gleich leicht'],'Je weiter vom Drehpunkt entfernt, desto weniger Kraft brauchst du.'],
+  ['Welcher Teil einer Taschenlampe liefert die Energie?','die Batterie',['der Schalter','das Gehäuse','der Griff'],
+    'Die Batterie speichert die elektrische Energie, die das Licht zum Leuchten bringt.'],
+  ['Welche Aufgabe hat der Schalter an einer Lampe?','Er schließt oder unterbricht den Stromkreis',
+    ['Er erzeugt den Strom','Er macht das Licht heller','Er kühlt die Lampe'],
+    'Nur im geschlossenen Stromkreis fließt Strom. Der Schalter öffnet oder schließt ihn.'],
+  ['Eine Taschenlampe leuchtet nicht. Was prüfst du zuerst?','Batterien und Schalter',
+    ['ob sie die richtige Farbe hat','ob es draußen regnet','ob ein Name darauf steht'],
+    'Bei einer Panne prüft man nacheinander die Teile, die die Funktion ermöglichen: Energie und Schalter zuerst.'],
+  ['Die Kette eines Fahrrads quietscht. Was hilft vermutlich?','die Kette ölen',
+    ['mehr Luft in den Sattel pumpen','die Klingel putzen','die Reifen anmalen'],'Quietschen kommt oft von Reibung. Etwas Öl macht die Kette geschmeidig.'],
+  ['Frosch und Schmetterling: Welcher Unterschied hängt mit dem Lebensraum zusammen?','Die Kaulquappe lebt im Wasser, die Raupe an Pflanzen an Land',
+    ['Die Raupe lebt im Wasser, die Kaulquappe an Land','Beide leben unter der Erde','Beide leben im Meer'],
+    'Das Jungtier des Frosches lebt im Wasser, das des Schmetterlings an Land und frisst Blätter.'],
+  ['Welche Aussage über Vögel stimmt?','Alle Vögel legen Eier',['Vögel bringen lebende Junge zur Welt','Vögel haben kein Skelett','Alle Vögel können fliegen'],
+    'Alle Vögel legen Eier. Nicht alle fliegen: Pinguine und Strauße zum Beispiel nicht.'],
+  ['Beim Rennen schlägt dein Herz schneller. Warum?','Die Muskeln brauchen mehr Sauerstoff, den das Blut bringt',
+    ['Das Herz will nur schneller sein','Die Haut wird heiß','Der Magen verdaut gerade'],
+    'Bei Anstrengung arbeiten Atmung, Herz und Muskeln zusammen: Mehr Sauerstoff muss schneller zu den Muskeln.'],
+  ['Wozu braucht der Körper Schlaf?','zum Ausruhen und Erholen',['um Wasser zu sparen','um die Knochen zu verkürzen','um die Augenfarbe zu ändern'],
+    'Im Schlaf erholt sich der Körper, und das Gehirn verarbeitet, was am Tag passiert ist.']
+];
+
+/* Zyklus 4 (Seite 38): Vielfalt und Lebensräume, Körpersysteme, Ökosystem, Experimente mit Protokoll,
+   Werkzeugwahl, Algorithmen, Landschaften, Karten und Maßstab, menschliche Aktivität, Epochen, Quellen. */
+const S4_KNOBELN = [
+  ['Welcher Lebensraum passt zu einem Kamel?','die Wüste',['das Polargebiet','das Meer','der Regenwald'],
+    'Kamele sind an Hitze und Trockenheit angepasst und speichern Fett im Höcker.'],
+  ['Welche Anpassung hilft Eisbären in der Kälte?','dichtes Fell und eine dicke Fettschicht',
+    ['ein dünnes Fell ohne Unterwolle','große Ohren wie beim Wüstenfuchs','ein Panzer wie bei der Schildkröte'],
+    'Fell und Fettschicht halten die Wärme im Körper. Jedes Lebewesen ist an seinen Lebensraum angepasst.'],
+  ['Wohin gelangt der Sauerstoff aus der Lunge?','ins Blut',['in den Magen','in die Knochen','in den Mund'],
+    'In der Lunge geht der Sauerstoff ins Blut. Das Blut bringt ihn zu allen Teilen des Körpers.'],
+  ['Welche Aufgabe hat das Blut im Kreislauf?','Es transportiert Sauerstoff und Nährstoffe zu den Körperteilen',
+    ['Es verdaut die Nahrung','Es bildet die Haut','Es erzeugt Töne'],'Das Herz pumpt das Blut durch die Adern, damit Sauerstoff und Nährstoffe überall ankommen.'],
+  ['In welcher Reihenfolge wandert die Nahrung durch den Körper?','Mund, Speiseröhre, Magen, Darm',
+    ['Mund, Magen, Speiseröhre, Darm','Magen, Mund, Darm, Speiseröhre','Speiseröhre, Mund, Darm, Magen'],
+    'Beim Schlucken rutscht der Bissen durch die Speiseröhre in den Magen und dann in den Darm.'],
+  ['In welchem Teil des Verdauungssystems gehen die meisten Nährstoffe ins Blut über?','im Dünndarm',['im Magen','in der Speiseröhre','im Mund'],
+    'Der Dünndarm ist lang und hat eine große Oberfläche, über die die Nährstoffe ins Blut gelangen.'],
+  ['Welches Gas aus der Luft braucht der Körper zum Leben?','Sauerstoff',['Helium','Methan','Neon'],
+    'Aus der Atemluft nimmt der Körper nur den Sauerstoff auf, den er für die Energiegewinnung braucht.'],
+  ['Ein Roboter soll ein Quadrat laufen: „Wiederhole 4-mal: gehe 3 Schritte vor, drehe dich um 90° nach rechts.“ Wie viele Schritte geht er insgesamt?','12',
+    ['7','4','16'],'Die Wiederholung gilt für den ganzen Block: 4 · 3 = 12 Schritte.'],
+  ['Programm: „Wenn die Ampel rot ist, bleibe stehen, sonst gehe weiter.“ Die Ampel ist grün. Was tut der Roboter?','Er geht weiter',
+    ['Er bleibt stehen','Er dreht sich um','Er schaltet sich aus'],'Die Bedingung „rot“ stimmt nicht, also gilt der Teil nach „sonst“.'],
+  ['Was ist ein Algorithmus?','eine Schritt-für-Schritt-Anleitung, um eine Aufgabe zu lösen',
+    ['ein Rechenfehler','ein Teil eines Computers','ein Lied'],'Ein Algorithmus legt genau fest, welche Schritte in welcher Reihenfolge folgen, zum Beispiel ein Rezept.'],
+  ['Du testest, wie Dünger das Wachstum von Bohnen beeinflusst. Was lässt du bei allen Pflanzen gleich?','Licht, Wassermenge und Topfgröße',
+    ['den Dünger','nichts, alles darf sich ändern','nur die Farbe des Topfes'],
+    'Man verändert nur eine Sache, hier den Dünger. Alles andere bleibt gleich, damit der Unterschied sicher vom Dünger kommt.'],
+  ['Du änderst in einem Experiment nur eine Sache auf einmal. Warum?','Damit man weiß, was die Wirkung verursacht hat',
+    ['Damit es schneller geht','Damit der Versuch billiger wird','Damit man nicht aufschreiben muss'],
+    'Ändert man mehrere Dinge zugleich, weiß man nicht, welche davon das Ergebnis bewirkt hat.'],
+  ['Was gehört in ein Versuchsprotokoll?','Frage, Vermutung, Durchführung, Beobachtung und Ergebnis',
+    ['nur das erwartete Ergebnis','nur die Namen der Beteiligten','nur Zeichnungen ohne Text'],
+    'Ein Protokoll hält fest, was man gefragt, getan und beobachtet hat, damit andere den Versuch nachvollziehen können.']
+];
+const S4_ERZAEHLEN = [
+  ['Auf einer Karte gilt: 1 cm entspricht 1 km in Wirklichkeit. Zwei Orte sind auf der Karte 5 cm voneinander entfernt (Luftlinie). Wie weit sind sie in Wirklichkeit?','5 km',
+    ['2 km','10 km','50 km'],'Jeder Zentimeter auf der Karte sind 1 km: 5 · 1 km = 5 km.'],
+  ['Der Maßstab einer Karte ist 1 : 100 000. Was bedeutet 1 cm auf der Karte in Wirklichkeit?','1 km',['100 m','10 km','10 m'],
+    '100 000 cm sind 1000 m, also 1 km.'],
+  ['Welche Karte zeigt mehr Einzelheiten: eine mit dem Maßstab 1 : 10 000 oder eine mit 1 : 1 000 000?','die mit 1 : 10 000',
+    ['die mit 1 : 1 000 000','beide gleich viele','Das hängt nur von der Farbe ab'],
+    'Je kleiner die Zahl nach dem Doppelpunkt, desto größer ist die Darstellung und desto mehr Einzelheiten passen hinein.'],
+  ['Welches Beispiel zeigt, wie ein natürlicher Faktor eine Landschaft prägt?','Ein Fluss formt ein Tal',
+    ['Eine neue Autobahn wird gebaut','Ein Acker wird angelegt','Ein Windpark wird errichtet'],
+    'Fließendes Wasser trägt über sehr lange Zeit Boden ab und formt Täler. Straßen, Äcker und Windparks stammen von Menschen.'],
+  ['Welches Beispiel zeigt, wie Menschen eine Landschaft verändern?','Ein Wald wird für ein Neubaugebiet gerodet',
+    ['Regen formt ein Tal','Eine Düne wandert im Wind','Ein Fluss ändert nach Hochwasser seinen Lauf'],
+    'Landschaften werden von der Natur und von Menschen geformt. Rodung und Bauen sind menschliche Eingriffe.'],
+  ['Was kann passieren, wenn viel Boden mit Asphalt und Beton bedeckt wird?','Regenwasser kann schlechter im Boden versickern',
+    ['Der Boden speichert mehr Wasser','Es regnet weniger','Es wachsen mehr Pflanzen'],
+    'Auf versiegeltem Boden fließt das Wasser ab, statt zu versickern. Das kann bei Starkregen zu Überschwemmungen führen.'],
+  ['Welche Epoche liegt zeitlich am weitesten zurück?','die Steinzeit',['das Mittelalter','die Antike','die Neuzeit'],
+    'Die Reihenfolge von früh nach spät ist Steinzeit, Antike, Mittelalter, Neuzeit.'],
+  ['Welche Reihenfolge der Epochen ist richtig (vom ältesten zum jüngsten)?','Steinzeit, Antike, Mittelalter, Neuzeit',
+    ['Antike, Steinzeit, Neuzeit, Mittelalter','Mittelalter, Steinzeit, Antike, Neuzeit','Neuzeit, Mittelalter, Antike, Steinzeit'],
+    'Auf einer Zeitleiste stehen die frühesten Zeiten links: Steinzeit, Antike, Mittelalter, Neuzeit.'],
+  ['Was wurde um 1450 erfunden und machte es viel leichter, Bücher zu vervielfältigen?','der Buchdruck mit beweglichen Lettern',
+    ['der Telegraf','die Dampfmaschine','das Radio'],'Johannes Gutenberg entwickelte den Buchdruck mit beweglichen Metallbuchstaben. Bücher wurden dadurch billiger.'],
+  ['Welche Erfindung veränderte im 18. und 19. Jahrhundert Fabriken und Verkehr stark?','die Dampfmaschine',
+    ['das Smartphone','das Internet','der Fernseher'],'Dampfmaschinen trieben Fabriken, Lokomotiven und Schiffe an.'],
+  ['Eine Webseite behauptet etwas Erstaunliches, nennt aber weder Autor noch Belege. Was tust du?','Weitere zuverlässige Quellen suchen und vergleichen',
+    ['Es glauben, weil es im Internet steht','Es sofort weitererzählen','Nur die Überschrift lesen'],
+    'Quellen prüft man kritisch: Wer hat es geschrieben, gibt es Belege, sagen andere verlässliche Quellen dasselbe?'],
+  ['Welche Quelle stammt aus der Zeit selbst, über die man etwas wissen will?','ein Brief, der damals geschrieben wurde',
+    ['ein Schulbuch von heute über diese Zeit','ein Film von heute über diese Zeit','ein Roman von heute über diese Zeit'],
+    'Briefe, Tagebücher und Gegenstände aus der Zeit sind Originalquellen. Bücher und Filme von heute beruhen darauf.'],
+  ['Welches ist eine gesellschaftliche Veränderung der letzten 200 Jahre in Europa?','Kinder gehen heute zur Schule, statt zu arbeiten',
+    ['Menschen leben wieder wie in der Steinzeit','Es gibt keine Gesetze mehr','Fast alle arbeiten wieder auf dem Feld'],
+    'Schulpflicht und das Verbot von Kinderarbeit haben das Leben von Kindern stark verändert.']
+];
+const S4_ENTDECKEN = [
+  ['In der Nahrungskette Gras → Hase → Fuchs: Wer ist der Produzent, der selbst Nahrung herstellt?','das Gras',
+    ['der Hase','der Fuchs','der Boden'],'Pflanzen stellen mit Licht ihre Nahrung selbst her. Hase und Fuchs fressen andere Lebewesen.'],
+  ['Was passiert wahrscheinlich, wenn in einem Wald fast alle Füchse verschwinden?','Die Zahl der Mäuse und Hasen steigt zunächst',
+    ['Die Zahl der Hasen sinkt sofort','Das Gras hört auf zu wachsen','Alle anderen Tiere verschwinden auch'],
+    'Im Ökosystem hängen alle Lebewesen zusammen. Fehlt der Jäger, vermehren sich seine Beutetiere erst einmal stärker.'],
+  ['Wer zersetzt in der Natur tote Pflanzen zu Humus?','Pilze und Bodentiere wie Regenwürmer',['Hasen und Rehe','Sonne und Wind','Fische im Meer'],
+    'Pilze, Bakterien und Bodentiere verwandeln Laub und Holz in Humus. Daraus nehmen Pflanzen wieder Nährstoffe.'],
+  ['Welches Gas geben Pflanzen bei der Fotosynthese ab?','Sauerstoff',['Kohlenstoffdioxid','Stickstoff','Methan'],
+    'Pflanzen nehmen Kohlenstoffdioxid auf und geben Sauerstoff ab.'],
+  ['Was brauchen Pflanzen für die Fotosynthese?','Licht, Wasser und Kohlenstoffdioxid',
+    ['Dunkelheit, Sand und Sauerstoff','Salz, Öl und Wärme','Fleisch, Wasser und Licht'],
+    'Aus Licht, Wasser und Kohlenstoffdioxid bauen Pflanzen Zucker auf.'],
+  ['Du willst die Länge deines Tisches genau messen. Welches Werkzeug wählst du?','ein Maßband',['eine Waage','ein Thermometer','eine Stoppuhr'],
+    'Zum Werkzeug gehört die Aufgabe: Länge misst man mit Maßband oder Lineal.'],
+  ['Du willst eine Schraube mit Kreuzschlitz festdrehen. Was brauchst du?','einen Kreuzschlitz-Schraubendreher',['einen Hammer','eine Säge','eine Schere'],
+    'Der Kopf des Schraubendrehers muss zur Form der Schraube passen.'],
+  ['Du untersuchst in zwei gleichen Gläsern, ob Wasser in der Sonne schneller verdunstet als im Schatten. Was misst du?','wie viel Wasser nach gleicher Zeit noch im Glas ist',
+    ['wie schön das Glas aussieht','wie schwer das leere Glas ist','wie viele Wolken am Himmel sind'],
+    'Gemessen wird das, was sich durch die untersuchte Bedingung ändert: die Wassermenge nach gleicher Zeit.'],
+  ['Du vermutest: Eine höhere Rampe lässt ein Spielzeugauto weiter rollen. Wie prüfst du das fair?','Nur die Höhe ändern, Auto und Rampe sonst gleich lassen',
+    ['Höhe, Auto und Rampe gleichzeitig ändern','Nur einmal fahren und raten','Jedes Mal ein anderes Auto nehmen'],
+    'Nur eine Bedingung wird verändert. Alles andere muss gleich bleiben, sonst ist das Ergebnis nicht aussagekräftig.'],
+  ['Ein Roboter soll sich bewegen: „Wiederhole, bis eine Wand kommt: gehe einen Schritt.“ Wann hört er auf?','Wenn er vor einer Wand steht',
+    ['nach genau einem Schritt','nie','wenn er müde ist'],'Eine solche Schleife läuft weiter, bis die Bedingung (Wand) erfüllt ist.'],
+  ['Der Roboter soll um eine Ecke fahren, dreht sich aber zu früh. Was tust du?','Den Ablauf Schritt für Schritt prüfen und die Schrittzahl vor der Drehung anpassen',
+    ['Den Roboter wegwerfen','Nichts ändern und hoffen','Ihn schneller laufen lassen'],
+    'Fehler in einem Algorithmus sucht man, indem man die Schritte nacheinander durchgeht und verbessert.'],
+  ['Du bist in einer fremden Stadt und hast einen Stadtplan. Wie gehst du vor?','Standort und Ziel suchen und der Route entlang der Straßennamen folgen',
+    ['Immer nach Norden gehen','Einfach der Menge folgen','Die Karte falten und wegstecken'],
+    'Mit einem Plan sucht man zuerst, wo man ist und wohin man will, und verfolgt dann den Weg.'],
+  ['Wo liegt Norden auf den meisten Karten?','oben',['unten','links','rechts'],'Die meisten Karten sind „genordet“: Norden ist oben, Süden unten, Osten rechts und Westen links.']
 ];
 
 /* ======================== GENERATOREN ======================== */
@@ -750,7 +1029,10 @@ export function luGen(h) {
     lu_deutsch_z4: { knobeln: fest(D4_KNOBELN, '🧠'), erzaehlen: fest(D4_ERZAEHLEN, '📖') },
     lu_franzoesisch_z2: { knobeln: fest(F2_KNOBELN, '🧠'), erzaehlen: fest(F2_ERZAEHLEN, '📖') },
     lu_franzoesisch_z3: { knobeln: fest(F3_KNOBELN, '🧠'), erzaehlen: fest(F3_ERZAEHLEN, '📖') },
-    lu_franzoesisch_z4: { knobeln: fest(F4_KNOBELN, '🧠'), erzaehlen: fest(F4_ERZAEHLEN, '📖') }
+    lu_franzoesisch_z4: { knobeln: fest(F4_KNOBELN, '🧠'), erzaehlen: fest(F4_ERZAEHLEN, '📖') },
+    lu_sach_z2: { knobeln: fest(S2_KNOBELN, '🧠'), erzaehlen: fest(S2_ERZAEHLEN, '📖'), entdecken: fest(S2_ENTDECKEN, '🔎') },
+    lu_sach_z3: { knobeln: fest(S3_KNOBELN, '🧠'), erzaehlen: fest(S3_ERZAEHLEN, '📖'), entdecken: fest(S3_ENTDECKEN, '🔎') },
+    lu_sach_z4: { knobeln: fest(S4_KNOBELN, '🧠'), erzaehlen: fest(S4_ERZAEHLEN, '📖'), entdecken: fest(S4_ENTDECKEN, '🔎') }
   };
 }
 
@@ -761,5 +1043,8 @@ export const LU_FESTE_FRAGEN = {
   lu_deutsch_z4: [...D4_KNOBELN, ...D4_ERZAEHLEN],
   lu_franzoesisch_z2: [...F2_KNOBELN, ...F2_ERZAEHLEN],
   lu_franzoesisch_z3: [...F3_KNOBELN, ...F3_ERZAEHLEN],
-  lu_franzoesisch_z4: [...F4_KNOBELN, ...F4_ERZAEHLEN]
+  lu_franzoesisch_z4: [...F4_KNOBELN, ...F4_ERZAEHLEN],
+  lu_sach_z2: [...S2_KNOBELN, ...S2_ERZAEHLEN, ...S2_ENTDECKEN],
+  lu_sach_z3: [...S3_KNOBELN, ...S3_ERZAEHLEN, ...S3_ENTDECKEN],
+  lu_sach_z4: [...S4_KNOBELN, ...S4_ERZAEHLEN, ...S4_ENTDECKEN]
 };

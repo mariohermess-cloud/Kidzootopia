@@ -600,6 +600,14 @@ verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
      sollten von einer Lehrkraft geprüft werden, bevor sie als „lehrplangetreu“ gelten.
      Französisch im Zyklus 2 ist im Plan nur mündlich; die App stellt trotzdem kurze
      Lesefragen – das ist eine Vereinfachung.
+   * **Sachunterricht – abgeleitet, noch nicht fachlich geprüft.** Drei weitere Ziele
+     `lu_sach_z2`, `lu_sach_z3`, `lu_sach_z4` („Sachunterricht · Zyklus N“) im bestehenden Fach
+     Allgemeinwissen, abgeleitet aus dem Bereich „Éveil aux sciences, sciences humaines et
+     naturelles“ (Druckseite 34–38: Nature et homme, Technologie et objets techniques, Terre et
+     espace, Temps et évolution). Wege: Knobeln, Geschichten, Entdecken; je Ziel über 30 feste
+     Fragen mit Erklärung. Der Plan nennt nur Kompetenzen; die Fragen sind eine Auslegung und
+     sollten von einer Lehrkraft geprüft werden. Luxemburg-spezifische Fakten sind bewusst
+     vermieden.
    * Klasse 1–2 sieht die Zyklus-2-Ziele, Klasse 3–4 den Zyklus 3, Klasse 5–6 den Zyklus 4
      (über die Etappen der App: Zyklus 2 nur in Etappe 1, Zyklus 3 in Etappe 1–2, Zyklus 4
      nur in Etappe 2).

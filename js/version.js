@@ -9,11 +9,16 @@
    Bei jeder Änderung: NUMMER hier hochzählen UND in sw.js (CACHE) gleichziehen.
    tests/version.mjs prüft, dass beide übereinstimmen. */
 
-export const NUMMER = 40;
+export const NUMMER = 41;
 export const STAND = '01.10.2026';
 
 /* Neueste zuerst. Kurz und in Alltagssprache – das lesen Eltern, nicht Entwickler. */
 export const VERLAUF = [
+  { nr: 41, stand: '01.10.2026', was: [
+    'Neu: Sachunterricht nach dem luxemburgischen Lehrplan (Bereich „Éveil aux sciences“) – drei Lernziele für Zyklus 2, 3 und 4 (Klasse 1–2, 3–4, 5–6), im Fach Allgemeinwissen',
+    'Themen: Natur und Körper, Technik und einfache Maschinen, Orte, Karten und Orientierung, Zeit und Geschichte – jeweils mit Knobel-, Geschichten- und Entdecker-Weg und mit Erklärung zu jeder Frage',
+    'Die Fragen sind aus den Kompetenzen des Lehrplans abgeleitet und sollten von einer Lehrkraft geprüft werden'
+  ]},
   { nr: 40, stand: '01.10.2026', was: [
     'Neu: Lernziele nach dem luxemburgischen Lehrplan (Plan d\'études 2026) – für Mathe, Deutsch und das neue Fach Französisch, jeweils getrennt nach Zyklus 2, 3 und 4 (Klasse 1–2, 3–4, 5–6)',
     'Mathe stammt direkt aus dem Lehrplan: Zahlen, Rechnen, Größen, Formen, Brüche, Dezimalzahlen, Winkel, Volumen, Koordinaten, Mittelwert und mehrstufige Textaufgaben – jede Aufgabe wird berechnet, jede mit Erklärung',
