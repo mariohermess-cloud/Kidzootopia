@@ -579,6 +579,32 @@ verteilt über fünf Etappen von der Grundschule bis zu Erwachsenen.
    verwechselt wird, genau der Fehler, der den Anlass gab.
 
 
+28. **Lernziele nach dem luxemburgischen Lehrplan** 🇱🇺
+   Neun neue Lernziele nach dem *Plan d'études 2026* der École fondamentale
+   (Quelle: `docs/plan-detudes-enseignement-fondamental-2026.pdf`, © MENJE/SCRIPT). Zuschnitt:
+   **pro Fach und Zyklus ein Ziel** – Zyklus 2 = Klasse 1–2, Zyklus 3 = Klasse 3–4,
+   Zyklus 4 = Klasse 5–6. Die Ziele heißen z. B. „Mathe · Zyklus 3 (Klasse 3–4)“; ihre ids
+   beginnen mit `lu_` (`lu_mathe_z2` … `lu_franzoesisch_z4`). Dazu gibt es das neue Fach
+   **Französisch** 🇫🇷. Die Aufgaben leben in `js/luxemburg.js`.
+
+   * **Mathe – direkt aus dem Plan** (Druckseite 30–32, „Mathématiques“, Niveau socle und
+     avancé): Zahlenraum, Rechnen, Einmaleins samt Umkehrung, Lückenaufgaben, Größen,
+     Brüche, Dezimalzahlen, Formen und Körper, Umfang und Fläche, Winkel, Volumen,
+     Koordinaten, Diagramme, Mittelwert, Wahrscheinlichkeit, mehrstufige Textaufgaben.
+     Die Aufgaben werden **berechnet** (Level 1–5, Wege Knobeln, Geschichten, Bauen),
+     nicht abgeschrieben; jede hat eine Erklärung. Unterrichtssprache Mathe in Luxemburg
+     ist Deutsch.
+   * **Deutsch und Französisch – abgeleitet, noch nicht fachlich geprüft.** Der Plan nennt
+     dafür (Druckseite 20–27) nur Kompetenzen, keine Themenlisten. Die festen Fragen
+     (mindestens 17 je Ziel, mit Erklärung) sind eine Auslegung dieser Kompetenzen und
+     sollten von einer Lehrkraft geprüft werden, bevor sie als „lehrplangetreu“ gelten.
+     Französisch im Zyklus 2 ist im Plan nur mündlich; die App stellt trotzdem kurze
+     Lesefragen – das ist eine Vereinfachung.
+   * Klasse 1–2 sieht die Zyklus-2-Ziele, Klasse 3–4 den Zyklus 3, Klasse 5–6 den Zyklus 4
+     (über die Etappen der App: Zyklus 2 nur in Etappe 1, Zyklus 3 in Etappe 1–2, Zyklus 4
+     nur in Etappe 2).
+
+
 ---
 
 ## Auf dem Handy nutzen
@@ -800,6 +826,7 @@ js/philosophie.js     Stoa für Kinder: Zitate, Alltagslagen, Denk-Impulse
 js/hauptwerke.js      Kanon: 61 Hauptwerke aus Literatur, Philosophie, Wissenschaft, Kunst
 js/fortgeschritten.js Denkfehler, Fehlschlüsse, Stilmittel, Wortwurzeln, Syllogismen
 js/generators.js      Aufgaben-Generatoren – ein Ziel, viele Wege
+js/luxemburg.js       Lernziele nach dem luxemburgischen Lehrplan (Plan d'études 2026): Mathe berechnet, Deutsch/Französisch abgeleitet
 js/engine.js          Auswahl von Ziel & Weg, Brücken-Regel, Elternhinweise
 js/store.js           Profile, Fortschritt, Talentwerte, gemessene Wirksamkeit (lokal)
 js/ui.js              Bildschirme
