@@ -27,6 +27,7 @@ import * as Lesehilfe from './lesehilfe.js';
 import * as Texterkennung from './texterkennung.js';
 import * as Textaufbereitung from './textaufbereitung.js';
 import * as Lesemodi from './lesemodi.js';
+import * as Lesetest from './lesetest.js';
 
 const view = () => document.getElementById('view');
 export const esc = s => String(s).replace(/[&<>"']/g, c =>
@@ -58,7 +59,7 @@ export function zeige(neu, daten) {
   ({ start:screenStart, lernen:screenLernen, talente:screenTalente, wege:screenWege,
      eltern:screenEltern, test:screenTest, session:screenSession, profile:screenProfile,
      galerie:screenGalerie, ueberraschung:screenUeberraschung, eigenertext:screenEigenerText,
-     meinetexte:screenMeineTexte }[neu] || screenLernen)(p, daten);
+     meinetexte:screenMeineTexte, album:screenAlbum, lesetest:screenLesetest }[neu] || screenLernen)(p, daten);
 }
 
 /* Lesehilfe bei Legasthenie/LRS auf das aktive Profil anwenden: CSS-Variablen
@@ -224,22 +225,32 @@ function screenProfile() {
    drei erste Durchgänge für die Leseflüssigkeits-Karte vorliegen: der Takt
    wird nach JEDER Lesung mit Mikrofon gemessen, in jedem Modus. */
 function echoTaktKarteHtml(p) {
+  /* Blitzlesen (js/lesespiele.js): die Anzeigedauer passt sich pro Kind an -
+     unabhaengig davon, ob schon Echo-/Takt-Daten vorliegen, deshalb eine
+     eigene Zeile statt in den fruehen Abbruch unten verwoben. */
+  const blitzZeile = `<p class="small" style="margin:4px 0 0">⚡ Blitzlesen: zurzeit
+    <b>${(( (p.blitzMs ?? 1500) / 1000 ).toFixed(1)).replace('.', ',')} s</b> Anzeigezeit</p>`;
+
   const z = S.echoZustand(p);
   const takt = (z.verlauf || []).slice(-10);
-  if (!takt.length) return '';
+  if (!takt.length) return `<div class="card flat" style="background:var(--bg);margin-top:12px">
+    <p class="small" style="margin:0 0 6px"><b>🔊🥁⚡ Echo-Lesen, Takt-Lesen und Blitzlesen</b></p>
+    ${blitzZeile}
+  </div>`;
   const erste = takt.slice(0, Math.max(1, Math.floor(takt.length / 2)));
   const letzte = takt.slice(Math.floor(takt.length / 2));
   const schnitt = (liste, feld) => Math.round(liste.reduce((s, x) => s + (x[feld] || 0), 0) / liste.length);
   return `<div class="card flat" style="background:var(--bg);margin-top:12px">
-    <p class="small" style="margin:0 0 6px"><b>🔊🥁 Echo-Lesen und Takt-Lesen</b></p>
+    <p class="small" style="margin:0 0 6px"><b>🔊🥁⚡ Echo-Lesen, Takt-Lesen und Blitzlesen</b></p>
     <p class="small" style="margin:0">Echo-Stufe: <b>${esc(Lesemodi.echoStufeName(z.echoStufe))}</b></p>
     <p class="small" style="margin:4px 0 0">Aktuelle Takt-Vorgabe: <b>${Lesemodi.taktVorgabe(z)} Silben/Minute</b></p>
+    ${blitzZeile}
     <p class="small muted" style="margin:6px 0 0">Zuletzt gemessener Takt: ${schnitt(letzte, 'silbenProMin')}
       Silben/Minute, Gleichmaß ${schnitt(letzte, 'gleichmass')}
       ${erste.length < takt.length ? `(vorher ${schnitt(erste, 'silbenProMin')} Silben/Minute)` : ''}.</p>
-    <p class="small muted" style="margin:6px 0 0">Die Hilfestufe beim Echo-Lesen und das Takt-Tempo
-      passen sich von selbst an – nach guten Lesungen wird schrittweise weniger geholfen bzw.
-      etwas zügiger vorgegeben, nach schwächeren wieder mehr Hilfe bzw. etwas ruhiger.
+    <p class="small muted" style="margin:6px 0 0">Die Hilfestufe beim Echo-Lesen, das Takt-Tempo und die
+      Blitzlesen-Anzeigezeit passen sich von selbst an – nach guten Lesungen/Antworten wird schrittweise
+      weniger geholfen bzw. etwas zügiger vorgegeben, nach schwächeren wieder mehr Hilfe bzw. etwas ruhiger.
       Kein Zeitdruck, kein Punktabzug.</p>
   </div>`;
 }
@@ -247,6 +258,53 @@ function echoTaktKarteHtml(p) {
 /* Leseflüssigkeit im Eltern-Bereich. Verglichen werden nur ERSTE Durchgänge –
    der dritte Durchgang eines geübten Textes ist immer besser und würde einen
    Fortschritt vortäuschen, den es nicht gibt. */
+/* "wort:Haus" -> "Haus" (Wort genau lesen), "spiegel:Dach" -> "b/d/p/q: Dach"
+   usw. - roh gespeicherte Lernmotor-Schlüssel (js/lernmotor.js) in einen für
+   Eltern lesbaren Text übersetzen. */
+function elementText(schluessel) {
+  const [art, ...rest] = String(schluessel).split(':');
+  const wert = rest.join(':').replace(/_/g, ' ');
+  const NAMEN = {
+    wort: 'Wort genau lesen', spiegel: 'b/d/p/q', silbe: 'Silben hören & bauen',
+    satz: 'Satz-Detektiv', blitz: 'Blitzlesen', stolper: 'Stolperwort'
+  };
+  return `${NAMEN[art] || art}: „${wert}“`;
+}
+
+/* Eltern-Karte "🧠 Was gerade geübt wird" (Lernmotor, js/lernmotor.js):
+   Kasten-Verteilung, die schwierigsten Elemente, wie viele heute fällig sind,
+   die Tagesziel-Einstellung und der Minuten-Verlauf der letzten 7 Tage. */
+function lernmotorKarte(p) {
+  const lern = S.lernStandFuerEltern(p);
+  const maxK = Math.max(1, ...lern.verteilung);
+  const maxM = Math.max(1, ...lern.minutenVerlauf.map(x => x.minuten));
+  return `
+    <div class="card">
+      <h3>🧠 Was gerade geübt wird</h3>
+      <p class="muted small">Aus den Lesespielen und dem Vorlesen: was sich einprägt, kommt
+        seltener wieder, was noch hakt, kommt bald erneut - ${lern.faelligHeute}
+        Element${lern.faelligHeute === 1 ? '' : 'e'} sind heute fällig.</p>
+      <div class="row" style="align-items:flex-end;height:60px;gap:6px;margin-top:10px">
+        ${lern.verteilung.map((n, i) => `<div style="flex:1;text-align:center">
+          <div style="height:${Math.max(3, n/maxK*46)}px;background:var(--brand);border-radius:4px 4px 0 0"></div>
+          <div class="muted" style="font-size:.6rem">Kasten ${i+1}</div></div>`).join('')}
+      </div>
+      ${lern.schwierigste.length ? `<ul class="clean small" style="margin-top:10px">
+        ${lern.schwierigste.map(x => `<li>${esc(elementText(x.schluessel))} · Kasten ${x.kasten}/5</li>`).join('')}
+      </ul>` : '<p class="small muted" style="margin-top:8px">Noch keine Lesespiele geübt.</p>'}
+      <label class="field" style="margin-top:12px"><span>Tagesziel Lesen</span>
+        <select id="tageszielWahl">${[5,10,15].map(m =>
+          `<option value="${m}" ${m === lern.tagesziel ? 'selected' : ''}>${m} Minuten</option>`).join('')}</select>
+      </label>
+      <h4 style="margin:14px 0 6px">Leseminuten – letzte 7 Tage</h4>
+      <div class="row" style="align-items:flex-end;height:70px;gap:6px">
+        ${lern.minutenVerlauf.map(x => `<div style="flex:1;text-align:center">
+          <div style="height:${Math.max(4, x.minuten/maxM*50)}px;background:var(--brand);border-radius:6px 6px 0 0"></div>
+          <div class="muted" style="font-size:.65rem">${x.tag.slice(8)}.</div></div>`).join('')}
+      </div>
+    </div>`;
+}
+
 function leseProfilKarte(p) {
   const v = S.leseVerlauf(p);
   if (!v || v.anzahl < 3) return `
@@ -349,7 +407,379 @@ function leseProfilKarte(p) {
     </div>`;
 }
 
+/* Karte im Eltern-Bereich: letztes Lesetest-Ergebnis, Vergleich zum vorigen
+   Test und eine freundliche Erinnerung, falls der letzte Test schon über
+   vier Wochen her ist (siehe js/lesetest.js: erinnerungFaellig). */
+function lesetestKarte(p) {
+  const letzter = S.lesetestLetzter(p);
+  const voriger = (p.lesetests || [])[(p.lesetests || []).length - 2] || null;
+  const erinnerung = Lesetest.erinnerungFaellig(letzter?.datum);
+  return `
+    <div class="card">
+      <h3>📋 Lesetest</h3>
+      <p class="muted small">Ein kurzer, gemeinsamer Test (etwa 15 Minuten): Wörter lesen,
+        Quatschwörter lesen, ähnliche Wörter unterscheiden, Tempo &amp; Takt (mit Mikrofon,
+        überspringbar) und Verstehen. <b>Keine Diagnose</b> – nur ein Blick darauf, wo es
+        gerade hakt, mit passenden Übungsvorschlägen.</p>
+      ${letzter ? `
+        <div class="card flat" style="background:var(--bg);margin-top:10px">
+          <p class="small" style="margin:0"><b>Letzter Test: ${esc(Lesetest.datumKurz(letzter.datum))}</b></p>
+          <p class="small muted" style="margin:6px 0 0">
+            ${letzter.woerter?.proMinute ?? '–'} Wörter/Min ·
+            ${letzter.quatsch?.proMinute ?? '–'} Quatschwörter/Min</p>
+          ${voriger ? `<p class="small" style="margin:6px 0 0">${esc(Lesetest.verlaufVergleich(voriger, letzter)?.text || '')}</p>` : ''}
+        </div>` : `<p class="small">Noch kein Lesetest gemacht.</p>`}
+      ${erinnerung && letzter ? `<p class="small" style="margin-top:10px">
+        🔔 Der letzte Test ist eine Weile her – wenn es passt, ist ein neuer eine gute Idee.
+        Kein Muss, kein Zeitdruck.</p>` : ''}
+      <button class="btn" id="zumLesetest" style="margin-top:10px">📋 Lesetest starten</button>
+    </div>`;
+}
 
+/* ============================================================================
+   LESETEST: adaptives Leseprofil, Eltern und Kind gemeinsam (~15 Minuten).
+   Reine Anzeige/Verkabelung – die gesamte Auswertung steckt in js/lesetest.js
+   (DOM-frei, siehe tests/lesetest.mjs).
+
+   Für Ende-zu-Ende-Tests lässt sich die Dauer der Teile 1 und 2 (normal
+   60000ms) über window.__testDauerMs verkürzen – NUR zu Testzwecken, siehe
+   tests/e2e.mjs. Ohne diesen Schalter gilt immer die volle Minute.
+   ============================================================================ */
+function screenLesetest(p) {
+  /* Die Lesehilfe-Einstellungen des Profils gelten hier bewusst NICHT: eine
+     neutrale Darstellung hält die Ergebnisse über mehrere Tests hinweg
+     vergleichbar. zeige() wendet beim nächsten Bildschirmwechsel automatisch
+     wieder die gewohnte Einstellung an. */
+  lesehilfeAnwenden(null);
+  const teilDauerMs = () => (Number.isFinite(window.__testDauerMs) ? window.__testDauerMs : 60000);
+  const etappe = Math.max(1, Math.min(2, p.etappe || 1));
+
+  const stand = {
+    protokollWoerter: [], protokollQuatsch: [],
+    treppe: Lesetest.neuerTreppenZustand(), unterscheidenAntworten: [],
+    tempoTakt: null, verstehen: null
+  };
+
+  const kopf = (titel, teilNr) => `
+    <div class="row spread"><span class="pill">📋 Teil ${teilNr}/5 · ${esc(titel)}</span></div>`;
+
+  const ueberspringenKnopf = (weiter) =>
+    `<button class="btn ghost small" id="ueberspringen" style="margin-top:10px">Diesen Teil überspringen</button>`;
+
+  /* -------------------------------------------------------------- Intro */
+  const intro = () => {
+    view().innerHTML = `
+      <div class="hero"><h2>📋 Lesetest</h2>
+        <p>Ein kurzer Test für Sie beide gemeinsam – etwa 15 Minuten, in Ruhe.</p></div>
+      <div class="card">
+        <h3>Bevor es losgeht</h3>
+        <ul class="clean small">
+          <li>👨‍👩‍👧 Ihr Kind sitzt daneben, Sie bedienen die Uhr und tippen mit.</li>
+          <li>⏸️ Jederzeit pausieren oder abbrechen – jeder Teil ist einzeln überspringbar.</li>
+          <li>🔤 Die Lesehilfe-Einstellungen (Farben, Schrift, Fenster) sind für diesen Test
+            ausgeschaltet, damit die Darstellung neutral bleibt und die Ergebnisse über
+            mehrere Tests hinweg vergleichbar sind. Danach gilt wieder die gewohnte Einstellung.</li>
+          <li>🔒 Ein möglicher Mikrofon-Teil misst nur die Lautstärke, nichts wird gespeichert
+            oder verschickt.</li>
+        </ul>
+        <p class="small" style="margin-top:10px"><b>Wichtig: Das ist kein Diagnoseverfahren.</b>
+          Fachleute nutzen dafür standardisierte Tests (z. B. SLRT-II, ELFE II, WLLP-R).
+          Dieser Test zeigt nur, woran es gerade hakt, und schlägt dazu Übungen aus der App vor.
+          Bei einem Verdacht auf LRS berät die Schule über einen möglichen Nachteilsausgleich.</p>
+        <button class="btn" id="los" style="margin-top:14px;width:100%">Los geht's ➜</button>
+        <button class="btn quiet" id="abbrechen" style="margin-top:10px;width:100%">Abbrechen</button>
+      </div>`;
+    view().querySelector('#los').onclick = () => teil1();
+    view().querySelector('#abbrechen').onclick = () => zeige('eltern');
+  };
+
+  /* ------------------------------------------------- Teil 1 & 2: Tippen */
+  const wortTeil = (teilNr, titel, wortListeVoll, protokollFeld, naechster) => {
+    let liste = [...wortListeVoll];
+    let i = 0;
+    let restMs = teilDauerMs();
+    let timer = null;
+    /* "beendet" ist der Schutz gegen das Rundenende-Rennen: läuft die
+       (verkürzte) Zeit genau in dem Moment ab, in dem ein Tipp unterwegs
+       ist, darf dieser Tipp nicht mehr im Protokoll landen – sonst zählt
+       ein Wort mit, das während der Auswertung schon nicht mehr dran war. */
+    let beendet = false;
+
+    const naechstesWort = () => {
+      if (i >= liste.length) { liste = [...wortListeVoll]; i = 0; }
+      return liste[i];
+    };
+
+    const stopTimer = () => { if (timer) clearInterval(timer); timer = null; };
+    const startTimer = () => {
+      stopTimer();
+      timer = setInterval(() => {
+        restMs -= 250;
+        const anzeige = view().querySelector('#lesetestUhr');
+        if (anzeige) anzeige.textContent = `⏱ ${Math.max(0, Math.ceil(restMs / 1000))} s`;
+        if (restMs <= 0) beenden();
+      }, 250);
+    };
+
+    const renderTipp = () => {
+      view().innerHTML = `
+        <div class="card">${kopf(titel, teilNr)}
+          <p class="small muted" id="lesetestUhr" style="text-align:right;margin:0">⏱ ${Math.ceil(restMs / 1000)} s</p>
+          <p class="task pop" style="text-align:center;font-size:2.2rem;margin:24px 0" id="wortAnzeige">${esc(naechstesWort())}</p>
+          <p class="small muted center">Ihr Kind liest laut – Sie tippen das Ergebnis:</p>
+          <div class="row wrap" style="justify-content:center;gap:10px;margin-top:10px">
+            <button class="btn" id="tippRichtig">✓ richtig</button>
+            <button class="btn ghost" id="tippFalsch">✗ falsch</button>
+            <button class="btn quiet" id="tippAus">⏭ ausgelassen</button>
+          </div>
+          <div style="text-align:center">${ueberspringenKnopf()}</div>
+        </div>`;
+
+      view().querySelector('#tippRichtig').onclick = () => tippe('richtig');
+      view().querySelector('#tippFalsch').onclick = () => renderFehlerart();
+      view().querySelector('#tippAus').onclick = () => tippe('ausgelassen');
+      view().querySelector('#ueberspringen').onclick = () => beenden();
+      startTimer();
+    };
+
+    /* Während der Fehlerart-Wahl sind ✓/✗/⏭ komplett von der Seite (nicht
+       nur per Klick blockiert) – ein Erwachsener kann dann nicht mehr aus
+       Versehen daneben auf einen Tipp-Knopf statt eine Fehlerart tippen.
+       Die Uhr PAUSIERT bewusst dabei: Die Fehlerart in Ruhe auszuwählen
+       gehört zum Protokollieren, nicht zur gemessenen Lesezeit – sonst
+       würde ausgerechnet das sorgfältige Erfassen eines Fehlers das
+       gemessene Tempo verfälschen. Die pausierte Zeit zählt nicht zur
+       Minute; das Wort selbst wurde ja schon gelesen, bevor pausiert wurde. */
+    const renderFehlerart = () => {
+      stopTimer();
+      view().innerHTML = `
+        <div class="card">${kopf(titel, teilNr)}
+          <p class="small muted" id="lesetestUhr" style="text-align:right;margin:0">⏱ ${Math.ceil(restMs / 1000)} s · pausiert</p>
+          <p class="task pop" style="text-align:center;font-size:1.5rem;margin:20px 0">Fehlerart (optional):</p>
+          <div class="choices">
+            ${Lesetest.FEHLERARTEN.map(f => `<button class="choice small" data-f="${f.id}">${esc(f.label)}</button>`).join('')}
+            <button class="choice small" data-f="">ohne Angabe – weiter</button>
+          </div>
+        </div>`;
+      view().querySelectorAll('[data-f]').forEach(b => b.onclick = () => tippe('falsch', b.dataset.f || null));
+    };
+
+    const tippe = (ergebnis, fehlerart = null) => {
+      if (beendet) return;
+      stand[protokollFeld].push({ ergebnis, fehlerart });
+      i++;
+      renderTipp();
+    };
+
+    const beenden = () => {
+      if (beendet) return;
+      beendet = true;
+      stopTimer();
+      naechster();
+    };
+
+    renderTipp();
+  };
+
+  const teil1 = () => {
+    const woerter = Lesetest.wortlisteFuerTest(etappe, 40);
+    wortTeil(1, 'Wörter lesen (1 Minute)', woerter, 'protokollWoerter', teil2);
+  };
+  const teil2 = () => {
+    const kunst = Lesetest.kunstwortlisteFuerTest(30);
+    wortTeil(2, 'Quatschwörter lesen (1 Minute)', kunst, 'protokollQuatsch', () => teil3());
+  };
+
+  /* ------------------------------------------ Teil 3: Ähnliche Wörter */
+  const UNTERSCHEIDEN_ANZAHL = 12;
+  const teil3 = (i = 0) => {
+    if (i >= UNTERSCHEIDEN_ANZAHL) return teil4();
+    const ausschluss = new Set(stand.unterscheidenAntworten.map(a => a.element));
+    const a = Lesetest.unterscheidenAufgabe(stand.treppe.stufe, ausschluss);
+    const start = Date.now();
+    view().innerHTML = `
+      <div class="card">${kopf('Ähnliche Wörter unterscheiden', 3)}
+        <p class="muted small">Jetzt liest dein Kind allein. Frage ${i + 1} von ${UNTERSCHEIDEN_ANZAHL}.</p>
+        <p style="text-align:center;font-size:3.2rem;margin:14px 0">${a.bild}</p>
+        <div class="choices">${a.optionen.map(o => `<button class="choice" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+        <div style="text-align:center">${ueberspringenKnopf()}</div>
+      </div>`;
+    view().querySelectorAll('[data-o]').forEach(b => b.onclick = () => {
+      const richtig = b.dataset.o === a.antwort;
+      const zeitMs = Date.now() - start;
+      stand.treppe = Lesetest.treppeSchritt(stand.treppe, richtig);
+      stand.unterscheidenAntworten.push({ richtig, zeitMs, stufeNach: stand.treppe.stufe, element: a.element });
+      teil3(i + 1);
+    });
+    view().querySelector('#ueberspringen').onclick = () => teil4();
+  };
+
+  /* ------------------------------------------------ Teil 4: Tempo & Takt */
+  const teil4 = () => {
+    const text = Lesen.texteFuer(etappe)[0] || Lesen.TEXTE[0];
+    view().innerHTML = `
+      <div class="card">${kopf('Tempo & Takt (mit Mikrofon)', 4)}
+        <p class="muted small">Freiwillig. Ihr Kind liest den Text einmal laut vor.</p>
+        <div class="lesetext" style="margin:14px 0">${esc(text.text)}</div>
+        <div class="row wrap" style="gap:10px">
+          <button class="btn" id="mikroStart">🎤 Los, ich lese vor</button>
+          <button class="btn quiet" id="mikroFertig" hidden>Fertig</button>
+        </div>
+        <p class="small muted" id="mikroStatus" style="margin-top:8px"></p>
+        <div style="text-align:center">${ueberspringenKnopf()}</div>
+      </div>`;
+    let rec = null;
+    view().querySelector('#mikroStart').onclick = async () => {
+      try {
+        rec = aufnahme();
+        await rec.start();
+        view().querySelector('#mikroStart').hidden = true;
+        view().querySelector('#mikroFertig').hidden = false;
+        view().querySelector('#mikroStatus').textContent = '🔴 Aufnahme läuft …';
+      } catch {
+        view().querySelector('#mikroStatus').textContent = 'Mikrofon nicht verfügbar – Teil wird übersprungen.';
+      }
+    };
+    view().querySelector('#mikroFertig').onclick = () => {
+      rec?.stopp();
+      const huellkurve = rec?.huellkurve || [];
+      const leseWerte = Lesen.auswerten(huellkurve, { text: text.text, schrittMs: SCHRITT_MS });
+      const gipfelListe = Aussprache.gipfel(huellkurve, SCHRITT_MS);
+      const taktMessung = Lesemodi.taktMessen(gipfelListe);
+      stand.tempoTakt = Lesetest.tempoTaktKennzahlen(leseWerte, taktMessung);
+      teil5();
+    };
+    view().querySelector('#ueberspringen').onclick = () => teil5();
+  };
+
+  /* -------------------------------------------------------------- Teil 5 */
+  const teil5 = () => {
+    const paare = Lesetest.textpaareFuer(etappe);
+    const paar = paare[r0(paare.length)];
+    const selbstZuerst = Math.random() < 0.5;
+    const selbstText = selbstZuerst ? paar.a : paar.b;
+    const gehoertText = selbstZuerst ? paar.b : paar.a;
+
+    const fragenRunde = (titel, textObj, i, richtigBisher, weiter) => {
+      if (i >= textObj.fragen.length) return weiter(richtigBisher);
+      const f = textObj.fragen[i];
+      view().innerHTML = `
+        <div class="card">${kopf(titel, 5)}
+          <p class="task pop">${esc(f.frage)}</p>
+          <div class="choices">${shuffleArr(f.optionen).map(o => `<button class="choice" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+        </div>`;
+      view().querySelectorAll('[data-o]').forEach(b => b.onclick = () => {
+        const richtig = b.dataset.o === f.antwort;
+        fragenRunde(titel, textObj, i + 1, richtigBisher + (richtig ? 1 : 0), weiter);
+      });
+    };
+
+    const gehoertVorlesen = (selbstRichtig) => {
+      view().innerHTML = `
+        <div class="card">${kopf('Verstehen: vorgelesen', 5)}
+          <p class="muted small">Jetzt liest die App vor – der Text bleibt verborgen.</p>
+          <p style="text-align:center;font-size:2.4rem;margin:24px 0">🔊</p>
+          <button class="btn" id="vorlesenStart" style="width:100%">Vorlesen starten</button>
+          <div style="text-align:center">${ueberspringenKnopf()}</div>
+        </div>`;
+      view().querySelector('#vorlesenStart').onclick = () => {
+        view().querySelector('#vorlesenStart').disabled = true;
+        vorlesen(gehoertText.text, { tempo: 0.85, beiEnde: () => {
+          fragenRunde('Verstehen: vorgelesen', gehoertText, 0, 0, gehoertRichtig => {
+            stand.verstehen = { selbstRichtig, gehoertRichtig };
+            fertig();
+          });
+        } });
+      };
+      view().querySelector('#ueberspringen').onclick = () => { stand.verstehen = { selbstRichtig, gehoertRichtig: null }; fertig(); };
+    };
+
+    const selbstLesen = () => {
+      view().innerHTML = `
+        <div class="card">${kopf('Verstehen: selbst gelesen', 5)}
+          <p class="muted small">Ihr Kind liest diesen Text einmal für sich, dann kommen Fragen.</p>
+          <div class="lesetext" style="margin:14px 0">${esc(selbstText.text)}</div>
+          <button class="btn" id="weiterFragen" style="width:100%">Fertig gelesen – weiter ➜</button>
+          <div style="text-align:center">${ueberspringenKnopf()}</div>
+        </div>`;
+      view().querySelector('#weiterFragen').onclick = () =>
+        fragenRunde('Verstehen: selbst gelesen', selbstText, 0, 0, gehoertVorlesen);
+      view().querySelector('#ueberspringen').onclick = () => fertig();
+    };
+
+    selbstLesen();
+  };
+
+  const r0 = n => Math.floor(Math.random() * Math.max(1, n));
+  const shuffleArr = a => a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(v => v[1]);
+
+  /* --------------------------------------------------- Auswertung & Ende
+     "fertig" berechnet und speichert EINMAL, dann sieht das Kind zuerst nur
+     Ermutigung (keine Zahlen, keine Fehler) – die Kennzahlen öffnen sich erst
+     über einen eigenen, als "für Eltern" beschrifteten Knopf. */
+  function fertig() {
+    const woerter = Lesetest.woerterAuswerten(stand.protokollWoerter, teilDauerMs());
+    const quatsch = Lesetest.woerterAuswerten(stand.protokollQuatsch, teilDauerMs());
+    const unterscheiden = Lesetest.unterscheidenAuswerten(stand.unterscheidenAntworten);
+    const werte = { woerter, quatsch, verstehen: stand.verstehen, tempoTakt: stand.tempoTakt };
+    const aussagen = Lesetest.profilAussagen(werte);
+    const tipps = Lesetest.empfehlungen(werte);
+
+    const eintrag = {
+      datum: new Date().toISOString(),
+      etappe, woerter, quatsch, unterscheiden, tempoTakt: stand.tempoTakt, verstehen: stand.verstehen,
+      aussagen: aussagen.map(a => a.text), empfehlungen: tipps
+    };
+    const voriger = S.lesetestLetzter(p);
+    S.lesetestSpeichern(p, eintrag);
+    const vergleich = Lesetest.verlaufVergleich(voriger, eintrag);
+    ergebnisKind(eintrag, vergleich);
+  }
+
+  function ergebnisKind(eintrag, vergleich) {
+    view().innerHTML = `
+      <div class="hero"><h2>Super gemacht! 🌟</h2>
+        <p>Du hast den ganzen Lesetest geschafft!</p></div>
+      <div class="card" style="text-align:center">
+        <p style="font-size:3.4rem;margin:10px 0">🎉🌟🎉</p>
+        <p class="small muted">Frag deine Eltern, wenn du willst, was als Nächstes geübt wird.</p>
+        <button class="btn quiet small" id="fuerEltern" style="margin-top:20px">Für Eltern: Ergebnis ansehen</button>
+      </div>`;
+    view().querySelector('#fuerEltern').onclick = () => ergebnisEltern(eintrag, vergleich);
+  }
+
+  function ergebnisEltern(eintrag, vergleich) {
+    const { woerter, quatsch, unterscheiden, aussagen: aussagenText, empfehlungen: tipps } = eintrag;
+    const aussagen = aussagenText.map(text => ({ text }));
+
+    view().innerHTML = `
+      <div class="hero"><h2>Ergebnis für Sie</h2>
+        <p>Kein Diagnose-Ergebnis – ein Blick darauf, wo es gerade hakt.</p></div>
+      <div class="card">
+        <h3>Kennzahlen</h3>
+        <div class="grid two">
+          <div><div class="muted small">Wörter/Min</div><b style="font-size:1.4rem">${woerter.proMinute}</b></div>
+          <div><div class="muted small">Quatschwörter/Min</div><b style="font-size:1.4rem">${quatsch.proMinute}</b></div>
+          <div><div class="muted small">Unterscheiden</div><b style="font-size:1.4rem">${Math.round(unterscheiden.trefferquote * 100)}%</b></div>
+          <div><div class="muted small">Stufe erreicht</div><b style="font-size:1.4rem">${unterscheiden.stufeEnde}</b></div>
+        </div>
+        ${vergleich ? `<p class="small" style="margin-top:10px">${esc(vergleich.text)}</p>` : ''}
+      </div>
+      ${aussagen.length ? `<div class="card"><h3>Was auffällt</h3>
+        <ul class="clean small">${aussagen.map(a => `<li>${esc(a.text)}</li>`).join('')}</ul></div>` : ''}
+      ${tipps.length ? `<div class="card"><h3>Was jetzt helfen könnte</h3>
+        <ul class="clean small">${tipps.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>` : ''}
+      <div class="card">
+        <p class="small muted"><b>Keine Diagnose:</b> Dieser Test ersetzt keine standardisierten
+          Verfahren (z. B. SLRT-II, ELFE II, WLLP-R) und sagt nichts über „LRS ja/nein" aus.
+          Bei einem Verdacht berät die Schule über einen möglichen Nachteilsausgleich.</p>
+      </div>
+      <button class="btn" id="lesetestFertig" style="width:100%">Fertig</button>`;
+    view().querySelector('#lesetestFertig').onclick = () => zeige('eltern');
+  }
+
+  intro();
+}
 
 /* Lesehilfe bei Legasthenie/LRS: Hauptschalter, Einzel-Einstellungen und eine
    Live-Vorschau. Die Vorschau braucht keine eigene Verkabelung – sie steckt
@@ -2468,6 +2898,30 @@ function screenTest(p) {
 }
 
 /* ------------------------------ Lernen (Start) ------------------------------ */
+/* Fortschrittsring "📖 Heute: x von y Minuten" - kein Countdown, keine Farbe
+   Rot: ein einfacher Kreis (SVG), der sich fuellt, plus ein ruhiger Satz.
+   Bei Erreichen eine kleine, stille Feier statt eines lauten Effekts. */
+function tageszielRing(p) {
+  const stand = S.tagesZielStand(p);
+  const anteil = Math.min(1, stand.minuten / stand.ziel);
+  const umfang = 2 * Math.PI * 26;
+  return `
+    <div class="card" style="text-align:center">
+      <svg width="72" height="72" viewBox="0 0 64 64" style="display:block;margin:0 auto">
+        <circle cx="32" cy="32" r="26" fill="none" stroke="var(--linie,#ddd)" stroke-width="6"></circle>
+        <circle cx="32" cy="32" r="26" fill="none" stroke="var(--brand)" stroke-width="6"
+          stroke-linecap="round" stroke-dasharray="${umfang}"
+          stroke-dashoffset="${umfang * (1 - anteil)}"
+          transform="rotate(-90 32 32)"></circle>
+      </svg>
+      <div style="margin-top:8px;font-weight:700">📖 Heute: ${stand.minuten} von ${stand.ziel} Minuten</div>
+      ${stand.erreicht
+        ? '<div class="muted small">🎉 Geschafft für heute – toll gelesen!</div>'
+        : '<div class="muted small">Lesen zählt in Lautlesen, Meine Texte, Lesespielen und Silben.</div>'}
+      <button class="btn quiet small" id="zumAlbum" style="margin-top:8px">📒 Lese-Album</button>
+    </div>`;
+}
+
 function screenLernen(p) {
   const ziele = S.zieleFuerKlasse(p);
   const heuteAufgaben = p.stats.tage[new Date().toISOString().slice(0,10)] || 0;
@@ -2482,6 +2936,7 @@ function screenLernen(p) {
       <p>8 Aufgaben – auf deinem Weg zusammengestellt.</p>
       <button class="btn" id="mission">Mission starten 🚀</button>
     </div>
+    ${tageszielRing(p)}
     ${ueberraschungsKarte(p)}
     <div class="card" style="border:2px solid var(--brand)">
       <div class="row spread">
@@ -2553,6 +3008,36 @@ function screenLernen(p) {
   view().querySelectorAll('[data-ziel]').forEach(b => b.onclick = () => zeige('session', { zielId:b.dataset.ziel, laenge:8 }));
   view().querySelector('#zurUeberraschung')?.addEventListener('click', () => zeige('ueberraschung'));
   view().querySelector('#meineTexte')?.addEventListener('click', () => zeige('meinetexte'));
+  view().querySelector('#zumAlbum')?.addEventListener('click', () => zeige('album'));
+}
+
+/* ------------------------------ Lese-Album ------------------------------
+   Feste Reihenfolge, keine Zufallsbelohnung (keine Lootbox): jeder Sticker
+   hat einen festen Platz und wird beim Erreichen von Tagesziel oder
+   Meilenstein einfach der naechste freie. Noch nicht erreichte Plaetze
+   werden verdeckt gezeigt (grauer Umriss), aber sie zaehlen sichtbar mit -
+   nichts an dieser Ansicht wird bewertet oder verglichen. */
+const ALBUM_GRUENDE = {
+  tagesziel: 'Tagesziel Lesen erreicht',
+  leseserie3: '3 Tage in Folge gelesen',
+  kasten5: '10 Wörter/Sätze sicher gemeistert'
+};
+function screenAlbum(p) {
+  const stand = S.albumStand(p);
+  const anzahl = stand.filter(s => s.freigeschaltet).length;
+  view().innerHTML = `
+    <h1>📒 Lese-Album</h1>
+    <p class="muted small">${anzahl} von ${stand.length} Stickern gesammelt – fürs Lesen, nicht für Wettbewerb.</p>
+    <div class="card">
+      <div class="tiles" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:8px">
+        ${stand.map(s => `<div title="${s.freigeschaltet ? esc(ALBUM_GRUENDE[s.grund] || 'gesammelt') : 'noch nicht erreicht'}"
+            style="font-size:1.8rem;text-align:center;padding:6px;border-radius:10px;
+              background:${s.freigeschaltet ? 'transparent' : 'var(--card-alt,#eee)'};
+              opacity:${s.freigeschaltet ? '1' : '.35'}">${s.freigeschaltet ? s.sticker : '❔'}</div>`).join('')}
+      </div>
+    </div>
+    <button class="btn quiet" id="albumZurueck" style="margin-top:10px">Zurück</button>`;
+  view().querySelector('#albumZurueck').onclick = () => zeige('lernen');
 }
 
 /* ------------------------------ Meine Texte (Kind) ------------------------------
@@ -2615,7 +3100,10 @@ function meineTexteLesen(p, text, abschnittIndex, durchgang) {
     verarbeiteLesung(p, a, huellkurve, extra, {
       titel: lesetitel, durchgang, vorherigerDurchgang: S.letzteLesung(p, lesetitel, durchgang - 1)
     });
-    S.verbuche(p, { zielId: 'lautlesen', weg: 'erzaehlen', level: p.etappe || 1, richtig: true, ms });
+    /* Tagesziel Lesen: die tatsächlich gemessene Lesedauer zählt, nicht die
+       (hier gar nicht erfasste) Bildschirmzeit - siehe js/store.js: verbuche. */
+    S.verbuche(p, { zielId: 'lautlesen', weg: 'erzaehlen', level: p.etappe || 1, richtig: true, ms,
+                    lesedauerMs: a.leseWerte?.dauerMs ?? null });
     kopfzeile(p);
     meineTexteWeiter(p, text, abschnittIndex, durchgang, a);
   });
@@ -2916,6 +3404,43 @@ function screenSession(p, opts = {}) {
       };
       zeichnen();
 
+    } else if (a.typ === 'blitz') {
+      /* Blitzlesen: das Wort/die Silbe erscheint groß, verschwindet nach
+         p.blitzMs wieder, dann kommen die vier Antworten. "Nochmal zeigen"
+         kostet nichts - kein Zeitdruck, keine Abzüge. Bei
+         prefers-reduced-motion wird die Anzeigedauer stark verkürzt statt
+         mit Effekten zu arbeiten - das Prinzip (erst sehen, dann erkennen)
+         bleibt, ohne jemanden zu stören, der bewegte/blinkende Inhalte meiden will. */
+      const reduziert = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      bereich.innerHTML = `
+        <div class="blitz-flash pop" id="blitzFlash">${textAnzeige(a.blitzText)}</div>
+        <div class="choices" id="blitzOptionen" hidden>${a.optionen.map(o =>
+          `<button class="choice" data-o="${esc(o)}">${textAnzeige(o)}</button>`).join('')}</div>
+        ${ergebnis === null ? '<button class="btn quiet small" id="blitzNochmal" hidden style="margin-top:10px">👀 Nochmal zeigen</button>' : ''}`;
+      const zeigen = () => {
+        const flash = bereich.querySelector('#blitzFlash');
+        const opts = bereich.querySelector('#blitzOptionen');
+        const nochmal = bereich.querySelector('#blitzNochmal');
+        flash.hidden = false; opts.hidden = true; if (nochmal) nochmal.hidden = true;
+        const dauer = reduziert ? 120 : (p.blitzMs || a.dauerMs || 1500);
+        setTimeout(() => {
+          flash.hidden = true; opts.hidden = false; if (nochmal) nochmal.hidden = false;
+        }, dauer);
+      };
+      zeigen();
+      if (ergebnis === null) {
+        bereich.querySelector('#blitzNochmal')?.addEventListener('click', zeigen);
+        bereich.querySelectorAll('[data-o]').forEach(b => b.onclick = () => auswerten(a, b.dataset.o));
+      } else {
+        bereich.querySelector('#blitzFlash').hidden = true;
+        bereich.querySelector('#blitzOptionen').hidden = false;
+        bereich.querySelectorAll('[data-o]').forEach(b => {
+          const ok = pruefe(a, b.dataset.o);
+          b.classList.add(ok ? 'correct' : (b.dataset.o === eingabe ? 'wrong' : 'dim'));
+          b.disabled = true;
+        });
+      }
+
     } else {
       /* Eigenes Tastenfeld statt der Systemtastatur, sobald eine Zahl gefragt
          ist. Grund: inputmode="numeric" zeigt auf dem iPad einen Ziffernblock
@@ -3030,6 +3555,10 @@ function screenSession(p, opts = {}) {
              : okDirekt !== null ? okDirekt
              : pruefe(a, eingabe);
     if (messwerte) a.messwerte = messwerte;
+    /* Blitzlesen: die Anzeigedauer passt sich an - kürzer nach richtig,
+       länger nach falsch, siehe S.blitzNachAntwortAnpassen. Kein Abzug,
+       nur die Dauer der NÄCHSTEN Aufgabe ändert sich. */
+    if (a.typ === 'blitz') S.blitzNachAntwortAnpassen(p, ok);
     status[sess.index] = a.keineWertung ? 'denk' : (ok ? 'done' : 'miss');
     sess.index++;
     if (a.keineWertung) sess.laenge--;          // zählt nicht in die Quote der Runde
@@ -3045,7 +3574,10 @@ function screenSession(p, opts = {}) {
     // Zeit fliesst in die Wirksamkeit eines Weges ein – schnell und sicher zaehlt mehr.
     S.verbuche(p, { zielId:a.ziel.id, weg:a.weg, level:a.level, richtig:ok, bruecke:a.bruecke, ms,
                     tippsGenutzt, knacknuss: !!a.knacknuss, keineWertung: !!a.keineWertung,
-                    skizze: Skizze.benutzt(a.blatt) });
+                    skizze: Skizze.benutzt(a.blatt), element: a.element || null,
+                    /* Tagesziel Lesen: bei Lautlese-Aufgaben zaehlt die tatsächlich
+                       gemessene Lesedauer (Mikrofon), sonst die verstrichene Zeit. */
+                    lesedauerMs: a.typ === 'lesen' ? (a.leseWerte?.dauerMs ?? null) : null });
     /* Ein Satz, der sich auf DIESE Antwort bezieht – nicht ein allgemeines Lob.
        Die App weiß dafür mehr, als aus der Aufgabe allein hervorginge: wie
        lange gebraucht, wie viele Tipps, wie knapp daneben, ob gemalt wurde. */
@@ -3099,6 +3631,14 @@ function screenSession(p, opts = {}) {
       <button class="btn quiet" id="heim" style="margin-top:10px">Zur Übersicht</button>`;
     view().querySelector('#nochmal').onclick = () => zeige('session', opts);
     view().querySelector('#heim').onclick = () => zeige('lernen');
+    /* Rundenende ersetzt den Bildschirm direkt (ohne zeige()), das dort
+       sonst übliche Zurücksetzen auf Scrollposition 0 fehlt hier also. Blieb
+       vom letzten Aufgabenbildschirm (z. B. einem hohen Zeichenbrett) eine
+       Scrollposition übrig, konnte die sticky Kopfleiste (position:sticky,
+       z-index über dem Inhalt) genau über dem Rennkreisel kleben bleiben -
+       der Kreisel war dann weder sichtbar noch antippbar, das Rennen ließ
+       sich nie beenden. */
+    window.scrollTo(0, 0);
     if (view().querySelector('#rennKreisel')) rennenStarten(p, sess, geistVorher);
   };
 
@@ -3367,6 +3907,7 @@ function screenEltern(p) {
           <div class="muted" style="font-size:.65rem">${x.d.slice(8)}.</div></div>`).join('')}
       </div>
     </div>
+    ${lernmotorKarte(p)}
     <div class="card">
       <h3>Was bei ${esc(p.name)} wirkt</h3>
       <p class="muted small">Gemessen an tatsächlich gelösten Aufgaben – Trefferquote und Tempo.
@@ -3518,17 +4059,22 @@ function screenEltern(p) {
     ${vergleichKarte(p)}
     ${skizzenKarte(p)}
     ${leseProfilKarte(p)}
+    ${lesetestKarte(p)}
     ${versionsKarte()}
 `;
   view().querySelector('#profile').onclick = () => zeige('profile');
   view().querySelector('#etappeWahl').onchange = e => {
     p.etappe = Number(e.target.value); S.speichern(); zeige('eltern');
   };
+  view().querySelector('#tageszielWahl')?.addEventListener('change', e => {
+    S.tagesZielSetzen(p, e.target.value); zeige('eltern');
+  });
   view().querySelector('#vorleseSchalter').onclick = () => {
     p.vorlesen = !p.vorlesen; S.speichern(); zeige('eltern');
   };
   lesehilfeVerdrahten(p);
   view().querySelector('#zuEigenerText').onclick = () => zeige('eigenertext');
+  view().querySelector('#zumLesetest')?.addEventListener('click', () => zeige('lesetest'));
 
   /* Speicher-Status anzeigen und dauerhaften Speicher anfordern */
   (async () => {

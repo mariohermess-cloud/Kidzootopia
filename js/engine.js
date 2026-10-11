@@ -6,7 +6,8 @@
 import { ZIEL_MAP, WEGE, ZIELE, TALENTE } from './data.js';
 import { baueAufgabe } from './generators.js';
 import { talentWerte, zielStand, zieleFuerEtappe as zieleFuerKlasse, zielWegWirksamkeit,
-         wegWirksamkeit, kennung, schonGehabt, merkeAufgabe } from './store.js';
+         wegWirksamkeit, kennung, schonGehabt, merkeAufgabe,
+         lesespieleKontext, eigeneTexte } from './store.js';
 
 const BRUECKEN_ANTEIL = 0.2;
 
@@ -35,10 +36,16 @@ export function wegRanking(profil, ziel) {
 export function waehleWeg(profil, ziel, erzwingeBruecke = null) {
   const rang = wegRanking(profil, ziel);
   const bruecke = erzwingeBruecke ?? (Math.random() < BRUECKEN_ANTEIL && rang.length > 2);
-  // Brueckenaufgaben gehen bewusst ueber die hinteren Wege – dort waechst,
-  // was noch schwerfaellt. Sonst bleibt das Kind auf seiner Staerke stehen.
-  const auswahl = bruecke ? rang.slice(-2) : rang.slice(0, 2);
-  const weg = auswahl[Math.floor(Math.random()*auswahl.length)];
+  /* Brueckenaufgaben gehen bewusst ueber die hinteren Wege – dort waechst,
+     was noch schwerfaellt. Sonst bleibt das Kind auf seiner Staerke stehen.
+     WICHTIG: "hintere Wege" heisst ALLE ausser den zwei staerksten, nicht nur
+     die zwei schwaechsten. Bei rang.slice(-2) waeren bei fuenf Wegen immer nur
+     die Plaetze 1+2 (Staerke) ODER 4+5 (Schwaeche) erreichbar – Platz 3 kaeme
+     nie dran, egal wie oft gewuerfelt wird. Mit slice(2) sind bei fuenf Wegen
+     die Plaetze 3, 4 UND 5 erreichbar. */
+  const auswahl = bruecke ? rang.slice(2) : rang.slice(0, 2);
+  const pool = auswahl.length ? auswahl : rang;
+  const weg = pool[Math.floor(Math.random()*pool.length)];
   return { weg, bruecke: !!bruecke };
 }
 
@@ -90,6 +97,31 @@ export function starteSession(profil, { zielId = null, fach = null, laenge = 8 }
       // jede 5. Aufgabe bewusst ueber einen anderen Weg
       const erzwinge = (this.index + 1) % 5 === 0 ? true : (this.index === 0 ? false : null);
       const { weg, bruecke } = waehleWeg(profil, ziel, erzwinge);
+
+      /* Kontext fuer den Lernmotor (js/lernmotor.js) - reicht bewusst NUR bis
+         hierher (engine kennt das Profil, generators.js nicht) und dann als
+         schlichtes Datenobjekt weiter, statt dass die Generatoren selbst
+         Profil oder Speicher anfassen muessten. */
+      let kontext = null;
+      if (ziel.id === 'lesespiele') {
+        kontext = lesespieleKontext(profil);
+      } else if (ziel.id === 'lautlesen') {
+        /* Etwa jede zweite Lautlese-Aufgabe kommt aus einem eigenen Text,
+           falls vorhanden - EINMAL pro Sitzung gewuerfelt, damit alle
+           Durchgaenge (1 bis 3) derselben Sitzung denselben Abschnitt lesen. */
+        const eigene = eigeneTexte(profil);
+        if (eigene.length) {
+          if (this._nutzeEigenenText === undefined) this._nutzeEigenenText = Math.random() < 0.5;
+          if (this._nutzeEigenenText && !this._eigenerAbschnitt) {
+            const text = eigene[Math.floor(Math.random() * eigene.length)];
+            this._eigenerAbschnitt = {
+              titel: text.titel,
+              abschnitt: text.abschnitte[Math.floor(Math.random() * text.abschnitte.length)]
+            };
+          }
+          if (this._nutzeEigenenText) kontext = { eigenerText: this._eigenerAbschnitt };
+        }
+      }
       /* Keine Wiederholungen. Zwei Dinge waren hier vorher falsch gedacht:
 
          1. Eine feste Zahl an Versuchen reicht nicht. Sind von 20 Stilmitteln
@@ -101,7 +133,7 @@ export function starteSession(profil, { zielId = null, fach = null, laenge = 8 }
             dieselbe Aufgabe noch einmal vorzusetzen. */
       const ziehe = (w) => {
         for (let versuch = 0; versuch < 400; versuch++) {
-          const kandidat = baueAufgabe(ziel.id, w, stufe);
+          const kandidat = baueAufgabe(ziel.id, w, stufe, kontext);
           const kk = kennung(kandidat);
           if (schonGehabt(profil, ziel.id, kk)) continue;
           if (wortlaute.has(kandidat.frage)) continue;
@@ -117,7 +149,7 @@ export function starteSession(profil, { zielId = null, fach = null, laenge = 8 }
       }
       if (!zug) {                     // wirklich alles durch: aeltestes vergessen
         (profil.gesehen[ziel.id] || []).splice(0, 10);
-        const kandidat = baueAufgabe(ziel.id, weg, stufe);
+        const kandidat = baueAufgabe(ziel.id, weg, stufe, kontext);
         zug = { aufgabe: kandidat, k: kennung(kandidat), weg };
       }
       const { aufgabe, k } = zug;
