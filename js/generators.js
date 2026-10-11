@@ -14,6 +14,7 @@ import { silben, uebwoerterBis } from './silben.js';
 import { DENKFEHLER, FEHLSCHLUESSE, STILMITTEL, WORTWURZELN, SYLLOGISMEN } from './fortgeschritten.js';
 import { wortDetektivAufgabe, spiegelAufgabe, silbenBaukastenAufgabe,
          quatschAufgabe, satzDetektivAufgabe, blitzAufgabe } from './lesespiele.js';
+import { luGen } from './luxemburg.js';
 
 const r = (a,b) => a + Math.floor(Math.random()*(b-a+1));
 const pick = a => a[r(0,a.length-1)];
@@ -1485,7 +1486,10 @@ lesespiele: {
   bauen:     silbenBaukastenAufgabe,
   entdecken: satzDetektivAufgabe,
   knobeln:   (lvl, kontext) => pick([quatschAufgabe, spiegelAufgabe, blitzAufgabe])(lvl, kontext)
-}
+},
+
+/* Lernziele nach dem luxemburgischen Lehrplan (Plan d'études 2026), siehe js/luxemburg.js */
+...luGen({ r, pick, shuffle, uniq, wahl, zahlText, zahlChoice })
 };
 
 /* Aufgabe erzeugen; faellt auf einen vorhandenen Weg zurueck.
