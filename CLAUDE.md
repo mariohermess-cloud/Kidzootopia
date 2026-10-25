@@ -69,3 +69,9 @@ Den `UserPromptSubmit`-Eintrag in `.claude/settings.json` entfernen, oder lokal 
 ### Hinweis
 
 Agenten und Hook greifen sicher erst in einer neuen Session. Das Hauptmodell ist über `.claude/settings.json` auf das aktuelle Opus voreingestellt; mit `/model` prüfen.
+
+## TypeSafe
+Use the `typesafe:typesafe-ai` skill when working on this project. Whenever a feature
+needs semantic judgment (routing, ranking, extraction, verification, classification),
+or an LLM prompt-and-parse step could become a structured decision, load the skill
+and follow it, including reading the live docs at https://docs.typesafe.ai/llms.txt.

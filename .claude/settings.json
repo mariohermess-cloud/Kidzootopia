@@ -2,7 +2,25 @@
   "model": "opus",
   "hooks": {
     "UserPromptSubmit": [
-      { "hooks": [ { "type": "command", "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/ablauf-erinnerung.sh\"" } ] }
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/ablauf-erinnerung.sh\""
+          }
+        ]
+      }
     ]
+  },
+  "extraKnownMarketplaces": {
+    "typesafe-ai": {
+      "source": {
+        "source": "github",
+        "repo": "typesafe-ai/skills"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "typesafe@typesafe-ai": true
   }
 }
