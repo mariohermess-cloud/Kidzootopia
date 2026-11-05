@@ -40,6 +40,7 @@ if akt: segs.append(akt)
 UMWEG = {"command", "exec", "env", "nohup", "time", "timeout", "xargs", "sudo", "doas", "nice", "builtin",
          "stdbuf", "npx", "{", "}", "!", "if", "then", "elif", "else", "fi", "do", "done", "while", "until"}
 for w in segs:
+    if any("`" in x for x in w) and GITWORT.search(" ".join(w)) and "`" in " ".join(w): fehler("git in Backticks")
     if w and w[0] == "for":  # for x in ...; do -> Kopf ist harmlos, Rumpf ist eigenes Segment
         continue
     vorher = None
@@ -48,7 +49,9 @@ for w in segs:
         if w[0].rsplit("/", 1)[-1] in UMWEG: vorher = w[0].rsplit("/", 1)[-1]
         w = w[1:]
         # Optionen mit Wert (sudo -u x, stdbuf -o 0, timeout -s KILL): Wert mit ueberspringen
-        if vorher in ("sudo", "doas", "stdbuf", "timeout", "env") and len(w) >= 2 and w[0] in ("-u", "-g", "-o", "-e", "-i", "-s", "-k", "-C", "-U"):
+        MIT_WERT = {"sudo": ("-u", "-g", "-C", "-U", "-h", "-p", "-r", "-t"), "doas": ("-u", "-C"),
+                    "stdbuf": ("-i", "-o", "-e"), "timeout": ("-s", "-k"), "env": ("-u", "-C", "-S")}
+        while len(w) >= 2 and w[0] in MIT_WERT.get(vorher, ()):
             w = w[2:]
     if not w: continue
     name = w[0].rsplit("/", 1)[-1].lstrip("\\`")
@@ -69,18 +72,17 @@ for w in segs:
     if sub not in LESEND: fehler("git " + sub)
     if sub == "branch":
         erlaubt_wert = {"--contains", "--no-contains", "--merged", "--no-merged", "--points-at", "--list", "-l", "--sort", "--format"}
-        i = 0
+        i, liste = 0, False
         while i < len(rest):
             x = rest[i]
             if x in ("-d","-D","-m","-M","-c","-C","-f","--delete","--move","--copy","--force","-u","--set-upstream-to",
                      "--unset-upstream","--edit-description","--track","-t") or x.startswith("--set-upstream-to="):
                 fehler("git branch schreibend")
-            if x in erlaubt_wert:
-                if x in ("--list", "-l"): i = len(rest); break  # danach nur Muster
-                i += 2; continue
-            if not x.startswith("-"): fehler("git branch schreibend")
+            if x in ("--list", "-l"): liste = True; i += 1; continue  # danach Muster, Optionen weiter pruefen
+            if x in erlaubt_wert: i += 2; continue
+            if not x.startswith("-") and not liste: fehler("git branch schreibend")
             i += 1
-    if sub in ("diff","show","log") and any(x.startswith("--output") or x.startswith("--ext-diff") for x in rest): fehler("git " + sub + " --output")
+    if sub in ("diff","show","log") and any(x == "--output" or x.startswith("--output=") or x == "--ext-diff" for x in rest): fehler("git " + sub + " --output")
     if sub == "grep" and any(re.match(r"^-[A-Za-z]*O", x) or x.startswith("--open-files-in-pager") for x in rest): fehler("git grep -O")
     if sub == "stash" and not (rest[:1] in (["list"], ["show"])): fehler("git stash")
     if sub == "config" and not any(x in ("--get", "--get-all", "--get-regexp", "--list", "-l", "--show-origin") for x in rest[:2]): fehler("git config schreibend")
