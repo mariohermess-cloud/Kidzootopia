@@ -49,8 +49,7 @@ if b_neu > grenze and b_neu > b_alt:
     sys.stderr.write(
         f"Gesperrt: {pfad} wuerde von {b_alt} auf {b_neu} Bytes wachsen (Grenze {grenze}). "
         "CLAUDE.md enthaelt nur Regeln. Aenderungsberichte gehoeren nach "
-        "Commits, Bereichsregeln nach .claude/rules/, offene Punkte nach "
-        "TODO-INHALTE.md. Regel kuerzen statt anhaengen.\n")
+        "Commits, Ausfuehrliches nach README.md. Regel kuerzen statt anhaengen.\n")
     sys.exit(2)
 sys.exit(0)
 '

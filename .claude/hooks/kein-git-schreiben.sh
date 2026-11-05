@@ -6,6 +6,7 @@
 # ueber Pfad (/usr/bin/git), Quotes ("git"), Backslash (\git), Variablen ($x) oder
 # command/exec/env-Umwege, eval oder sh/bash -c (auch -lc), sowie gh (GitHub-CLI) und hub.
 # Grenze: Schutz vor Versehen, kein Sandkasten.
+command -v python3 >/dev/null 2>&1 || { echo 'kein-git-schreiben: python3 fehlt, Bash gesperrt' >&2; exit 2; }
 INPUT=$(cat)
 case "$INPUT" in *git*|*gh*|*hub*) ;; *) exit 0 ;; esac
 printf '%s' "$INPUT" | python3 -c '
@@ -34,13 +35,15 @@ if akt: segs.append(akt)
 
 UMWEG = {"command", "exec", "env", "nohup", "time", "timeout", "xargs", "sudo", "nice", "builtin"}
 for w in segs:
+    if w and w[0].rsplit("/", 1)[-1] in ("sudo", "npx", "doas") and re.search(r"\b(git|gh|hub)\b", " ".join(w[1:])):
+        fehler(w[0] + " mit git/gh")
     vorher = None
     while w and (re.match(r"^[A-Za-z_][A-Za-z0-9_]*=", w[0]) or w[0] in UMWEG
                  or (vorher in UMWEG and (w[0].startswith("-") or re.fullmatch(r"[0-9.]+[smhd]?", w[0])))):
         vorher = w[0] if w[0] in UMWEG else vorher
         w = w[1:]
     if not w: continue
-    name = w[0].rsplit("/", 1)[-1].lstrip("\\")
+    name = w[0].rsplit("/", 1)[-1].lstrip("\\`")
     if w[0].startswith("$"): fehler("Befehl aus Variable")
     if name in ("gh", "hub"): fehler(name)
     if name == "eval" and re.search(r"\bgit\b|\bgh\b|\bhub\b", " ".join(w)): fehler("git in eval")

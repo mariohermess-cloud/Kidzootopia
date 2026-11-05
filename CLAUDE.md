@@ -8,10 +8,10 @@ Hook blockiert Wachstum dieser Datei über 8 KB).
 
 Die Hauptsession ist der **Chef** (Opus, in `.claude/settings.json` gesetzt; `/model` hat Vorrang).
 
-| Rolle | Modell | Aufgabe | Darf nicht (per Hook erzwungen) |
+| Rolle | Modell | Aufgabe | Darf nicht (Hook = technisch gesperrt, Schutz vor Versehen) |
 |---|---|---|---|
 | Chef | Opus | planen, delegieren, jeden Diff prüfen, Checks nachfahren, committen, pushen, Live-Schritte | eigene Arbeit ungeprüft durchwinken |
-| `coder` | Sonnet | abgegrenzte Umsetzung (Feature, Bugfix, Test), liefert Diff + Prüfnachweis | Git-Schreibbefehle, `gh` (Hook `kein-git-schreiben.sh`), Live, Auftrag erweitern |
+| `coder` | Sonnet | abgegrenzte Umsetzung (Feature, Bugfix, Test), liefert Diff + Prüfnachweis | Git-Schreibbefehle, `gh` (Hook `kein-git-schreiben.sh`); Live, Auftrag erweitern |
 | `helfer` | Haiku | suchen, lesen, zusammenfassen; Doku-Zeilen nur auf ausdrücklichen Auftrag | kein Bash; schreibt nur `*.md` außer CLAUDE.md (Hook `helfer-nur-doku.sh`) |
 
 - ≤ 1 Datei, ≤ 10 Zeilen, keine Logik: macht der Chef selbst.
@@ -55,11 +55,12 @@ endet mit `📋 Planstand ✅ erledigt · ▶️ läuft (wer) · ⬜ offen`.
 `manifest.webmanifest`) ändert, zieht den Cache-Namen in `sw.js` und die Nummer in
 `js/version.js` mit; neue Module gehören in die Offline-Liste von `sw.js`
 (`npm run test:version` prüft das). Neue Dateien oder Ordner der App zusätzlich in den Schritt
-„App-Dateien nach _site kopieren“ in `pages.yml` eintragen; veröffentlicht wird nur, was dort steht.
+„App-Dateien nach _site kopieren“ in `pages.yml` eintragen; veröffentlicht wird nur, was dort steht
+(`test:version` prüft auch das).
 
 ## Große Dateien
 
-`vendor/**` und `docs/*.pdf` sind fürs Lesen gesperrt (`permissions.deny`; zwei Tesseract-Dateien
+`vendor/**` und `docs/*.pdf` sind fürs Lesen (und damit Schreiben) gesperrt (`permissions.deny`; zwei Tesseract-Dateien
 haben je eine Zeile von 3,9 MB). Große JS-Dateien (`js/ui.js`, `js/luxemburg.js`,
 `js/generators.js`) und `README.md` nur gezielt lesen: erst Grep, dann Read mit `offset`/`limit`.
 

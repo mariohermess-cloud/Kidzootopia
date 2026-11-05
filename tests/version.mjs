@@ -5,7 +5,7 @@
    Eltern-Bereich behauptet trotzdem, alles sei aktuell. Genau das faengt dieser
    Test ab, bevor es auf die Geraete geht. */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { NUMMER, STAND, VERLAUF, AKTUELL } from '../js/version.js';
 
 let fehler = 0;
@@ -27,6 +27,19 @@ const module = readFileSync(new URL('../js/ui.js', import.meta.url), 'utf8')
 const fehlend = module.filter(m => !dateien.includes(`./js/${m}`));
 pruefe(fehlend.length === 0,
   `alle von ui.js geladenen Module sind im Offline-Speicher${fehlend.length ? ': fehlt ' + fehlend.join(', ') : ''}`);
+
+/* Veroeffentlicht wird nur, was der Kopierschritt in pages.yml nach _site legt.
+   Jede Offline-Datei aus sw.js muss darin enthalten sein, sonst scheitert addAll. */
+const workflow = readFileSync(new URL('../.github/workflows/pages.yml', import.meta.url), 'utf8');
+const kopie = workflow.match(/cp -r (.+) _site\//)?.[1].trim().split(/\s+/) || [];
+const offline = [...dateien.matchAll(/'\.\/([^']*)'/g)].map(z => z[1]).filter(Boolean);
+/* Zur Laufzeit nachgeladene Ordner (z. B. ../vendor/tesseract/ in js/texterkennung.js) */
+const laufzeit = [...new Set(readdirSync(new URL('../js/', import.meta.url))
+  .filter(f => f.endsWith('.js'))
+  .flatMap(f => [...readFileSync(new URL(`../js/${f}`, import.meta.url), 'utf8').matchAll(/['`]\.\.\/([a-z_-]+)\//g)].map(z => z[1])))];
+const nichtKopiert = [...offline, ...laufzeit].filter(f => !kopie.includes(f.split('/')[0]));
+pruefe(kopie.length > 0 && nichtKopiert.length === 0,
+  `alle Offline-Dateien werden auf Pages veroeffentlicht (pages.yml)${nichtKopiert.length ? ': fehlt ' + nichtKopiert.join(', ') : ''}`);
 
 pruefe(/^\d{2}\.\d{2}\.\d{4}$/.test(STAND), `Stand ist ein Datum (${STAND})`);
 pruefe(AKTUELL.nr === NUMMER, 'der Verlauf beginnt mit der aktuellen Fassung');

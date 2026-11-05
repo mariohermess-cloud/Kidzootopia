@@ -12,8 +12,7 @@
   "permissions": {
     "deny": [
       "Read(./vendor/**)",
-      "Read(./docs/*.pdf)",
-      "Read(./screens/**)"
+      "Read(./docs/*.pdf)"
     ]
   }
 }
