@@ -740,7 +740,8 @@ selbst anlegen (`Resource not accessible by integration`), dafür wären
 Administrator-Rechte nötig.
 
 Danach wird die App bei jedem Push auf `main` automatisch veröffentlicht
-(Workflow `.github/workflows/pages.yml`; der Generator-Test läuft als Gate davor).
+(Workflow `.github/workflows/pages.yml`; alle Fachtests laufen als Gate davor (`npm test`),
+veröffentlicht werden nur die App-Dateien, nicht `tests/`, `docs/`, `.claude/` usw.).
 Der fehlgeschlagene Lauf lässt sich unter *Actions → Deploy zu GitHub Pages →
 Re-run all jobs* einfach wiederholen. Die Adresse lautet:
 
@@ -870,6 +871,7 @@ wird), danach wird wie beim normalen Lautlesen bis zu dreimal derselbe Abschnitt
 ## Tests
 
 ```bash
+npm test                  # alle Fachtests unten außer e2e (so läuft es auch in der CI)
 npm run test:aufgaben     # alle Generatoren: 33.000 Aufgaben auf Vollständigkeit & Eindeutigkeit
 npm run test:knacknuesse  # Vielfalt (1.394) und Richtigkeit (19.200 unabhängig nachgerechnet)
 npm run test:lernen       # Lernschleife, Wiederholungsfreiheit, Sachaufgaben-Kontrolle

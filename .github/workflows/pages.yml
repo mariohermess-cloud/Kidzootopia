@@ -22,25 +22,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: node tests/aufgaben.mjs
-      - run: node tests/lernen.mjs
-      - run: node tests/knacknuesse.mjs
-      - run: node tests/kunst.mjs
-      - run: node tests/version.mjs
-      - run: node tests/silben.mjs
-      - run: node tests/lesen.mjs
-      - run: node tests/skizze.mjs
-      - run: node tests/zahlfeld.mjs
-      - run: node tests/kommentar.mjs
-      - run: node tests/aussprache.mjs
-      - run: node tests/punkte.mjs
-      - run: node tests/lesehilfe.mjs
-      - run: node tests/texterkennung.mjs
-      - run: node tests/eigenetexte.mjs
-      - run: node tests/lesemodi.mjs
-      - run: node tests/lesespiele.mjs
-      - run: node tests/lernmotor.mjs
-      - run: node tests/lesetest.mjs
+      # Alle Fachtests aus package.json (test:* ausser test:e2e), siehe tests/alle.mjs
+      - run: npm test
 
   deploy:
     needs: test
@@ -55,8 +38,14 @@ jobs:
       # Pages-Seite nicht selbst anlegen ("Resource not accessible by integration"),
       # dafuer waeren Administrator-Rechte noetig.
       - uses: actions/configure-pages@v5
+      # Nur die App-Dateien veroeffentlichen (Entscheidung Mario 05.11.2026): kein .claude/,
+      # CLAUDE.md, README, tests/, docs/. Neue Dateien der App hier und in sw.js eintragen.
+      - name: App-Dateien nach _site kopieren
+        run: |
+          mkdir _site
+          cp -r index.html app.css manifest.webmanifest sw.js icons js vendor _site/
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
