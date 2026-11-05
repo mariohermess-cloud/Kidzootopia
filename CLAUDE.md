@@ -1,71 +1,74 @@
 # CLAUDE.md – Kidzootopia
 
-## Arbeitsablauf: Orchestrator
+Lern-App für Kinder: statische PWA, Vanilla-JS, kein Build, kein Linter, keine externen APIs
+(alles localStorage). Nur Grundregeln; Änderungsberichte gehören in Commits, nie hierher (ein
+Hook blockiert Wachstum dieser Datei über 8 KB).
 
-Dieses Repo wird im Orchestrator-Modell bearbeitet: ein Chef (Hauptsession) plant und prüft, zwei Subagenten arbeiten zu.
+## Rollen
 
-### Rollen
+Die Hauptsession ist der **Chef** (Opus, in `.claude/settings.json` gesetzt; `/model` hat Vorrang).
 
-| Rolle | Modell | Aufgabe | darf nicht |
-|-------|--------|---------|------------|
-| Chef | Opus | Hauptsession; plant, verteilt Aufgaben an coder/helfer, prüft jede Änderung (Diff lesen, Checks nachfahren), committet, pusht; ist die einzige Rolle, die Live-Schritte ausführen darf | eigene Arbeit ungeprüft durchwinken |
-| coder | Sonnet | Setzt klar abgegrenzte Code-Aufgaben um (Feature, Bugfix, Test), liefert Diff + Prüfnachweis | commit/push/merge, Live-Schritte, Aufgabe eigenmächtig erweitern |
-| helfer | Haiku | Einfache Zuarbeit: suchen, lesen, zusammenfassen, Doku-Zeilen, Formatierung | Logikänderungen in js/, sw.js, tests/; commit/push; Live-Schritte |
+| Rolle | Modell | Aufgabe | Darf nicht (Hook = technisch gesperrt, Schutz vor Versehen) |
+|---|---|---|---|
+| Chef | Opus | planen, delegieren, jeden Diff prüfen, Checks nachfahren, committen, pushen, Live-Schritte | eigene Arbeit ungeprüft durchwinken |
+| `coder` | Sonnet | abgegrenzte Umsetzung (Feature, Bugfix, Test), liefert Diff + Prüfnachweis | Git-Schreibbefehle, `gh` (Hook `kein-git-schreiben.sh`); Live, Auftrag erweitern |
+| `helfer` | Haiku | suchen, lesen, zusammenfassen; Doku-Zeilen nur auf ausdrücklichen Auftrag | kein Bash; schreibt nur `*.md` außer CLAUDE.md (Hook `helfer-nur-doku.sh`) |
 
-### Modelle
+- ≤ 1 Datei, ≤ 10 Zeilen, keine Logik: macht der Chef selbst.
+- Unabhängige Aufträge in **einer** Nachricht parallel starten; keine parallelen Schreibaufträge
+  für dieselben Dateien. Scheitert derselbe Auftrag dreimal an derselben Rolle: nicht weiter
+  delegieren, Mario fragen.
+- Modelle über Kurznamen (`opus`, `sonnet`, `haiku`), keine festen Versionsnummern.
 
-Alle Rollen nutzen das jeweils aktuelle Modell ihrer Familie über Kurznamen: `opus` (Chef), `sonnet` (coder) und `haiku` (helfer). Auch ein zusätzlicher Opus-Agent bekommt `model: opus`, keine feste Versionsnummer. Eine Wahl per `/model` oder in der App hat Vorrang vor der Voreinstellung.
+## Live (nur der Chef, nur nach ausdrücklichem OK für genau diesen Schritt)
 
-### Was „live” hier heißt
+- **Push oder Merge auf `main` = Deploy auf GitHub Pages**
+  (https://mariohermess-cloud.github.io/Kidzootopia/). Merge macht Mario selbst.
+- Jeder schreibende Zugriff über ein MCP-Tool, gleich welcher Dienst; Artifact-Veröffentlichung.
+- Ein OK zur lokalen Umsetzung erlaubt keinen Push, PR oder Merge.
 
-- Push/Merge auf `main` → automatischer Deploy auf GitHub Pages (https://mariohermess-cloud.github.io/Kidzootopia/)
-- GitHub-MCP-Schreibtools: `mcp__github__merge_pull_request`, `push_files`, `create_or_update_file`, `delete_file`, `create_branch`, `create_pull_request`, `update_pull_request`, `actions_run_trigger`, `enable_pr_auto_merge`, `add_issue_comment`, `pull_request_review_write`, `issue_write`
-- Weitere MCP-Server der Umgebung: `mcp__HA_MCP_NABU__*` (Home Assistant / Smart Home – Geräte schalten, Automationen, Neustart), `mcp__Lovable__*` (Deploy, `send_message` verbraucht Credits), `mcp__Gamma__generate` u. a. Gamma-Schreibfunktionen, `mcp__Claude_Docs__*` Schreibfunktionen
-- Die App selbst ruft keine externen APIs auf (alles localStorage)
+## Ablauf bei jedem Arbeitsauftrag
 
-### Ablauf bei jedem Arbeitsauftrag
-
-1. Prompt verbessern und zeigen. – macht immer der Chef selbst, nie delegiert
-2. Plan zeigen (Tabelle: # / Schritt / Wer / Live? / Risiko). – macht immer der Chef selbst, nie delegiert
+1. Auftrag klären: nur unklare, mehrdeutige oder diktierte Aufträge umformulieren und die
+   Deutung offenlegen (bei Bedarf Skill `trainiere-prompt`), klare nicht.
+2. Plan zeigen: `# | Schritt | Wer | Live? | Risiko`, offene Entscheidungen mit Vorschlag.
 3. Auf OK warten.
-4. Delegieren (an coder oder helfer, je nach Aufgabe).
+4. Delegieren (Rollen oben).
 5. Kontrolle durch den Chef: Diff lesen, Checks selbst nachfahren.
-6. Abschluss mit „Verifiziert“ / „Nicht verifiziert“.
+6. Abschluss getrennt nach **Verifiziert** und **Nicht verifiziert**.
 
-Reine Fragen und Smalltalk werden direkt beantwortet, ohne Plan.
+Reine Fragen und Smalltalk direkt beantworten, ohne Plan. Jede Antwort während eines Auftrags
+endet mit `📋 Planstand ✅ erledigt · ▶️ läuft (wer) · ⬜ offen`.
 
-### Planstand
+## Prüfungen
 
-Jede Antwort während eines laufenden Auftrags endet mit einem Block:
+- `npm test` führt alle Fachtests aus (jedes `test:*` aus `package.json` außer `test:e2e`); die CI
+  (`.github/workflows/pages.yml`) ruft genau das vor jedem Deploy auf. Einzeln:
+  `npm run test:<name>`. Neue Tests als `test:<name>` in `package.json` eintragen, dann laufen
+  sie überall mit.
+- `npm run test:e2e` braucht Playwright und einen laufenden Server (`npm start &`).
+- `tests/ocr-qualitaet.mjs` ist eine einmalige Qualitätsmessung, kein Pflichttest.
+- Bei Änderungen an `.claude/`: `sh .claude/hooks/agenten-hooks.test.sh` und
+  `sh .claude/hooks/claude-md-groesse.test.sh`.
 
-```
-📋 Planstand
-✅ erledigt · ▶️ läuft (wer) · ⬜ offen
-```
+**Versionsregel:** Wer App-Dateien (`index.html`, `app.css`, `js/*`, `sw.js`,
+`manifest.webmanifest`) ändert, zieht den Cache-Namen in `sw.js` und die Nummer in
+`js/version.js` mit; neue Module gehören in die Offline-Liste von `sw.js`
+(`npm run test:version` prüft das). Neue Dateien oder Ordner der App zusätzlich in den Schritt
+„App-Dateien nach _site kopieren“ in `pages.yml` eintragen; veröffentlicht wird nur, was dort steht
+(`test:version` prüft auch das).
 
-Beispiel:
+## Große Dateien
 
-```
-📋 Planstand
-✅ 1 Tests lesen (helfer)
-▶️ 2 Fix umsetzen (coder)
-⬜ 3 Commit & Push (Opus)
-```
+`vendor/**` und `docs/*.pdf` sind fürs Lesen (und damit Schreiben) gesperrt (`permissions.deny`; zwei Tesseract-Dateien
+haben je eine Zeile von 3,9 MB). Große JS-Dateien (`js/ui.js`, `js/luxemburg.js`,
+`js/generators.js`) und `README.md` nur gezielt lesen: erst Grep, dann Read mit `offset`/`limit`.
 
-### Prüfbefehle
+## Hooks und Skills
 
-Die vollständige Befehlsliste steht in `.claude/agents/coder.md`. Kurzfassung: `npm run test:<name>` für die 17 Fachtests (z. B. `test:aufgaben`, `test:lernen`, `test:kunst`, `test:version`, …) sowie `npm run test:e2e` (braucht Playwright + `npm start &`). Kein Linter/Formatter vorhanden.
-
-**Versionsregel:** Wer App-Dateien (`index.html`, `app.css`, `js/*`, `sw.js`, `manifest.webmanifest`) ändert, muss den Cache-Namen in `sw.js` und die Nummer in `js/version.js` mitziehen; neue Module gehören in die Offline-Liste von `sw.js`. `npm run test:version` prüft das.
-
-### „trainiere Prompt“
-
-Bei „trainiere Prompt“ (oder „Prompt trainieren“) greift der gleichnamige Skill: er zeigt nur den verbesserten Prompt plus Plan, führt nichts aus.
-
-### Hook abschalten
-
-Den `UserPromptSubmit`-Eintrag in `.claude/settings.json` entfernen, oder lokal in `.claude/settings.local.json` `"disableAllHooks": true` setzen. Die Wirkung greift erst in einer neuen Session bzw. nach `/hooks`.
-
-### Hinweis
-
-Agenten und Hook greifen sicher erst in einer neuen Session. Das Hauptmodell ist über `.claude/settings.json` auf das aktuelle Opus voreingestellt; mit `/model` prüfen.
+- Hooks (`.claude/settings.json`): `ablauf-erinnerung.sh` (eine Zeile je Prompt),
+  `claude-md-groesse.sh` (Größensperre); Agenten-Hooks im Frontmatter von coder und helfer.
+  Abschalten nur auf Auftrag: Eintrag entfernen oder lokal `"disableAllHooks": true` in
+  `.claude/settings.local.json`.
+- Skill `trainiere-prompt`: auf Zuruf verbesserter Prompt plus Plan, führt nichts aus.
+- Hooks, Agenten und Skills greifen erst in einer neuen Session.

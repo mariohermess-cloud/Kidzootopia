@@ -6,6 +6,7 @@
   "description": "Lern-App für Kinder: Talente entdecken und jedes Lernziel über den passenden Weg erreichen.",
   "scripts": {
     "start": "python3 -m http.server 8765",
+    "test": "node tests/alle.mjs",
     "test:aufgaben": "node tests/aufgaben.mjs",
     "test:lernen": "node tests/lernen.mjs",
     "test:e2e": "node tests/e2e.mjs ./screens",
